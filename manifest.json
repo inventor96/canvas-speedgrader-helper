@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "Helper for Canvas SpeedGrader",
+  "version": "0.1.0",
+  "description": "Little funcationality improvements for Canvas SpeedGrader.",
+  "icons": {
+    "48": "icon.png",
+    "128": "icon.png"
+  },
+  "action": {
+    "default_icon": "icon.png",
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://*.instructure.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://*.instructure.com/courses/*/gradebook/speed_grader*"],
+      "js": ["settings.js", "storage-utils.js", "loader.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["page.js"],
+      "matches": ["https://*.instructure.com/*"]
+    }
+  ]
+}

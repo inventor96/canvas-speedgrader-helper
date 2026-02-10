@@ -1,0 +1,83 @@
+main {
+  max-width: 720px;
+  margin: 0 auto
+}
+
+#placeholders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0 12px
+}
+
+#students-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+.placeholder-item {
+  display: flex;
+  gap: 8px;
+  align-items: center
+}
+
+.student-item {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.student-item .student-id {
+  width: 140px;
+  padding: 6px 8px;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  background: #fafafa;
+}
+
+.student-item .student-name {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.placeholder-item input {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px
+}
+
+.controls {
+  margin-bottom: 8px
+}
+
+.import-results {
+  margin: 8px 0 12px;
+  padding: 8px 10px;
+  border: 1px solid #000;
+  border-radius: 6px;
+  background: #ddd;
+}
+
+#import-conflicts {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  color: #a23;
+  font-size: 0.9rem;
+}
+
+.actions {
+  margin-top: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center
+}
+
+#status {
+  color: var(--muted);
+  font-size: 0.9rem
+}

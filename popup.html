@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Set Preferred Name</title>
+    <link rel="stylesheet" href="base.css">
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <div class="options-root">
+      <h2>Set Preferred Name</h2>
+      <div id="no-student" style="display:none;">Setting a preferred name for a student is only available on a SpeedGrader page.</div>
+      <div id="form" style="display:none;">
+        <div><strong>student_id:</strong> <span id="student-id"></span></div>
+        <div style="margin-top:8px;"><input id="student-name" type="text" placeholder="Custom name" /></div>
+        <div style="margin-top:8px;"><button id="save">Save</button> <span id="status"></span></div>
+      </div>
+      <div style="margin-top:48px; text-align:center;">
+        <button id="open-settings" style="font-size:90%; padding:6px 10px;">Open Settings</button>
+      </div>
+    </div>
+    <script src="storage-utils.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

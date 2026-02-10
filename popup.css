@@ -1,0 +1,30 @@
+.options-root {
+  min-width: 200px;
+  padding: 8px 0;
+}
+
+.options-root h2 {
+  text-align: center;
+  margin: 8px 0 16px;
+}
+
+.options-root > div {
+  padding: 0 20px;
+}
+
+.options-root input {
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.options-root button {
+  margin-right: 8px;
+}
+
+#status {
+  color: var(--muted);
+  font-size: 0.9rem;
+}

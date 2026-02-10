@@ -1,0 +1,115 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Settings | Helper for Canvas SpeedGrader</title>
+    <link rel="stylesheet" href="base.css">
+    <link rel="stylesheet" href="options.css">
+  </head>
+  <body>
+    <main>
+      <h1>Settings</h1>
+      <p class="muted">Configure your preferences for the Helper for Canvas SpeedGrader extension. Changes will take effect immediately after saving. Unless otherwise specified, your settings are synced between your devices (if supported by your browser).</p>
+
+      <hr>
+
+      <section id="rubric-section">
+        <label for="open-rubric">
+          <h2>Rubric</h2>
+        </label>
+        <div style="margin:8px 0 12px">
+          <label>
+            <input id="open-rubric" type="checkbox" />
+            Open rubric automatically for ungraded submissions
+          </label>
+          <br>
+          <label>
+            <input id="open-comment-library" type="checkbox" />
+            Open the Comment Library after submitting the assessment
+          </label>
+          <h3 style="margin-top: 48px; margin-bottom: 0;">Unstructured Rubric Options</h3>
+          <p class="muted">These options apply to unstructured rubrics where criteria are not predefined. They do not affect functionality for rubrics with preset point values.</p>
+          <label>
+            <input id="auto-fill-full-points" type="checkbox" />
+            Prepopulate criterion scores with full points after clicking in the score input (unless a score already exists)
+          </label>
+          <br>
+          <label>
+            <input id="remember-points-for-comments" type="checkbox" />
+            Remember and prepopulate points for saved comments for individual criterion (replacing existing point values if present)
+          </label>
+          <p style="margin-top: 5px; margin-left: 2em; margin-bottom: 0;"><b>Note 1:</b> If more than one comment is longer than 100 characters, and the first 100 characters are the same, points may be incorrectly prepopulated.</p>
+          <p style="margin-top: 5px; margin-left: 2em; margin-bottom: 0;"><b>Note 2:</b> If you manually change the comment text after selecting an option from the Comment Library, the points will be remembered based on the original comment text, not the modified text. However, if the "Save this comment for reuse" checkbox is checked, the modified comment text will be used instead.</p>
+        </div>
+      </section>
+
+      <hr>
+
+      <section id="placeholders-section">
+        <label for="placeholders-list">
+          <h2>Name Placeholders</h2>
+        </label>
+        <p class="muted">Define the list of available placeholders you can use in your Comment Library in Canvas. You can add or remove placeholders as needed. At least one placeholder must be defined. When you select a comment from the Comment Library, any placeholders will be replaced with the corresponding student name based on your settings.</p>
+        <div id="placeholders-list"></div>
+        <div class="controls">
+          <button id="add-placeholder">Add placeholder</button>
+        </div>
+      </section>
+
+      <hr>
+
+      <section id="student-name-format-section">
+        <label>
+          <h2>Student Name Format</h2>
+        </label>
+        <p class="muted">Choose how student names are used in placeholders. This applies only when a custom student name is not provided for a student (see below). The first name option makes a best guess by taking the first word of the full name (separating by spaces). At this time, the full name cannot be determined if Canvas truncates it.</p>
+        <div style="margin:8px 0 12px">
+          <label>
+            <input type="radio" name="student-name-format" value="first-name" id="student-name-first-name" checked />
+            First name only
+          </label>
+          <br>
+          <label>
+            <input type="radio" name="student-name-format" value="full-name" id="student-name-full-name" />
+            Full name
+          </label>
+        </div>
+      </section>
+
+      <hr>
+
+      <section id="students-section">
+        <label>
+          <h2>Student Preferred Names</h2>
+        </label>
+        <p class="muted">Student preferred names are stored ONLY on this device and are NOT synced between your devices to avoid potential FERPA issues.</p>
+        <p id="no-student-names">(No preferred names have been set yet.)</p>
+        <div id="students-list"></div>
+        <p class="muted small">You can add student preferred names while viewing the SpeedGrader page; they will appear here.</p>
+        <div class="controls" style="margin-top: 36px;">
+          <button id="export-students" type="button">Export Names CSV</button>
+          <button id="import-students" type="button">Import Names CSV</button>
+          <input id="import-students-file" type="file" accept=".csv,text/csv" hidden>
+        </div>
+        <div id="import-results" class="import-results hidden" aria-live="polite">
+          <p class="muted small" id="import-summary"></p>
+          <ul id="import-conflicts"></ul>
+        </div>
+        <p class="muted">You can use CSV files to import or export student preferred names. This enables you to back up your data, transfer it between devices, or share it with colleagues.</p>
+        <p class="muted"><b>WARNING:</b> It is your responsibility to handle this data securely and in compliance with all applicable privacy laws and regulations (e.g. FERPA).</p>
+      </section>
+
+      <hr>
+
+      <div class="actions">
+        <button id="save">Save</button>
+        <span id="status" aria-live="polite"></span>
+      </div>
+    </main>
+
+    <script src="settings.js"></script>
+    <script src="storage-utils.js"></script>
+    <script src="options.js"></script>
+  </body>
+</html>
