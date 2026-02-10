@@ -240,7 +240,12 @@ function setImportResults(summary, conflicts) {
 }
 
 // Initialize the options page
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  // Initialize storage limits based on browser quota
+  if (typeof window.CSHStorageUtils !== 'undefined' && typeof window.CSHStorageUtils.initializeLimits === 'function') {
+    await window.CSHStorageUtils.initializeLimits();
+  }
+
   loadPlaceholders();
   loadStudents();
 

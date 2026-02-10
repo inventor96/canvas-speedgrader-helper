@@ -1,16 +1,95 @@
 (() => {
   'use strict';
 
-  const DEFAULT_LIMITS = {
+  // Fallback limits used until browser quota is available
+  const FALLBACK_LIMITS = {
     savedPoints: {
-      maxEntries: 1000,
-      maxBytes: 90 * 1024
+      maxEntries: 5000, // Probably closer to like 70 in practice
+      maxBytes: 8 * 1024,
     },
     studentNames: {
-      maxEntries: 5000,
-      maxBytes: 500 * 1024
-    }
+      maxEntries: 10000,
+      maxBytes: 128 * 1024,
+    },
   };
+
+  // DEFAULT_LIMITS will be populated by initializeLimits()
+  let DEFAULT_LIMITS = { ...FALLBACK_LIMITS };
+
+  /** Get limits based on extension storage quotas */
+  async function getDefaultLimits() {
+    // Clone the fallback limits so we can safely override byte caps.
+    const cloneLimits = () => ({
+      savedPoints: { ...FALLBACK_LIMITS.savedPoints },
+      studentNames: { ...FALLBACK_LIMITS.studentNames }
+    });
+
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage) {
+        // Step 1: start from safe defaults and only override byte caps when quotas are known.
+        const limits = cloneLimits();
+
+        // Wrap storage.getBytesInUse into a promise and return null on failure.
+        const getBytesInUse = (area) => new Promise((resolve) => {
+          if (!area || typeof area.getBytesInUse !== 'function') return resolve(null);
+          area.getBytesInUse(null, (bytes) => {
+            if (chrome.runtime && chrome.runtime.lastError) return resolve(null);
+            resolve(typeof bytes === 'number' ? bytes : null);
+          });
+        });
+
+        // Step 2: compute sync quota headroom for savedPoints (sync storage).
+        const syncArea = chrome.storage.sync;
+        const syncQuota = syncArea && Number.isFinite(syncArea.QUOTA_BYTES) ? syncArea.QUOTA_BYTES : null;
+        const syncItemQuota = syncArea && Number.isFinite(syncArea.QUOTA_BYTES_PER_ITEM) ? syncArea.QUOTA_BYTES_PER_ITEM : null;
+        if (syncQuota !== null) {
+          const syncUsage = await getBytesInUse(syncArea);
+          if (syncUsage !== null) {
+            const availableSync = Math.max(syncQuota - syncUsage, 0);
+            // Allocate 80% of available sync quota to savedPoints
+            let savedPointsBytes = Math.floor(availableSync * 0.8);
+            // savedPoints is stored as a single sync item; enforce the per-item cap.
+            if (syncItemQuota !== null) {
+              savedPointsBytes = Math.min(savedPointsBytes, syncItemQuota);
+            }
+            limits.savedPoints.maxBytes = savedPointsBytes;
+          }
+        }
+
+        // Step 3: compute local quota headroom for studentNames (local storage).
+        const localArea = chrome.storage.local;
+        const localQuota = localArea && Number.isFinite(localArea.QUOTA_BYTES) ? localArea.QUOTA_BYTES : null;
+        if (localQuota !== null) {
+          const localUsage = await getBytesInUse(localArea);
+          if (localUsage !== null) {
+            const availableLocal = Math.max(localQuota - localUsage, 0);
+            // Allocate 60% of available local quota to studentNames
+            limits.studentNames.maxBytes = Math.floor(availableLocal * 0.6);
+          }
+        }
+
+        // Step 4: if local quota is unknown, try navigator estimate in extension pages only.
+        if (localQuota === null && typeof navigator !== 'undefined' && navigator.storage && navigator.storage.estimate && typeof location !== 'undefined' && location.protocol === 'chrome-extension:') {
+          const estimate = await navigator.storage.estimate();
+          const availableBytes = Math.max((estimate.quota || 0) - (estimate.usage || 0), 0);
+          // Only use this fallback for extension pages, not content scripts.
+          limits.studentNames.maxBytes = Math.floor(availableBytes * 0.6);
+        }
+
+        return limits;
+      }
+    } catch (e) {
+      console.warn('CSH storage warning: failed to get extension storage quota.', e.message);
+    }
+
+    // Return fallback limits if API unavailable or on error
+    return cloneLimits();
+  }
+
+  /** Initialize DEFAULT_LIMITS based on browser quota (call at startup) */
+  async function initializeLimits() {
+    DEFAULT_LIMITS = await getDefaultLimits();
+  }
 
   /** Estimate the byte size of a value when stored as JSON */
   function estimateBytes(value) {
@@ -152,7 +231,8 @@
 
   // Expose utility functions globally for use in other scripts
   window.CSHStorageUtils = {
-    DEFAULT_LIMITS,
+    DEFAULT_LIMITS: () => DEFAULT_LIMITS, // Function to get current limits
+    initializeLimits,
     estimateBytes,
     ensureMeta,
     normalizeMetaKeys,

@@ -1,4 +1,9 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  // Initialize storage limits based on browser quota
+  if (typeof window.CSHStorageUtils !== 'undefined' && typeof window.CSHStorageUtils.initializeLimits === 'function') {
+    await window.CSHStorageUtils.initializeLimits();
+  }
+
   const studentIdEl = document.getElementById('student-id');
   const nameInput = document.getElementById('student-name');
   const saveBtn = document.getElementById('save');

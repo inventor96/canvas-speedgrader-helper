@@ -1,6 +1,13 @@
 (() => {
   const storageUtils = (typeof CSHStorageUtils !== 'undefined') ? CSHStorageUtils : null;
 
+  // Initialize storage limits based on browser quota
+  if (storageUtils && typeof storageUtils.initializeLimits === 'function') {
+    storageUtils.initializeLimits().catch((e) => {
+      // Silently ignore initialization errors; fallback limits will be used
+    });
+  }
+
   function logStorageWarning(message, detail) {
     try {
       if (detail) {
