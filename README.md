@@ -15,7 +15,20 @@ Small quality-of-life improvements for Canvas SpeedGrader. The extension runs on
 
 - **Open rubric automatically for ungraded submissions**: Opens the rubric panel when there is no prior evaluation.
 - **Open the Comment Library after submitting the assessment**: Opens the comment library after clicking Submit Assessment.
-- **Prepopulate criterion scores with full points**: For unstructured rubrics, focusing a score input fills it with the max points if empty.
+
+#### Structured Rubric Options
+
+These options apply only to structured rubrics with preset point values:
+
+- **Open comment box after selecting maximum rubric points**: Automatically opens the comment input box and focuses it when you select the maximum point option for a criterion. Mutually exclusive with "Clear criterion comment box when selecting maximum rubric points".
+- **Clear criterion comment box when selecting maximum rubric points**: Automatically clears any existing comment and closes the comment box when you select the maximum point option for a criterion. Useful for enforcing a "no comment needed for perfect scores" workflow. Mutually exclusive with "Open comment box after selecting maximum rubric points".
+- **Open comment box after selecting less-than-maximum rubric points**: Automatically opens the comment input box and focuses it when you select any less-than-maximum point option for a criterion.
+
+#### Unstructured Rubric Options
+
+These options apply only to unstructured rubrics without preset point values:
+
+- **Prepopulate criterion scores with full points**: Focusing a score input fills it with the max points if empty.
 - **Remember and prepopulate points for saved comments**: Stores points for unstructured rubric comments and reuses them when you select the same comment later.
 	- Notes in the options UI cover edge cases for long comments and edited comment text.
 

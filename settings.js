@@ -9,6 +9,9 @@ const SYNCED_SETTINGS = {
   studentNameFormat: 'first-name',
   autoFillFullPoints: false,
   rememberPointsForComments: false,
+  openCommentBoxAfterMaxPoints: false,
+  openCommentBoxAfterLessThanMaxPoints: false,
+  clearCommentBoxOnMaxPoints: false,
   savedPoints: {},
   savedPointsMeta: { lastUsed: {} },
 };

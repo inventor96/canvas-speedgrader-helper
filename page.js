@@ -7,6 +7,9 @@
   let OPEN_COMMENT_LIBRARY_AFTER_SUBMIT;
   let AUTO_FILL_FULL_POINTS;
   let REMEMBER_POINTS_FOR_COMMENTS;
+  let OPEN_COMMENT_BOX_AFTER_MAX_POINTS;
+  let OPEN_COMMENT_BOX_AFTER_LESS_THAN_MAX_POINTS;
+  let CLEAR_COMMENT_BOX_ON_MAX_POINTS;
   let SAVED_POINTS;
   let STUDENT_NAME_FORMAT;
   let STUDENT_NAMES;
@@ -44,6 +47,15 @@
     }
     if (parsed && typeof parsed.rememberPointsForComments !== 'undefined') {
       REMEMBER_POINTS_FOR_COMMENTS = !!parsed.rememberPointsForComments;
+    }
+    if (parsed && typeof parsed.openCommentBoxAfterMaxPoints !== 'undefined') {
+      OPEN_COMMENT_BOX_AFTER_MAX_POINTS = !!parsed.openCommentBoxAfterMaxPoints;
+    }
+    if (parsed && typeof parsed.openCommentBoxAfterLessThanMaxPoints !== 'undefined') {
+      OPEN_COMMENT_BOX_AFTER_LESS_THAN_MAX_POINTS = !!parsed.openCommentBoxAfterLessThanMaxPoints;
+    }
+    if (parsed && typeof parsed.clearCommentBoxOnMaxPoints !== 'undefined') {
+      CLEAR_COMMENT_BOX_ON_MAX_POINTS = !!parsed.clearCommentBoxOnMaxPoints;
     }
     if (parsed && parsed.savedPoints && typeof parsed.savedPoints === 'object') {
       SAVED_POINTS = parsed.savedPoints;
@@ -524,6 +536,105 @@
     });
   }
 
+  /** Attach click listeners to structured rubric max-point rating buttons to auto-clear comment boxes */
+  function attachClearCommentOnMaxPointsListeners() {
+    // Find all structured rubric rating buttons for max points (ratings-0)
+    const maxPointsButtons = document.querySelectorAll('button[data-testid^="traditional-criterion-"][data-testid$="-ratings-0"]');
+
+    maxPointsButtons.forEach((button) => {
+      // Avoid attaching multiple listeners
+      if (button.__clearCommentOnMaxPointsListenerAttached) return;
+      button.__clearCommentOnMaxPointsListenerAttached = true;
+
+      button.addEventListener('click', () => {
+        try {
+          // Check if the setting is enabled
+          if (!CLEAR_COMMENT_BOX_ON_MAX_POINTS) return;
+
+          // Extract criterion_id from data-testid
+          // Format: "traditional-criterion-{criterion_id}-ratings-0"
+          const testId = button.getAttribute('data-testid');
+          if (!testId || !testId.startsWith('traditional-criterion-')) return;
+
+          const parts = testId.split('-');
+          // parts: ['traditional', 'criterion', criterion_id, 'ratings', '0']
+          if (parts.length < 3) return;
+
+          const criterionId = parts[2];
+
+          // Find and click the clear-comment button for this criterion
+          const clearCommentButton = document.querySelector(`button[data-testid="clear-comment-button-${criterionId}"]`);
+          if (clearCommentButton) {
+            clearCommentButton.click();
+          }
+        } catch (e) {
+          console.error('Error handling clear comment on max points click:', e);
+        }
+      });
+    });
+  }
+
+  /** Attach click listeners to structured rubric rating buttons to auto-open comment boxes */
+  function attachStructuredRubricListeners() {
+    // Find all structured rubric rating buttons
+    const ratingButtons = document.querySelectorAll('button[data-testid^="traditional-criterion-"]');
+
+    ratingButtons.forEach((button) => {
+      // Avoid attaching multiple listeners
+      if (button.__structuredRubricListenerAttached) return;
+      button.__structuredRubricListenerAttached = true;
+
+      button.addEventListener('click', () => {
+        try {
+          // Extract criterion_id and rubric_point_id from data-testid
+          // Format: "traditional-criterion-{criterion_id}-ratings-{rubric_point_id}"
+          const testId = button.getAttribute('data-testid');
+          if (!testId || !testId.startsWith('traditional-criterion-')) return;
+
+          const parts = testId.split('-');
+          // parts: ['traditional', 'criterion', criterion_id, 'ratings', rubric_point_id, ...]
+          if (parts.length < 5) return;
+
+          const criterionId = parts[2];
+          const rubricPointId = parseInt(parts[4], 10);
+
+          // Check if the feature is enabled for this point level
+          if (rubricPointId === 0) {
+            // Maximum points - check if the first option is enabled
+            if (!OPEN_COMMENT_BOX_AFTER_MAX_POINTS) return;
+          } else {
+            // Less-than-maximum points - check if the second option is enabled
+            if (!OPEN_COMMENT_BOX_AFTER_LESS_THAN_MAX_POINTS) return;
+          }
+
+          // Find and click the toggle-comment button for this criterion
+          const toggleCommentButton = document.querySelector(`button[data-testid="toggle-comment-${criterionId}"]`);
+          
+          // Helper function to focus the comment text area
+          const focusCommentTextArea = () => {
+            const commentTextArea = document.querySelector(`textarea[data-testid="comment-text-area-${criterionId}"]`);
+            if (commentTextArea) {
+              commentTextArea.focus();
+            }
+          };
+
+          if (!toggleCommentButton) {
+            // If toggle button not found, check if textarea already exists and focus it
+            focusCommentTextArea();
+            return;
+          }
+
+          toggleCommentButton.click();
+
+          // Wait for UI to cooldown, then focus the comment text area
+          setTimeout(focusCommentTextArea, 500);
+        } catch (e) {
+          console.error('Error handling structured rubric rating button click:', e);
+        }
+      });
+    });
+  }
+
   /** Apply functionality related to rubric handling */
   function handleRubricFunctionality() {
     const rubricButton = document.querySelector('button[data-testid="view-rubric-button"]');
@@ -553,6 +664,8 @@
           attachAutoFillListeners();
           attachCommentLibraryChangeListeners();
           attachCommentLibraryTextareaListeners();
+          attachStructuredRubricListeners();
+          attachClearCommentOnMaxPointsListeners();
           applySettingsToTextareas();
         }, 1000);
       });
@@ -610,6 +723,19 @@
       // Update remember points for comments setting
       if (typeof s.rememberPointsForComments !== 'undefined') {
         REMEMBER_POINTS_FOR_COMMENTS = !!s.rememberPointsForComments;
+      }
+
+      // Update structured rubric settings
+      if (typeof s.openCommentBoxAfterMaxPoints !== 'undefined') {
+        OPEN_COMMENT_BOX_AFTER_MAX_POINTS = !!s.openCommentBoxAfterMaxPoints;
+      }
+
+      if (typeof s.openCommentBoxAfterLessThanMaxPoints !== 'undefined') {
+        OPEN_COMMENT_BOX_AFTER_LESS_THAN_MAX_POINTS = !!s.openCommentBoxAfterLessThanMaxPoints;
+      }
+
+      if (typeof s.clearCommentBoxOnMaxPoints !== 'undefined') {
+        CLEAR_COMMENT_BOX_ON_MAX_POINTS = !!s.clearCommentBoxOnMaxPoints;
       }
 
       // Update saved points map

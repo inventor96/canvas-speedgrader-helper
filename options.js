@@ -27,6 +27,7 @@ function loadPlaceholders() {
     const items = (data && data.placeholders && data.placeholders.length) ? data.placeholders : SYNCED_SETTINGS.placeholders;
     items.forEach(p => list.appendChild(createItem(p)));
 
+    // Load synced settings
     const cb = document.getElementById('open-rubric');
     if (cb) cb.checked = !!data.openRubricForUngraded;
 
@@ -38,6 +39,15 @@ function loadPlaceholders() {
 
     const rememberPointsCb = document.getElementById('remember-points-for-comments');
     if (rememberPointsCb) rememberPointsCb.checked = !!data.rememberPointsForComments;
+
+    const openCommentBoxMaxPointsCb = document.getElementById('open-comment-box-after-max-points');
+    if (openCommentBoxMaxPointsCb) openCommentBoxMaxPointsCb.checked = !!data.openCommentBoxAfterMaxPoints;
+
+    const openCommentBoxLessThanMaxPointsCb = document.getElementById('open-comment-box-after-less-than-max-points');
+    if (openCommentBoxLessThanMaxPointsCb) openCommentBoxLessThanMaxPointsCb.checked = !!data.openCommentBoxAfterLessThanMaxPoints;
+
+    const clearCommentBoxOnMaxPointsCb = document.getElementById('clear-comment-box-on-max-points');
+    if (clearCommentBoxOnMaxPointsCb) clearCommentBoxOnMaxPointsCb.checked = !!data.clearCommentBoxOnMaxPoints;
 
     const format = data && data.studentNameFormat ? data.studentNameFormat : SYNCED_SETTINGS.studentNameFormat;
     const formatRadio = document.querySelector(`input[name="student-name-format"][value="${format}"]`);
@@ -254,6 +264,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('placeholders-list').appendChild(createItem(''));
   });
 
+  // Make open-comment-box-after-max-points and clear-comment-box-on-max-points mutually exclusive
+  const openCommentBoxMaxCheckbox = document.getElementById('open-comment-box-after-max-points');
+  const clearCommentBoxCheckbox = document.getElementById('clear-comment-box-on-max-points');
+
+  if (openCommentBoxMaxCheckbox && clearCommentBoxCheckbox) {
+    openCommentBoxMaxCheckbox.addEventListener('change', () => {
+      if (openCommentBoxMaxCheckbox.checked) {
+        clearCommentBoxCheckbox.checked = false;
+      }
+    });
+
+    clearCommentBoxCheckbox.addEventListener('change', () => {
+      if (clearCommentBoxCheckbox.checked) {
+        openCommentBoxMaxCheckbox.checked = false;
+      }
+    });
+  }
+
   // Save settings and student mappings
   document.getElementById('save').addEventListener('click', () => {
     const inputs = Array.from(document.querySelectorAll('.placeholder-input')).map(i => i.value.trim()).filter(Boolean);
@@ -262,6 +290,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const openCommentLibrary = !!document.getElementById('open-comment-library') && document.getElementById('open-comment-library').checked;
     const autoFillFullPoints = !!document.getElementById('auto-fill-full-points') && document.getElementById('auto-fill-full-points').checked;
     const rememberPointsForComments = !!document.getElementById('remember-points-for-comments') && document.getElementById('remember-points-for-comments').checked;
+    const openCommentBoxAfterMaxPoints = !!document.getElementById('open-comment-box-after-max-points') && document.getElementById('open-comment-box-after-max-points').checked;
+    const openCommentBoxAfterLessThanMaxPoints = !!document.getElementById('open-comment-box-after-less-than-max-points') && document.getElementById('open-comment-box-after-less-than-max-points').checked;
+    const clearCommentBoxOnMaxPoints = !!document.getElementById('clear-comment-box-on-max-points') && document.getElementById('clear-comment-box-on-max-points').checked;
     const studentNameFormat = document.querySelector('input[name="student-name-format"]:checked')?.value || SYNCED_SETTINGS.studentNameFormat;
 
     saveStudentsFromDOM(() => {
@@ -272,6 +303,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         openCommentLibraryAfterSubmit: openCommentLibrary,
         autoFillFullPoints: autoFillFullPoints,
         rememberPointsForComments: rememberPointsForComments,
+        openCommentBoxAfterMaxPoints: openCommentBoxAfterMaxPoints,
+        openCommentBoxAfterLessThanMaxPoints: openCommentBoxAfterLessThanMaxPoints,
+        clearCommentBoxOnMaxPoints: clearCommentBoxOnMaxPoints,
         studentNameFormat: studentNameFormat
       }, () => {
         // Show saved status
