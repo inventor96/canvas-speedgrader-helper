@@ -81,7 +81,31 @@
     const el = document.querySelector(
       'button[data-testid="student-select-trigger"] [data-testid="selected-student"]'
     );
-    const fullName = el?.textContent?.trim() || null;
+    let fullName = el?.textContent?.trim() || null;
+
+    // If the name is truncated (ends with ellipsis), try to get the full name using a fallback query
+    if (fullName && fullName.endsWith('…')) {
+      try {
+        // Extract the truncated name without the ellipsis
+        const truncatedName = fullName.slice(0, -1).trim();
+        
+        // Query for the full name using the name attribute
+        const fullNameElement = document.querySelector(
+          `button[data-testid="student-select-trigger"] [name^="${truncatedName}"]`
+        );
+        
+        if (fullNameElement) {
+          // Get the full name from the name attribute
+          const nameAttr = fullNameElement.getAttribute('name');
+          if (nameAttr) {
+            fullName = nameAttr;
+          }
+        }
+      } catch (e) {
+        // If fallback fails, continue with the truncated name
+        console.error('Error retrieving full student name from truncated version:', e);
+      }
+    }
 
     // Return the name based on the configured format
     if (!fullName) return null;
