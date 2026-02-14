@@ -32,6 +32,11 @@
       "js": ["storage-utils.js", "grading-queue.js"],
       "run_at": "document_end",
       "all_frames": true
+    },
+    {
+      "matches": ["https://apps.powerapps.com/*"],
+      "js": ["powerapps-domain-monitor.js"],
+      "run_at": "document_end"
     }
   ],
   "options_ui": {
