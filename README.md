@@ -6,10 +6,15 @@ Small quality-of-life improvements for Canvas SpeedGrader. The extension runs on
 
 - Student name placeholders in comments, with automatic replacement in the rubric comment editor and free-form comment textareas.
 - Preferred student names per student_id, so you can use nicknames or chosen names in placeholders.
+- Student name mismatch detection when coming from the PowerApps Grading Queue, alerting you if the wrong student is loaded in SpeedGrader.
 - Rubric helpers for ungraded submissions, comment library follow-up, and point entry shortcuts.
 - Optional point memory for unstructured rubrics based on the comment you select or save.
 
 ## Options Page Overview
+
+### Grading Queue Integration
+
+- **Display a notification when the student name is mismatched between the Grading Queue and SpeedGrader**: When you click a grading button in the PowerApps Grading Queue, the extension remembers the student name. If SpeedGrader then loads a different student (indicating a potential navigation error), a warning notification appears at the top of the page to alert you before you begin grading.
 
 ### Rubric
 
@@ -60,3 +65,7 @@ The toolbar popup lets you set or clear a preferred name for the current student
 - `storage`: Save settings and preferred names.
 - `activeTab`: Read the active tab URL for quick preferred-name entry.
 - `https://*.instructure.com/*`: Run only on Canvas domains.
+- `https://apps.powerapps.com/*`: Run only on PowerApps (for the Grading Queue page).
+- `https://runtime-app.powerapps.com/*`: Run only on PowerApps (for the Grading Queue iframe, if it loads from this domain).
+- `https://runtime-app.powerplatform.com/*`: Run only on PowerApps (for the Grading Queue iframe, if it loads from this domain).
+
