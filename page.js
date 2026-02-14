@@ -10,9 +10,11 @@
   let OPEN_COMMENT_BOX_AFTER_MAX_POINTS;
   let OPEN_COMMENT_BOX_AFTER_LESS_THAN_MAX_POINTS;
   let CLEAR_COMMENT_BOX_ON_MAX_POINTS;
+  let NOTIFY_ON_STUDENT_NAME_MISMATCH;
   let SAVED_POINTS;
   let STUDENT_NAME_FORMAT;
   let STUDENT_NAMES;
+  let QUEUED_STUDENT_NAME;
   let LAST_TOUCHED_STUDENT_ID = null;
   const TOUCHED_POINTS = new Set();
 
@@ -57,6 +59,9 @@
     if (parsed && typeof parsed.clearCommentBoxOnMaxPoints !== 'undefined') {
       CLEAR_COMMENT_BOX_ON_MAX_POINTS = !!parsed.clearCommentBoxOnMaxPoints;
     }
+    if (parsed && typeof parsed.notifyOnStudentNameMismatch !== 'undefined') {
+      NOTIFY_ON_STUDENT_NAME_MISMATCH = !!parsed.notifyOnStudentNameMismatch;
+    }
     if (parsed && parsed.savedPoints && typeof parsed.savedPoints === 'object') {
       SAVED_POINTS = parsed.savedPoints;
     }
@@ -68,6 +73,9 @@
     if (parsed && parsed.studentNames && typeof parsed.studentNames === 'object') {
       STUDENT_NAMES = parsed.studentNames;
     }
+    if (parsed && parsed.queuedStudentName) {
+      QUEUED_STUDENT_NAME = parsed.queuedStudentName;
+    }
   } catch (e) {
     // Can't do much if parsing fails
     console.error('Error parsing settings from script dataset:', e);
@@ -76,7 +84,7 @@
   }
 
   /** Helper to get the current student name from the page based on the configured format. */
-  function getCurrentStudentNameFromPage() {
+  function getCurrentStudentNameFromPage(forceFullName = false) {
     // Find the selected student name element from the student selector button in the navbar
     const el = document.querySelector(
       'button[data-testid="student-select-trigger"] [data-testid="selected-student"]'
@@ -88,12 +96,12 @@
       try {
         // Extract the truncated name without the ellipsis
         const truncatedName = fullName.slice(0, -1).trim();
-        
+
         // Query for the full name using the name attribute
         const fullNameElement = document.querySelector(
           `button[data-testid="student-select-trigger"] [name^="${truncatedName}"]`
         );
-        
+
         if (fullNameElement) {
           // Get the full name from the name attribute
           const nameAttr = fullNameElement.getAttribute('name');
@@ -109,7 +117,7 @@
 
     // Return the name based on the configured format
     if (!fullName) return null;
-    if (STUDENT_NAME_FORMAT === 'full-name') {
+    if (STUDENT_NAME_FORMAT === 'full-name' || forceFullName) {
       return fullName;
     }
     // Default to first name
@@ -633,7 +641,7 @@
 
           // Find and click the toggle-comment button for this criterion
           const toggleCommentButton = document.querySelector(`button[data-testid="toggle-comment-${criterionId}"]`);
-          
+
           // Helper function to focus the comment text area
           const focusCommentTextArea = () => {
             const commentTextArea = document.querySelector(`textarea[data-testid="comment-text-area-${criterionId}"]`);
@@ -822,7 +830,138 @@
     }
   });
 
+  /** Display a warning notification when student names don't match */
+  function showStudentNameMismatchWarning(queuedName, speedgraderName) {
+    try {
+      // Create a warning container
+      const warningDiv = document.createElement('div');
+      warningDiv.id = 'csh-student-mismatch-warning';
+      warningDiv.setAttribute('role', 'alert');
+      warningDiv.setAttribute('aria-live', 'assertive');
+      warningDiv.style.cssText = `
+        position: fixed;
+        top: 65px;
+        right: 20px;
+        background-color: #fff3cd;
+        border: 2px solid #ff9800;
+        border-radius: 4px;
+        padding: 15px 20px;
+        max-width: 400px;
+        z-index: 10000;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-size: 14px;
+        line-height: 1.5;
+        color: #333;
+      `;
+
+      const heading = document.createElement('h3');
+      heading.style.cssText = 'margin: 0px 24px 8px 0px; font-size: 16px; font-weight: 600; color: #ff6f00;';
+      heading.textContent = '⚠️ Student Name Mismatch';
+
+      const messageDiv = document.createElement('p');
+      messageDiv.style.cssText = 'margin: 0 0 10px 0; color: #666;';
+      messageDiv.innerHTML = `<strong>Grading Queue:</strong> ${escapeHtml(queuedName)}<br><strong>SpeedGrader:</strong> ${escapeHtml(speedgraderName)}`;
+
+      const closeButton = document.createElement('button');
+      closeButton.textContent = '×';
+      closeButton.style.cssText = `
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: #ff6f00;
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        line-height: 1;
+      `;
+      closeButton.onclick = () => warningDiv.remove();
+
+      warningDiv.appendChild(heading);
+      warningDiv.appendChild(messageDiv);
+      warningDiv.appendChild(closeButton);
+      document.body.appendChild(warningDiv);
+
+      // Auto-remove after 10 seconds
+      /* setTimeout(() => {
+        if (warningDiv.parentElement) {
+          warningDiv.remove();
+        }
+      }, 10000); */
+
+      console.warn('CSH: Student name mismatch detected!', {
+        queued: queuedName,
+        speedgrader: speedgraderName
+      });
+    } catch (e) {
+      console.error('Error displaying student name mismatch warning:', e);
+    }
+  }
+
+  /** Escape HTML special characters for safe display */
+  function escapeHtml(text) {
+    const map = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#039;'
+    };
+    return text.replace(/[&<>"']/g, (m) => map[m]);
+  }
+
+  /** Check if queued student name matches the current SpeedGrader student name with retry logic */
+  function checkQueuedStudentName(retryCount = 0, maxRetries = 20) {
+    const queued = QUEUED_STUDENT_NAME;
+    if (!queued || !queued.name) {
+      console.log('CSH: No queued student name to check');
+      return;
+    }
+
+    // Get the current student name from SpeedGrader
+    const currentName = getCurrentStudentNameFromPage(true); // Force full name for comparison
+
+    // If name is not available yet, retry after a delay (up to maxRetries)
+    if (!currentName) {
+      if (retryCount < maxRetries) {
+        console.log(`CSH: Student name not available yet, retrying... (${retryCount + 1}/${maxRetries})`);
+        setTimeout(() => checkQueuedStudentName(retryCount + 1, maxRetries), 1000);
+      } else {
+        console.warn('CSH: Could not get current student name from SpeedGrader after maximum retries');
+      }
+      return;
+    }
+
+    // Clear the queued student name by sending message to loader script
+    try {
+      window.postMessage({ type: 'CSH_CLEAR_QUEUED_STUDENT' }, '*');
+    } catch (e) {
+      console.warn('CSH: Failed to send clear queued student message', e);
+    }
+
+    // Compare names (case-insensitive) and show notification if enabled
+    if (currentName.toLowerCase() !== queued.name.toLowerCase()) {
+      if (NOTIFY_ON_STUDENT_NAME_MISMATCH) {
+        showStudentNameMismatchWarning(queued.name, currentName);
+      }
+    } else {
+      console.log('CSH: Student names match! ✓');
+    }
+  }
+
   // Start processes
   waitForTinyMCE();
   handleRubricFunctionality();
+
+  // Check for queued student name from the Grading Queue (with built-in retry mechanism)
+  try {
+    // Wait a moment for the SpeedGrader navbar to load, then start checking
+    setTimeout(checkQueuedStudentName, 500);
+  } catch (e) {
+    console.error('Error initializing queue student name check:', e);
+  }
 })();

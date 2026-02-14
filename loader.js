@@ -181,6 +181,16 @@
             }
           });
         });
+        return;
+      }
+
+      if (msg.type === 'CSH_CLEAR_QUEUED_STUDENT') {
+        if (!chrome.storage || !chrome.storage.local) return;
+        chrome.storage.local.remove('queuedStudentName', () => {
+          if (chrome.runtime && chrome.runtime.lastError) {
+            logStorageWarning('CSH storage warning: failed clearing queuedStudentName.', chrome.runtime.lastError.message);
+          }
+        });
       }
       return;
     } catch (e) {

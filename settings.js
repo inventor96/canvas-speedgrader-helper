@@ -12,6 +12,7 @@ const SYNCED_SETTINGS = {
   openCommentBoxAfterMaxPoints: false,
   openCommentBoxAfterLessThanMaxPoints: false,
   clearCommentBoxOnMaxPoints: false,
+  notifyOnStudentNameMismatch: false,
   savedPoints: {},
   savedPointsMeta: { lastUsed: {} },
 };
@@ -23,4 +24,5 @@ const SYNCED_SETTINGS = {
 const LOCAL_SETTINGS = {
   studentNames: {},
   studentNamesMeta: { lastUsed: {} },
+  queuedStudentName: null,
 };

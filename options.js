@@ -49,6 +49,9 @@ function loadPlaceholders() {
     const clearCommentBoxOnMaxPointsCb = document.getElementById('clear-comment-box-on-max-points');
     if (clearCommentBoxOnMaxPointsCb) clearCommentBoxOnMaxPointsCb.checked = !!data.clearCommentBoxOnMaxPoints;
 
+    const notifyMismatchCb = document.getElementById('notify-student-name-mismatch');
+    if (notifyMismatchCb) notifyMismatchCb.checked = data.notifyOnStudentNameMismatch !== false;
+
     const format = data && data.studentNameFormat ? data.studentNameFormat : SYNCED_SETTINGS.studentNameFormat;
     const formatRadio = document.querySelector(`input[name="student-name-format"][value="${format}"]`);
     if (formatRadio) formatRadio.checked = true;
@@ -293,6 +296,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const openCommentBoxAfterMaxPoints = !!document.getElementById('open-comment-box-after-max-points') && document.getElementById('open-comment-box-after-max-points').checked;
     const openCommentBoxAfterLessThanMaxPoints = !!document.getElementById('open-comment-box-after-less-than-max-points') && document.getElementById('open-comment-box-after-less-than-max-points').checked;
     const clearCommentBoxOnMaxPoints = !!document.getElementById('clear-comment-box-on-max-points') && document.getElementById('clear-comment-box-on-max-points').checked;
+    const notifyOnStudentNameMismatch = !!document.getElementById('notify-student-name-mismatch') && document.getElementById('notify-student-name-mismatch').checked;
     const studentNameFormat = document.querySelector('input[name="student-name-format"]:checked')?.value || SYNCED_SETTINGS.studentNameFormat;
 
     saveStudentsFromDOM(() => {
@@ -306,6 +310,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         openCommentBoxAfterMaxPoints: openCommentBoxAfterMaxPoints,
         openCommentBoxAfterLessThanMaxPoints: openCommentBoxAfterLessThanMaxPoints,
         clearCommentBoxOnMaxPoints: clearCommentBoxOnMaxPoints,
+        notifyOnStudentNameMismatch: notifyOnStudentNameMismatch,
         studentNameFormat: studentNameFormat
       }, () => {
         // Show saved status

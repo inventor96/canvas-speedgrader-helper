@@ -16,13 +16,22 @@
     "activeTab"
   ],
   "host_permissions": [
-    "https://*.instructure.com/*"
+    "https://*.instructure.com/*",
+    "https://apps.powerapps.com/*",
+    "https://runtime-app.powerapps.com/*",
+    "https://runtime-app.powerplatform.com/*"
   ],
   "content_scripts": [
     {
       "matches": ["https://*.instructure.com/courses/*/gradebook/speed_grader*"],
       "js": ["settings.js", "storage-utils.js", "loader.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://runtime-app.powerapps.com/*", "https://runtime-app.powerplatform.com/*"],
+      "js": ["storage-utils.js", "grading-queue.js"],
+      "run_at": "document_end",
+      "all_frames": true
     }
   ],
   "options_ui": {
