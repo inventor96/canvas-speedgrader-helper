@@ -26,6 +26,25 @@
   const BLANK_DROPDOWN_VALUES = {};
 
   // ============================================================================
+  // UTILITY: Event Listener Attachment
+  // ============================================================================
+  /**
+   * Attach an event listener to an element with idempotency check to prevent duplicate listeners.
+   * @param {HTMLElement|null} element - The element to attach the listener to
+   * @param {string} eventType - The event type (e.g., 'click', 'focus', 'input')
+   * @param {Function} handler - The event handler function
+   * @param {string} flagProperty - The property name to use for the idempotency flag
+   * @returns {boolean} - True if listener was attached, false if already attached or element is null
+   */
+  function attachEventListenerIdempotent(element, eventType, handler, flagProperty) {
+    if (!element) return false;
+    if (element[flagProperty]) return false;
+    element[flagProperty] = true;
+    element.addEventListener(eventType, handler);
+    return true;
+  }
+
+  // ============================================================================
   // NAMESPACE: SettingsBridge
   // Handles settings initialization, validation, and live updates from extension
   // ============================================================================
@@ -353,10 +372,6 @@
       const commentLibraryInputs = document.querySelectorAll('input[data-testid^="comment-library-"]');
 
       commentLibraryInputs.forEach((libraryInput) => {
-        // Avoid attaching multiple listeners
-        if (libraryInput.__textareaListenerAttached) return;
-        libraryInput.__textareaListenerAttached = true;
-
         // Extract criterion ID from data-testid (format: "comment-library-{ID}")
         const testId = libraryInput.getAttribute('data-testid');
         const criterionId = testId ? testId.split('-').pop() : null;
@@ -367,10 +382,10 @@
         const textarea = document.querySelector(`textarea[data-testid^="free-form-comment-area-"][data-testid$="${criterionId}"]`);
         if (!textarea) return;
 
-        // Listen for input changes on the comment library input
-        libraryInput.addEventListener('input', () => {
+        // Attach listener with idempotency check
+        attachEventListenerIdempotent(libraryInput, 'input', () => {
           this.replacePlaceholdersInTextarea(textarea);
-        });
+        }, '__textareaListenerAttached');
       });
     },
 
@@ -378,7 +393,7 @@
      * Attach hook to a TinyMCE editor to handle future content sets
      */
     attachEditorHook(editor) {
-      // Avoid attaching multiple times
+      // Avoid attaching multiple times (TinyMCE uses custom events, not addEventListener)
       if (!editor || editor.__studentNameHookAttached) return;
       editor.__studentNameHookAttached = true;
 
@@ -441,14 +456,11 @@
      * Attach click listener to the view-rubric-button with idempotency check
      */
     attachViewRubricListener(rubricButton) {
-      // Check if listener already attached (avoid duplicates)
-      if (rubricButton.__viewRubricHandlerAttached) return;
-
-      rubricButton.__viewRubricHandlerAttached = true;
-      rubricButton.addEventListener('click', () => {
+      // Attach listener with idempotency check
+      attachEventListenerIdempotent(rubricButton, 'click', () => {
         // Give the rubric UI time to load, then attach handlers
         setTimeout(() => this.attachAllRubricHandlers(), 1000);
-      });
+      }, '__viewRubricHandlerAttached');
     },
 
     /**
@@ -479,17 +491,13 @@
       const cancelButton = document.querySelector('button[data-testid="cancel-rubric-assessment-button"]');
       if (!cancelButton) return;
 
-      // Avoid attaching multiple listeners
-      if (cancelButton.__cancelRubricListenerAttached) return;
-      cancelButton.__cancelRubricListenerAttached = true;
-
-      // Attach the click listener to "Cancel" button
-      cancelButton.addEventListener('click', () => {
+      // Attach the click listener to "Cancel" button with idempotency check
+      attachEventListenerIdempotent(cancelButton, 'click', () => {
         // Wait 1 second after cancellation, then reattach view-rubric-button listener
         setTimeout(() => {
           this.reattachViewRubricListener();
         }, 1000);
-      });
+      }, '__cancelRubricListenerAttached');
     },
 
     /**
@@ -540,12 +548,8 @@
       const saveButton = document.querySelector('button[data-testid="save-rubric-assessment-button"]');
       if (!saveButton) return;
 
-      // Avoid attaching multiple listeners
-      if (saveButton.__commentLibraryHandlerAttached) return;
-      saveButton.__commentLibraryHandlerAttached = true;
-
-      // Attach the click listener to "Submit Assessment" button
-      saveButton.addEventListener('click', () => {
+      // Attach the click listener to "Submit Assessment" button with idempotency check
+      attachEventListenerIdempotent(saveButton, 'click', () => {
         // Apply placeholder replacement to textareas before submission
         PlaceholderEngine.applySettingsToTextareas();
 
@@ -568,7 +572,7 @@
             commentLibButton.click();
           }
         }, 1000);
-      });
+      }, '__commentLibrarySubmitListenerAttached');
     },
 
     /**
@@ -664,11 +668,8 @@
       const scoreInputs = document.querySelectorAll('input[data-testid^="criterion-score-"]');
 
       scoreInputs.forEach((input) => {
-        // Avoid attaching multiple listeners
-        if (input.__autoFillListenerAttached) return;
-        input.__autoFillListenerAttached = true;
-
-        input.addEventListener('focus', () => {
+        // Attach listener with idempotency check
+        attachEventListenerIdempotent(input, 'focus', () => {
           try {
             // If no value exists, populate with max points
             if (!input.value || input.value.trim() === '') {
@@ -713,7 +714,7 @@
           } catch (e) {
             console.error('Error auto-filling points for criterion:', e);
           }
-        });
+        }, '__autoFillFullPointsListenerAttached');
       });
     },
 
@@ -753,10 +754,6 @@
       });
 
       dropdowns.forEach((dropdown) => {
-        // Avoid attaching multiple listeners
-        if (dropdown.__pointsPrePopulateListenerAttached) return;
-        dropdown.__pointsPrePopulateListenerAttached = true;
-
         // Extract criterion ID from data-testid (format: "comment-library-{ID}")
         const testId = dropdown.getAttribute('data-testid');
         const criterionId = testId ? testId.split('-').pop() : null;
@@ -823,22 +820,22 @@
         };
 
         // When the dropdown receives focus, start polling
-        dropdown.addEventListener('focus', () => {
+        attachEventListenerIdempotent(dropdown, 'focus', () => {
           previousDropdownValue = dropdown.value;
 
           // Start polling for value changes every 500ms
           if (!pollingInterval) {
             pollingInterval = setInterval(checkAndPrepopulatePoints, 500);
           }
-        });
+        }, '__pointsPrePopulateFocusListenerAttached');
 
         // When the dropdown loses focus, stop polling
-        dropdown.addEventListener('blur', () => {
+        attachEventListenerIdempotent(dropdown, 'blur', () => {
           if (pollingInterval) {
             clearInterval(pollingInterval);
             pollingInterval = null;
           }
-        });
+        }, '__pointsPrePopulateBlurListenerAttached');
       });
     }
   };
@@ -856,11 +853,8 @@
       const maxPointsButtons = document.querySelectorAll('button[data-testid^="traditional-criterion-"][data-testid$="-ratings-0"]');
 
       maxPointsButtons.forEach((button) => {
-        // Avoid attaching multiple listeners
-        if (button.__clearCommentOnMaxPointsListenerAttached) return;
-        button.__clearCommentOnMaxPointsListenerAttached = true;
-
-        button.addEventListener('click', () => {
+        // Attach listener with idempotency check
+        attachEventListenerIdempotent(button, 'click', () => {
           try {
             // Check if the setting is enabled
             if (!CLEAR_COMMENT_BOX_ON_MAX_POINTS) return;
@@ -884,7 +878,7 @@
           } catch (e) {
             console.error('Error handling clear comment on max points click:', e);
           }
-        });
+        }, '__clearCommentOnMaxPointsListenerAttached');
       });
     },
 
@@ -896,11 +890,8 @@
       const ratingButtons = document.querySelectorAll('button[data-testid^="traditional-criterion-"]');
 
       ratingButtons.forEach((button) => {
-        // Avoid attaching multiple listeners
-        if (button.__structuredRubricListenerAttached) return;
-        button.__structuredRubricListenerAttached = true;
-
-        button.addEventListener('click', () => {
+        // Attach listener with idempotency check
+        attachEventListenerIdempotent(button, 'click', () => {
           try {
             // Extract criterion_id and rubric_point_id from data-testid
             // Format: "traditional-criterion-{criterion_id}-ratings-{rubric_point_id}"
@@ -947,7 +938,7 @@
           } catch (e) {
             console.error('Error handling structured rubric rating button click:', e);
           }
-        });
+        }, '__structuredRubricListenerAttached');
       });
     }
   };
