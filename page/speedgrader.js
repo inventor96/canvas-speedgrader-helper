@@ -134,7 +134,7 @@
         if (LAST_TOUCHED_STUDENT_ID !== sid) {
           LAST_TOUCHED_STUDENT_ID = sid;
           try {
-            window.postMessage({ type: 'CSH_TOUCH_STUDENT_NAME', key: sid }, '*');
+            window.postMessage({ type: CSH_MESSAGE_TYPES.TOUCH_STUDENT_NAME, key: sid }, '*');
           } catch (e) {
             // ignore
           }
@@ -419,7 +419,7 @@
             // If we have points to save, send message to extension
             if (Object.keys(pointsToSave).length > 0) {
               window.postMessage({
-                type: 'CSH_SAVE_POINTS',
+                type: CSH_MESSAGE_TYPES.SAVE_POINTS,
                 pointsToSave
               }, '*');
             }
@@ -601,7 +601,7 @@
             if (!TOUCHED_POINTS.has(key)) {
               TOUCHED_POINTS.add(key);
               try {
-                window.postMessage({ type: 'CSH_TOUCH_POINTS', keys: [key] }, '*');
+                window.postMessage({ type: CSH_MESSAGE_TYPES.TOUCH_POINTS, keys: [key] }, '*');
               } catch (e) {
                 // ignore
               }
@@ -773,7 +773,7 @@
 
       // Validate message type
       const msg = event.data;
-      if (!msg || msg.type !== 'CSH_UPDATE_SETTINGS') return;
+      if (!msg || msg.type !== CSH_MESSAGE_TYPES.UPDATE_SETTINGS) return;
 
       // Fallback values
       const s = msg.settings || {};
@@ -988,7 +988,7 @@
 
     // Clear the queued student name by sending message to loader script
     try {
-      window.postMessage({ type: 'CSH_CLEAR_QUEUED_STUDENT' }, '*');
+      window.postMessage({ type: CSH_MESSAGE_TYPES.CLEAR_QUEUED_STUDENT }, '*');
     } catch (e) {
       console.warn('CSH: Failed to send clear queued student message', e);
     }

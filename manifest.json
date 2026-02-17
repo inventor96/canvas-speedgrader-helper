@@ -9,7 +9,7 @@
   },
   "action": {
     "default_icon": "icon.png",
-    "default_popup": "popup.html"
+    "default_popup": "extension/popup.html"
   },
   "permissions": [
     "storage",
@@ -24,28 +24,28 @@
   "content_scripts": [
     {
       "matches": ["https://*.instructure.com/courses/*/gradebook/speed_grader*"],
-      "js": ["settings.js", "storage-utils.js", "loader.js"],
+      "js": ["shared/message-types.js", "shared/settings.js", "shared/storage-utils.js", "content/loader-speedgrader.js"],
       "run_at": "document_idle"
     },
     {
       "matches": ["https://runtime-app.powerapps.com/*", "https://runtime-app.powerplatform.com/*"],
-      "js": ["storage-utils.js", "grading-queue.js"],
+      "js": ["shared/storage-utils.js", "content/grading-queue.js"],
       "run_at": "document_end",
       "all_frames": true
     },
     {
       "matches": ["https://apps.powerapps.com/*"],
-      "js": ["powerapps-domain-monitor.js"],
+      "js": ["content/powerapps-domain-monitor.js"],
       "run_at": "document_end"
     }
   ],
   "options_ui": {
-    "page": "options.html",
+    "page": "extension/options.html",
     "open_in_tab": true
   },
   "web_accessible_resources": [
     {
-      "resources": ["page.js"],
+      "resources": ["shared/message-types.js", "page/speedgrader.js"],
       "matches": ["https://*.instructure.com/*"]
     }
   ]

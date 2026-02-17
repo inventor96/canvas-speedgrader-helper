@@ -22,16 +22,24 @@
 
   // Inject the page script with settings via a data attribute.
   function inject(settings) {
-    const script = document.createElement('script');
-    script.src = chrome.runtime.getURL('page.js');
-    script.type = 'text/javascript';
-    try {
-      script.dataset.settings = JSON.stringify(settings);
-    } catch (e) {
-      // ignore
-    }
-    script.onload = () => script.remove();
-    document.documentElement.appendChild(script);
+    // First inject the shared message types so speedgrader.js can access them
+    const typeScript = document.createElement('script');
+    typeScript.src = chrome.runtime.getURL('shared/message-types.js');
+    typeScript.type = 'text/javascript';
+    typeScript.onload = () => {
+      // After message types are loaded, inject the page script with settings
+      const script = document.createElement('script');
+      script.src = chrome.runtime.getURL('page/speedgrader.js');
+      script.type = 'text/javascript';
+      try {
+        script.dataset.settings = JSON.stringify(settings);
+      } catch (e) {
+        // ignore
+      }
+      script.onload = () => script.remove();
+      document.documentElement.appendChild(script);
+    };
+    document.documentElement.appendChild(typeScript);
   }
 
   // Helper to read synced settings.
@@ -101,7 +109,7 @@
       const msg = event.data;
       if (!msg || !msg.type) return;
 
-      if (msg.type === 'CSH_SAVE_POINTS') {
+      if (msg.type === CSH_MESSAGE_TYPES.SAVE_POINTS) {
         // Get points to save
         const pointsToSave = msg.pointsToSave || {};
         if (Object.keys(pointsToSave).length === 0) return;
@@ -146,7 +154,7 @@
         return;
       }
 
-      if (msg.type === 'CSH_TOUCH_POINTS') {
+      if (msg.type === CSH_MESSAGE_TYPES.TOUCH_POINTS) {
         if (!storageUtils || !chrome.storage || !chrome.storage.sync) return;
         const keys = Array.isArray(msg.keys) ? msg.keys : [];
         if (keys.length === 0) return;
@@ -165,7 +173,7 @@
         return;
       }
 
-      if (msg.type === 'CSH_TOUCH_STUDENT_NAME') {
+      if (msg.type === CSH_MESSAGE_TYPES.TOUCH_STUDENT_NAME) {
         if (!storageUtils || !chrome.storage || !chrome.storage.local) return;
         const key = msg.key;
         if (!key) return;
@@ -184,7 +192,7 @@
         return;
       }
 
-      if (msg.type === 'CSH_CLEAR_QUEUED_STUDENT') {
+      if (msg.type === CSH_MESSAGE_TYPES.CLEAR_QUEUED_STUDENT) {
         if (!chrome.storage || !chrome.storage.local) return;
         chrome.storage.local.remove('queuedStudentName', () => {
           if (chrome.runtime && chrome.runtime.lastError) {
@@ -224,7 +232,7 @@
       // Read current settings and postMessage to the page.
       getAllSettings((settings) => {
         try {
-          window.postMessage({ type: 'CSH_UPDATE_SETTINGS', settings, studentNameChanges }, '*');
+          window.postMessage({ type: CSH_MESSAGE_TYPES.UPDATE_SETTINGS, settings, studentNameChanges }, '*');
         } catch (e) {
           // ignore
         }
