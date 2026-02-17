@@ -280,6 +280,67 @@
     setTimeout(waitForTinyMCE, 250);
   }
 
+  /** Attach all rubric-related handlers after the rubric UI loads */
+  function attachAllRubricHandlers() {
+    attachCommentLibraryHandler();
+    attachCancelRubricListener();
+    attachAutoFillListeners();
+    attachCommentLibraryChangeListeners();
+    attachCommentLibraryTextareaListeners();
+    attachStructuredRubricListeners();
+    attachClearCommentOnMaxPointsListeners();
+    applySettingsToTextareas();
+  }
+
+  /** Attach the click listener to the view-rubric-button with idempotency check */
+  function attachViewRubricListener(rubricButton) {
+    // Check if listener already attached (avoid duplicates)
+    if (rubricButton.__viewRubricHandlerAttached) return;
+
+    rubricButton.__viewRubricHandlerAttached = true;
+    rubricButton.addEventListener('click', () => {
+      // Give the rubric UI time to load, then attach handlers
+      setTimeout(attachAllRubricHandlers, 1000);
+    });
+  }
+
+  /** Reattach the view-rubric-button listener after it reappears in the DOM */
+  function reattachViewRubricListener(retryCount = 0, maxRetries = 10) {
+    const rubricButton = document.querySelector('button[data-testid="view-rubric-button"]');
+
+    if (!rubricButton) {
+      // Button not found yet, retry after 500ms (up to maxRetries)
+      if (retryCount < maxRetries) {
+        setTimeout(() => reattachViewRubricListener(retryCount + 1, maxRetries), 500);
+      } else {
+        console.log('CSH: view-rubric-button not found after maximum retries');
+      }
+      return;
+    }
+
+    // Button found, attach the click listener
+    attachViewRubricListener(rubricButton);
+    console.log('CSH: view-rubric-button listener reattached');
+  }
+
+  /** Attach listener to cancel button to reattach view-rubric-button handlers when cancelled */
+  function attachCancelRubricListener() {
+    const cancelButton = document.querySelector('button[data-testid="cancel-rubric-assessment-button"]');
+    if (!cancelButton) return;
+
+    // Avoid attaching multiple listeners
+    if (cancelButton.__cancelRubricListenerAttached) return;
+    cancelButton.__cancelRubricListenerAttached = true;
+
+    // Attach the click listener to "Cancel" button
+    cancelButton.addEventListener('click', () => {
+      // Wait 1 second after cancellation, then reattach view-rubric-button listener
+      setTimeout(() => {
+        reattachViewRubricListener();
+      }, 1000);
+    });
+  }
+
   /** Add click event listener to the save rubric button to auto-open comment library and save points */
   function attachCommentLibraryHandler() {
     const saveButton = document.querySelector('button[data-testid="save-rubric-assessment-button"]');
@@ -370,6 +431,9 @@
 
       // Wait 1 second after submission
       setTimeout(() => {
+        // Reattach the view-rubric-button listener since it gets removed when the rubric collapses
+        reattachViewRubricListener();
+
         // Skip if the setting is disabled
         if (!OPEN_COMMENT_LIBRARY_AFTER_SUBMIT) return;
 
@@ -687,21 +751,7 @@
     }
 
     // Attach the click listener for view-rubric-button
-    if (!rubricButton.__viewRubricHandlerAttached) {
-      rubricButton.__viewRubricHandlerAttached = true;
-      rubricButton.addEventListener('click', () => {
-        // Give the rubric UI time to load, then attach handlers
-        setTimeout(() => {
-          attachCommentLibraryHandler();
-          attachAutoFillListeners();
-          attachCommentLibraryChangeListeners();
-          attachCommentLibraryTextareaListeners();
-          attachStructuredRubricListeners();
-          attachClearCommentOnMaxPointsListeners();
-          applySettingsToTextareas();
-        }, 1000);
-      });
-    }
+    attachViewRubricListener(rubricButton);
 
 
     // Button found, wait 2 seconds before checking for the rubric table
