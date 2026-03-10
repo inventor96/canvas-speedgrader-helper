@@ -516,7 +516,7 @@
         }
 
         // Button not found and rubric not open, retry after 2 seconds
-        console.log('Rubric button not found yet');
+        console.log('Rubric button not found yet. Retrying after 2 seconds...');
         setTimeout(() => this.handleRubricFunctionality(), 2000);
         return;
       }
@@ -530,7 +530,10 @@
         const rubricTable = document.querySelector('div.rubric_summary');
         if (!rubricTable) {
           // Automatically open rubric if the rubric button is present and there's no rubric table (i.e. no previous evaluation exists).
+          console.log('No rubric table found, clicking view-rubric-button to open it');
           rubricButton.click();
+        } else {
+          console.log('Rubric table already present, not opening rubric');
         }
       }, 2000);
     }
