@@ -868,6 +868,16 @@
     },
 
     /**
+     * Scroll the Submit Assessment button into view for end-of-rubric workflows.
+     */
+    scrollSubmitAssessmentButtonIntoView() {
+      const submitButton = document.querySelector('button[data-testid="save-rubric-assessment-button"]');
+      if (!submitButton) return;
+
+      this.scrollRowIntoGradingPanelCenter(submitButton);
+    },
+
+    /**
      * Scroll to the next criterion row in the traditional rubric view.
      */
     scrollToNextCriterionRow(button) {
@@ -882,7 +892,10 @@
       if (currentIndex < 0) return;
 
       const nextRow = rubricRows[currentIndex + 1];
-      if (!nextRow) return;
+      if (!nextRow) {
+        this.scrollSubmitAssessmentButtonIntoView();
+        return;
+      }
 
       this.scrollRowIntoGradingPanelCenter(nextRow);
     },
