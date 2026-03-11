@@ -438,12 +438,14 @@
   // Handles rubric view/cancel wiring and initialization
   // ============================================================================
   const RubricController = {
+    // Flag to track if event delegation has been set up
+    __delegationSetUp: false,
+
     /**
      * Attach all rubric-related handlers after the rubric UI loads
      */
     attachAllRubricHandlers() {
       CommentLibraryController.attachCommentLibraryHandler();
-      this.attachCancelRubricListener();
       PointsMemory.attachAutoFillListeners();
       PointsMemory.attachCommentLibraryChangeListeners();
       PlaceholderEngine.attachCommentLibraryTextareaListeners();
@@ -453,51 +455,22 @@
     },
 
     /**
-     * Attach click listener to the view-rubric-button with idempotency check
+     * Set up event delegation for view-rubric-button clicks.
+     * This approach handles button re-renders gracefully since we listen at a parent level.
      */
-    attachViewRubricListener(rubricButton) {
-      // Attach listener with idempotency check
-      attachEventListenerIdempotent(rubricButton, 'click', () => {
+    setupViewRubricDelegation() {
+      // Only set up delegation once
+      if (this.__delegationSetUp) return;
+      this.__delegationSetUp = true;
+
+      // Attach a delegated listener to the document for view-rubric-button clicks
+      document.addEventListener('click', (event) => {
+        const button = event.target.closest('button[data-testid="view-rubric-button"]');
+        if (!button) return;
+
         // Give the rubric UI time to load, then attach handlers
         setTimeout(() => this.attachAllRubricHandlers(), 1000);
-      }, '__viewRubricHandlerAttached');
-    },
-
-    /**
-     * Reattach the view-rubric-button listener after it reappears in the DOM
-     */
-    reattachViewRubricListener(retryCount = 0, maxRetries = 10) {
-      const rubricButton = document.querySelector('button[data-testid="view-rubric-button"]');
-
-      if (!rubricButton) {
-        // Button not found yet, retry after 500ms (up to maxRetries)
-        if (retryCount < maxRetries) {
-          setTimeout(() => this.reattachViewRubricListener(retryCount + 1, maxRetries), 500);
-        } else {
-          console.log('CSH: view-rubric-button not found after maximum retries');
-        }
-        return;
-      }
-
-      // Button found, attach the click listener
-      this.attachViewRubricListener(rubricButton);
-      console.log('CSH: view-rubric-button listener reattached');
-    },
-
-    /**
-     * Attach listener to cancel button to reattach view-rubric-button handlers when cancelled
-     */
-    attachCancelRubricListener() {
-      const cancelButton = document.querySelector('button[data-testid="cancel-rubric-assessment-button"]');
-      if (!cancelButton) return;
-
-      // Attach the click listener to "Cancel" button with idempotency check
-      attachEventListenerIdempotent(cancelButton, 'click', () => {
-        // Wait 1 second after cancellation, then reattach view-rubric-button listener
-        setTimeout(() => {
-          this.reattachViewRubricListener();
-        }, 1000);
-      }, '__cancelRubricListenerAttached');
+      });
     },
 
     /**
@@ -521,8 +494,8 @@
         return;
       }
 
-      // Attach the click listener for view-rubric-button
-      this.attachViewRubricListener(rubricButton);
+      // Set up event delegation for the view-rubric-button
+      this.setupViewRubricDelegation();
 
       // Button found, wait 2 seconds before checking for the rubric table
       if (!OPEN_RUBRIC_FOR_UNGRADED) return;
@@ -563,9 +536,6 @@
 
         // Wait 1 second after submission
         setTimeout(() => {
-          // Reattach the view-rubric-button listener since it gets removed when the rubric collapses
-          RubricController.reattachViewRubricListener();
-
           // Skip if the setting is disabled
           if (!OPEN_COMMENT_LIBRARY_AFTER_SUBMIT) return;
 
