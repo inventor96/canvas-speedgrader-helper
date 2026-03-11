@@ -8,6 +8,7 @@ Small quality-of-life improvements for Canvas SpeedGrader. The extension runs on
 - Preferred student names per student_id, so you can use nicknames or chosen names in placeholders.
 - Student name mismatch detection when coming from the PowerApps Grading Queue, alerting you if the wrong student is loaded in SpeedGrader.
 - Rubric helpers for ungraded submissions, comment library follow-up, and point entry shortcuts.
+- Optional auto-scroll to the next criterion in structured rubrics after selecting a rating.
 - Optional point memory for unstructured rubrics based on the comment you select or save.
 
 ## Options Page Overview
@@ -30,6 +31,7 @@ These options apply only to structured rubrics with preset point values:
 - **Open comment box after selecting maximum rubric points**: Automatically opens the comment input box and focuses it when you select the maximum point option for a criterion. Mutually exclusive with "Clear criterion comment box when selecting maximum rubric points".
 - **Clear criterion comment box when selecting maximum rubric points**: Automatically clears any existing comment and closes the comment box when you select the maximum point option for a criterion. Useful for enforcing a "no comment needed for perfect scores" workflow. Mutually exclusive with "Open comment box after selecting maximum rubric points".
 - **Open comment box after selecting less-than-maximum rubric points**: Automatically opens the comment input box and focuses it when you select any less-than-maximum point option for a criterion.
+- **Automatically scroll to the next criterion after selecting a rating**: Smoothly scrolls the grading panel to the next criterion row after a structured-rubric rating click. If the selected rating is configured to auto-open the criterion comment box, scrolling is skipped so focus stays on comment entry.
 
 #### Unstructured Rubric Options
 

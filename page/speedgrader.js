@@ -13,6 +13,7 @@
   let REMEMBER_POINTS_FOR_COMMENTS;
   let OPEN_COMMENT_BOX_AFTER_MAX_POINTS;
   let OPEN_COMMENT_BOX_AFTER_LESS_THAN_MAX_POINTS;
+  let RUBRIC_AUTO_SCROLL_TO_NEXT_CRITERION;
   let CLEAR_COMMENT_BOX_ON_MAX_POINTS;
   let NOTIFY_ON_STUDENT_NAME_MISMATCH;
   let SAVED_POINTS;
@@ -110,6 +111,9 @@
       }
       if (typeof settings.openCommentBoxAfterLessThanMaxPoints !== 'undefined') {
         OPEN_COMMENT_BOX_AFTER_LESS_THAN_MAX_POINTS = !!settings.openCommentBoxAfterLessThanMaxPoints;
+      }
+      if (typeof settings.rubricAutoScrollToNextCriterion !== 'undefined') {
+        RUBRIC_AUTO_SCROLL_TO_NEXT_CRITERION = !!settings.rubricAutoScrollToNextCriterion;
       }
       if (typeof settings.clearCommentBoxOnMaxPoints !== 'undefined') {
         CLEAR_COMMENT_BOX_ON_MAX_POINTS = !!settings.clearCommentBoxOnMaxPoints;
@@ -819,6 +823,71 @@
   // ============================================================================
   const StructuredRubricUX = {
     /**
+     * Get the structured rubric root element whose children contain criterion rows.
+     */
+    getTraditionalRubricRoot() {
+      return document.querySelector('[data-testid="rubric-assessment-traditional-view"]');
+    },
+
+    /**
+     * Resolve the direct rubric row child for a rating button.
+     */
+    getCriterionRowFromButton(button, rubricRoot) {
+      if (!button || !rubricRoot) return null;
+
+      let current = button;
+      while (current && current.parentElement) {
+        if (current.parentElement === rubricRoot) return current;
+        current = current.parentElement;
+      }
+
+      return null;
+    },
+
+    /**
+     * Scroll the grading panel so the target row is centered.
+     */
+    scrollRowIntoGradingPanelCenter(targetRow) {
+      if (!targetRow) return;
+
+      const gradingPanel = document.querySelector('[data-testid="speedgrader-grading-panel"]');
+      if (!gradingPanel) {
+        targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+
+      const panelRect = gradingPanel.getBoundingClientRect();
+      const rowRect = targetRow.getBoundingClientRect();
+      const offsetWithinPanel = rowRect.top - panelRect.top;
+      const centerOffset = (gradingPanel.clientHeight / 2) - (rowRect.height / 2);
+      const nextTop = gradingPanel.scrollTop + offsetWithinPanel - centerOffset;
+      const maxTop = Math.max(0, gradingPanel.scrollHeight - gradingPanel.clientHeight);
+      const clampedTop = Math.min(Math.max(0, nextTop), maxTop);
+
+      gradingPanel.scrollTo({ top: clampedTop, behavior: 'smooth' });
+    },
+
+    /**
+     * Scroll to the next criterion row in the traditional rubric view.
+     */
+    scrollToNextCriterionRow(button) {
+      const rubricRoot = this.getTraditionalRubricRoot();
+      if (!rubricRoot) return;
+
+      const currentRow = this.getCriterionRowFromButton(button, rubricRoot);
+      if (!currentRow) return;
+
+      const rubricRows = Array.from(rubricRoot.children);
+      const currentIndex = rubricRows.indexOf(currentRow);
+      if (currentIndex < 0) return;
+
+      const nextRow = rubricRows[currentIndex + 1];
+      if (!nextRow) return;
+
+      this.scrollRowIntoGradingPanelCenter(nextRow);
+    },
+
+    /**
      * Attach click listeners to structured rubric max-point rating buttons to auto-clear comment boxes
      */
     attachClearCommentOnMaxPointsListeners() {
@@ -878,14 +947,16 @@
             const criterionId = parts[2];
             const rubricPointId = parseInt(parts[4], 10);
 
-            // Check if the feature is enabled for this point level
-            if (rubricPointId === 0) {
-              // Maximum points - check if the first option is enabled
-              if (!OPEN_COMMENT_BOX_AFTER_MAX_POINTS) return;
-            } else {
-              // Less-than-maximum points - check if the second option is enabled
-              if (!OPEN_COMMENT_BOX_AFTER_LESS_THAN_MAX_POINTS) return;
+            const shouldOpenCommentBox = rubricPointId === 0
+              ? !!OPEN_COMMENT_BOX_AFTER_MAX_POINTS
+              : !!OPEN_COMMENT_BOX_AFTER_LESS_THAN_MAX_POINTS;
+
+            if (RUBRIC_AUTO_SCROLL_TO_NEXT_CRITERION && !shouldOpenCommentBox) {
+              this.scrollToNextCriterionRow(button);
             }
+
+            // Open-comment behavior for this point level is optional and independent from auto-scroll.
+            if (!shouldOpenCommentBox) return;
 
             // Find and click the toggle-comment button for this criterion
             const toggleCommentButton = document.querySelector(`button[data-testid="toggle-comment-${criterionId}"]`);

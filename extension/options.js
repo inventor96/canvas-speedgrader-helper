@@ -46,6 +46,9 @@ function loadPlaceholders() {
     const openCommentBoxLessThanMaxPointsCb = document.getElementById('open-comment-box-after-less-than-max-points');
     if (openCommentBoxLessThanMaxPointsCb) openCommentBoxLessThanMaxPointsCb.checked = !!data.openCommentBoxAfterLessThanMaxPoints;
 
+    const rubricAutoScrollToNextCriterionCb = document.getElementById('rubric-auto-scroll-to-next-criterion');
+    if (rubricAutoScrollToNextCriterionCb) rubricAutoScrollToNextCriterionCb.checked = !!data.rubricAutoScrollToNextCriterion;
+
     const clearCommentBoxOnMaxPointsCb = document.getElementById('clear-comment-box-on-max-points');
     if (clearCommentBoxOnMaxPointsCb) clearCommentBoxOnMaxPointsCb.checked = !!data.clearCommentBoxOnMaxPoints;
 
@@ -295,6 +298,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const rememberPointsForComments = !!document.getElementById('remember-points-for-comments') && document.getElementById('remember-points-for-comments').checked;
     const openCommentBoxAfterMaxPoints = !!document.getElementById('open-comment-box-after-max-points') && document.getElementById('open-comment-box-after-max-points').checked;
     const openCommentBoxAfterLessThanMaxPoints = !!document.getElementById('open-comment-box-after-less-than-max-points') && document.getElementById('open-comment-box-after-less-than-max-points').checked;
+    const rubricAutoScrollToNextCriterion = !!document.getElementById('rubric-auto-scroll-to-next-criterion') && document.getElementById('rubric-auto-scroll-to-next-criterion').checked;
     const clearCommentBoxOnMaxPoints = !!document.getElementById('clear-comment-box-on-max-points') && document.getElementById('clear-comment-box-on-max-points').checked;
     const notifyOnStudentNameMismatch = !!document.getElementById('notify-student-name-mismatch') && document.getElementById('notify-student-name-mismatch').checked;
     const studentNameFormat = document.querySelector('input[name="student-name-format"]:checked')?.value || SYNCED_SETTINGS.studentNameFormat;
@@ -309,6 +313,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         rememberPointsForComments: rememberPointsForComments,
         openCommentBoxAfterMaxPoints: openCommentBoxAfterMaxPoints,
         openCommentBoxAfterLessThanMaxPoints: openCommentBoxAfterLessThanMaxPoints,
+        rubricAutoScrollToNextCriterion: rubricAutoScrollToNextCriterion,
         clearCommentBoxOnMaxPoints: clearCommentBoxOnMaxPoints,
         notifyOnStudentNameMismatch: notifyOnStudentNameMismatch,
         studentNameFormat: studentNameFormat
