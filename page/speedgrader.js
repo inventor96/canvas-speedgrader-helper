@@ -826,7 +826,8 @@
      * Get the structured rubric root element whose children contain criterion rows.
      */
     getTraditionalRubricRoot() {
-      return document.querySelector('[data-testid="rubric-assessment-traditional-view"]');
+      return document.querySelector('[data-testid="rubric-assessment-traditional-view"] tbody')
+        || document.querySelector('[data-testid="rubric-assessment-traditional-view"]');
     },
 
     /**
