@@ -1118,8 +1118,8 @@
         console.warn('CSH: Failed to send clear queued student message', e);
       }
 
-      // Compare names (case-insensitive) and show notification if enabled
-      if (currentName.toLowerCase() !== queued.name.toLowerCase()) {
+      // Compare names (case-insensitive, trimmed) and show notification if enabled
+      if (currentName.trim().toLowerCase() !== queued.name.trim().toLowerCase()) {
         if (NOTIFY_ON_STUDENT_NAME_MISMATCH) {
           this.showStudentNameMismatchWarning(queued.name, currentName);
         }
