@@ -36,7 +36,7 @@
       } catch (e) {
         // ignore
       }
-      script.onload = () => script.remove();
+      //script.onload = () => script.remove();
       document.documentElement.appendChild(script);
     };
     document.documentElement.appendChild(typeScript);

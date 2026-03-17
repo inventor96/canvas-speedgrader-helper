@@ -298,6 +298,25 @@
   // ============================================================================
   const PlaceholderEngine = {
     /**
+     * Scroll to the rubric comment submit button in the grading panel.
+     */
+    scrollToSubmitCommentButton() {
+      const submitButton = document.querySelector(
+        'button[data-testid="submit-comment-button"]'
+      );
+      if (!submitButton) return;
+
+      try {
+        StructuredRubricUX.scrollRowIntoGradingPanelCenter(submitButton);
+        return;
+      } catch (e) {
+        // Fall through to native scrolling.
+      }
+
+      submitButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    },
+
+    /**
      * Replace placeholders in a TinyMCE editor with the current student name
      */
     replacePlaceholdersInEditor(editor) {
@@ -404,6 +423,8 @@
       // Hook into content setting
       editor.on('SetContent', () => {
         this.replacePlaceholdersInEditor(editor);
+
+        setTimeout(() => this.scrollToSubmitCommentButton(), 150);
       });
     },
 
