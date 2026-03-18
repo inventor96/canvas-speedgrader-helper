@@ -606,6 +606,9 @@
     // Flag to track if event delegation has been set up
     __delegationSetUp: false,
 
+    // Flag to track if auto-open logic has already been executed
+    __rubricAutoOpenAttempted: false,
+
     /**
      * Attach all rubric-related handlers after the rubric UI loads
      */
@@ -642,6 +645,9 @@
      * Apply functionality related to rubric handling
      */
     handleRubricFunctionality() {
+      // Allow one retry attempt if button wasn't found, but prevent running again after button is found
+      if (this.__rubricAutoOpenAttempted) return;
+
       const rubricButton = document.querySelector('button[data-testid="view-rubric-button"]');
 
       if (!rubricButton) {
@@ -650,6 +656,7 @@
         if (saveButton) {
           // Rubric is already open, so skip the retry
           console.log('Rubric button not found, but rubric is already open');
+          this.__rubricAutoOpenAttempted = true;
           return;
         }
 
@@ -658,6 +665,9 @@
         setTimeout(() => this.handleRubricFunctionality(), 2000);
         return;
       }
+
+      // Mark that we've found the button and will proceed with the decision logic
+      this.__rubricAutoOpenAttempted = true;
 
       // Set up event delegation for the view-rubric-button
       this.setupViewRubricDelegation();
