@@ -34,6 +34,9 @@ function loadPlaceholders() {
     const commentLibCb = document.getElementById('open-comment-library');
     if (commentLibCb) commentLibCb.checked = !!data.openCommentLibraryAfterSubmit;
 
+    const scrollToSubmitCommentCb = document.getElementById('scroll-to-submit-comment-after-comment-library-selection');
+    if (scrollToSubmitCommentCb) scrollToSubmitCommentCb.checked = !!data.scrollToSubmitCommentAfterCommentLibrarySelection;
+
     const autoFillCb = document.getElementById('auto-fill-full-points');
     if (autoFillCb) autoFillCb.checked = !!data.autoFillFullPoints;
 
@@ -294,6 +297,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const toSave = inputs.length ? inputs : SYNCED_SETTINGS.placeholders;
     const openRubric = !!document.getElementById('open-rubric') && document.getElementById('open-rubric').checked;
     const openCommentLibrary = !!document.getElementById('open-comment-library') && document.getElementById('open-comment-library').checked;
+    const scrollToSubmitCommentAfterCommentLibrarySelection = !!document.getElementById('scroll-to-submit-comment-after-comment-library-selection') && document.getElementById('scroll-to-submit-comment-after-comment-library-selection').checked;
     const autoFillFullPoints = !!document.getElementById('auto-fill-full-points') && document.getElementById('auto-fill-full-points').checked;
     const rememberPointsForComments = !!document.getElementById('remember-points-for-comments') && document.getElementById('remember-points-for-comments').checked;
     const openCommentBoxAfterMaxPoints = !!document.getElementById('open-comment-box-after-max-points') && document.getElementById('open-comment-box-after-max-points').checked;
@@ -309,6 +313,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         placeholders: toSave,
         openRubricForUngraded: openRubric,
         openCommentLibraryAfterSubmit: openCommentLibrary,
+        scrollToSubmitCommentAfterCommentLibrarySelection: scrollToSubmitCommentAfterCommentLibrarySelection,
         autoFillFullPoints: autoFillFullPoints,
         rememberPointsForComments: rememberPointsForComments,
         openCommentBoxAfterMaxPoints: openCommentBoxAfterMaxPoints,

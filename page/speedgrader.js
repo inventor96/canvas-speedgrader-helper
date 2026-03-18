@@ -16,6 +16,7 @@
   let RUBRIC_AUTO_SCROLL_TO_NEXT_CRITERION;
   let CLEAR_COMMENT_BOX_ON_MAX_POINTS;
   let NOTIFY_ON_STUDENT_NAME_MISMATCH;
+  let SCROLL_TO_SUBMIT_COMMENT_AFTER_COMMENT_LIBRARY_SELECTION;
   let SAVED_POINTS;
   let STUDENT_NAME_FORMAT;
   let STUDENT_NAMES;
@@ -120,6 +121,9 @@
       }
       if (typeof settings.notifyOnStudentNameMismatch !== 'undefined') {
         NOTIFY_ON_STUDENT_NAME_MISMATCH = !!settings.notifyOnStudentNameMismatch;
+      }
+      if (typeof settings.scrollToSubmitCommentAfterCommentLibrarySelection !== 'undefined') {
+        SCROLL_TO_SUBMIT_COMMENT_AFTER_COMMENT_LIBRARY_SELECTION = !!settings.scrollToSubmitCommentAfterCommentLibrarySelection;
       }
       if (settings.savedPoints && typeof settings.savedPoints === 'object') {
         SAVED_POINTS = settings.savedPoints;
@@ -424,7 +428,9 @@
       editor.on('SetContent', () => {
         this.replacePlaceholdersInEditor(editor);
 
-        setTimeout(() => this.scrollToSubmitCommentButton(), 150);
+        if (SCROLL_TO_SUBMIT_COMMENT_AFTER_COMMENT_LIBRARY_SELECTION) {
+          setTimeout(() => this.scrollToSubmitCommentButton(), 150);
+        }
       });
     },
 

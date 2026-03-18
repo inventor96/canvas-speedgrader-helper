@@ -6,6 +6,7 @@ const SYNCED_SETTINGS = {
   placeholders: ["STUDENT_NAME"],
   openRubricForUngraded: false,
   openCommentLibraryAfterSubmit: false,
+  scrollToSubmitCommentAfterCommentLibrarySelection: false,
   studentNameFormat: 'first-name',
   autoFillFullPoints: false,
   rememberPointsForComments: false,
