@@ -345,7 +345,11 @@
     getReplacementName() {
       if (USE_TEAM_NAME_FOR_GROUP_PLACEHOLDER_REPLACEMENT) {
         const groupModeRadio = document.querySelector('input[name="commentMode"][value="group"]');
-        if (groupModeRadio) {
+        const allCommentsToWholeGroupNotice = Array.from(document.querySelectorAll('span')).some(
+          (span) => span.textContent?.trim() === 'All comments are sent to the whole group'
+        );
+
+        if (groupModeRadio || allCommentsToWholeGroupNotice) {
           return 'Team';
         }
       }
