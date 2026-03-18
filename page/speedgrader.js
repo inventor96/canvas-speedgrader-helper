@@ -725,8 +725,10 @@
       const rubricTable = document.querySelector('div.rubric_summary,[data-testid="rubric-assessment-traditional-view"]');
       if (rubricTable) {
         console.log('Rubric table already present');
-        this.attachAllRubricHandlers();
-        this.__rubricAutoOpenAttempted = true;
+        setTimeout(() => {
+          this.attachAllRubricHandlers();
+          this.__rubricAutoOpenAttempted = true;
+        }, 1000);
         return;
       }
 
@@ -755,7 +757,7 @@
       // Button found, wait 2 seconds before checking for the rubric table
       if (!OPEN_RUBRIC_FOR_UNGRADED) return;
       setTimeout(() => {
-        const currentRubricTable = document.querySelector('div.rubric_summary');
+        const currentRubricTable = document.querySelector('div.rubric_summary,[data-testid="rubric-assessment-traditional-view"]');
         if (!currentRubricTable) {
           // Automatically open rubric if the rubric button is present and there's no rubric table (i.e. no previous evaluation exists).
           console.log('No rubric table found, clicking view-rubric-button to open it');
