@@ -606,6 +606,14 @@
     // Flag to track if event delegation has been set up
     __delegationSetUp: false,
 
+    // Flag to track if submission-history change delegation has been set up
+    __submissionHistoryDelegationSetUp: false,
+
+    // State for detecting custom submission-history input changes via focus/blur
+    __submissionHistoryFocusedInput: null,
+    __submissionHistoryFocusedValue: null,
+    __submissionHistoryBlurTimer: null,
+
     // Flag to track if auto-open logic has already been executed
     __rubricAutoOpenAttempted: false,
 
@@ -620,6 +628,22 @@
       StructuredRubricUX.attachStructuredRubricListeners();
       StructuredRubricUX.attachClearCommentOnMaxPointsListeners();
       PlaceholderEngine.applySettingsToTextareas();
+    },
+
+    /**
+     * Re-apply rubric-related handlers after an attempt switch re-renders rubric DOM.
+     */
+    reapplyAfterSubmissionHistoryChange() {
+      // Allow rubric auto-open logic to run again for the newly selected attempt.
+      this.__rubricAutoOpenAttempted = false;
+
+      // Re-run a few times because Canvas may re-render rubric content asynchronously.
+      [200, 700, 1400].forEach((delay) => {
+        setTimeout(() => {
+          this.attachAllRubricHandlers();
+          this.handleRubricFunctionality();
+        }, delay);
+      });
     },
 
     /**
@@ -642,9 +666,59 @@
     },
 
     /**
+     * Set up event delegation for submission history changes.
+     */
+    setupSubmissionHistoryChangeDelegation() {
+      if (this.__submissionHistoryDelegationSetUp) return;
+      this.__submissionHistoryDelegationSetUp = true;
+
+      document.addEventListener('focus', (event) => {
+        const submissionHistoryInput = event.target.closest('input[data-testid="submission-history-select"]');
+        if (!submissionHistoryInput) return;
+
+        this.__submissionHistoryFocusedInput = submissionHistoryInput;
+        this.__submissionHistoryFocusedValue = submissionHistoryInput.value;
+      }, true);
+
+      document.addEventListener('blur', (event) => {
+        const submissionHistoryInput = event.target.closest('input[data-testid="submission-history-select"]');
+        if (!submissionHistoryInput) return;
+
+        if (this.__submissionHistoryBlurTimer) {
+          clearTimeout(this.__submissionHistoryBlurTimer);
+        }
+
+        // Wait briefly so Canvas can finish re-rendering the custom input.
+        this.__submissionHistoryBlurTimer = setTimeout(() => {
+          this.__submissionHistoryBlurTimer = null;
+
+          const previouslyFocusedInput = this.__submissionHistoryFocusedInput;
+          const previouslyFocusedValue = this.__submissionHistoryFocusedValue;
+          const currentInput = document.querySelector('input[data-testid="submission-history-select"]');
+
+          this.__submissionHistoryFocusedInput = null;
+          this.__submissionHistoryFocusedValue = null;
+
+          if (!previouslyFocusedInput || !currentInput) return;
+
+          const inputInstanceChanged = currentInput !== previouslyFocusedInput;
+          const inputValueChanged = currentInput.value !== previouslyFocusedValue;
+
+          if (inputInstanceChanged || inputValueChanged) {
+            this.reapplyAfterSubmissionHistoryChange();
+          }
+        }, 200);
+      }, true);
+    },
+
+    /**
      * Apply functionality related to rubric handling
      */
     handleRubricFunctionality() {
+      // Ensure delegated listeners are active even if Canvas swaps element instances.
+      this.setupViewRubricDelegation();
+      this.setupSubmissionHistoryChangeDelegation();
+
       // Allow one retry attempt if button wasn't found, but prevent running again after button is found
       if (this.__rubricAutoOpenAttempted) return;
 
@@ -656,6 +730,7 @@
         if (saveButton) {
           // Rubric is already open, so skip the retry
           console.log('Rubric button not found, but rubric is already open');
+          this.attachAllRubricHandlers();
           this.__rubricAutoOpenAttempted = true;
           return;
         }
@@ -668,9 +743,6 @@
 
       // Mark that we've found the button and will proceed with the decision logic
       this.__rubricAutoOpenAttempted = true;
-
-      // Set up event delegation for the view-rubric-button
-      this.setupViewRubricDelegation();
 
       // Button found, wait 2 seconds before checking for the rubric table
       if (!OPEN_RUBRIC_FOR_UNGRADED) return;
