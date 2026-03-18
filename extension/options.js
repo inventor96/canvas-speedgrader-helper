@@ -34,6 +34,9 @@ function loadPlaceholders() {
     const commentLibCb = document.getElementById('open-comment-library');
     if (commentLibCb) commentLibCb.checked = !!data.openCommentLibraryAfterSubmit;
 
+    const autoSetCommentsToWholeGroupCb = document.getElementById('auto-set-comments-to-whole-group-when-available');
+    if (autoSetCommentsToWholeGroupCb) autoSetCommentsToWholeGroupCb.checked = !!data.autoSetCommentsToWholeGroupWhenAvailable;
+
     const scrollToSubmitCommentCb = document.getElementById('scroll-to-submit-comment-after-comment-library-selection');
     if (scrollToSubmitCommentCb) scrollToSubmitCommentCb.checked = !!data.scrollToSubmitCommentAfterCommentLibrarySelection;
 
@@ -297,7 +300,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const toSave = inputs.length ? inputs : SYNCED_SETTINGS.placeholders;
     const openRubric = !!document.getElementById('open-rubric') && document.getElementById('open-rubric').checked;
     const openCommentLibrary = !!document.getElementById('open-comment-library') && document.getElementById('open-comment-library').checked;
+    const autoSetCommentsToWholeGroupWhenAvailable = !!document.getElementById('auto-set-comments-to-whole-group-when-available') && document.getElementById('auto-set-comments-to-whole-group-when-available').checked;
     const scrollToSubmitCommentAfterCommentLibrarySelection = !!document.getElementById('scroll-to-submit-comment-after-comment-library-selection') && document.getElementById('scroll-to-submit-comment-after-comment-library-selection').checked;
+    const useTeamNameForGroupPlaceholderReplacement = !!document.getElementById('use-team-name-for-group-placeholder-replacement') && document.getElementById('use-team-name-for-group-placeholder-replacement').checked;
     const autoFillFullPoints = !!document.getElementById('auto-fill-full-points') && document.getElementById('auto-fill-full-points').checked;
     const rememberPointsForComments = !!document.getElementById('remember-points-for-comments') && document.getElementById('remember-points-for-comments').checked;
     const openCommentBoxAfterMaxPoints = !!document.getElementById('open-comment-box-after-max-points') && document.getElementById('open-comment-box-after-max-points').checked;
@@ -313,7 +318,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         placeholders: toSave,
         openRubricForUngraded: openRubric,
         openCommentLibraryAfterSubmit: openCommentLibrary,
+        autoSetCommentsToWholeGroupWhenAvailable: autoSetCommentsToWholeGroupWhenAvailable,
         scrollToSubmitCommentAfterCommentLibrarySelection: scrollToSubmitCommentAfterCommentLibrarySelection,
+        useTeamNameForGroupPlaceholderReplacement: useTeamNameForGroupPlaceholderReplacement,
         autoFillFullPoints: autoFillFullPoints,
         rememberPointsForComments: rememberPointsForComments,
         openCommentBoxAfterMaxPoints: openCommentBoxAfterMaxPoints,

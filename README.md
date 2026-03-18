@@ -23,6 +23,8 @@ This applies only to graders within BYU Pathway. At the time I started this proj
 
 - **Open rubric automatically for ungraded submissions**: Opens the rubric panel when there is no prior evaluation.
 - **Open the Comment Library after submitting the assessment**: Opens the comment library after clicking Submit Assessment.
+- **Automatically set comments to be sent to the whole group when available**: When the submit-comment controls load, automatically selects the group comment mode if Canvas provides it.
+- **Automatically scroll to the submit comment button after selecting a comment from the comment library**: After you select a comment in the comment library, automatically scroll down to the submit comment button to save time if you are using the comment library frequently.
 
 #### Structured Rubric Options
 
@@ -44,6 +46,7 @@ These options apply only to unstructured rubrics without preset point values:
 ### Name Placeholders
 
 - **Custom placeholder list**: Define one or more tokens (for example, `STUDENT_NAME`) that will be replaced with the current student name when you pick or type comments.
+- **Use "Team" instead of the student's name when replacing name placeholders on a group submission (if applicable)**: If group comment mode is available, placeholders resolve to `Team` instead of an individual student name.
 
 ### Student Name Format
 

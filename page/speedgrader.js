@@ -9,6 +9,7 @@
   let PLACEHOLDERS;
   let OPEN_RUBRIC_FOR_UNGRADED;
   let OPEN_COMMENT_LIBRARY_AFTER_SUBMIT;
+  let AUTO_SET_COMMENTS_TO_WHOLE_GROUP_WHEN_AVAILABLE;
   let AUTO_FILL_FULL_POINTS;
   let REMEMBER_POINTS_FOR_COMMENTS;
   let OPEN_COMMENT_BOX_AFTER_MAX_POINTS;
@@ -17,6 +18,7 @@
   let CLEAR_COMMENT_BOX_ON_MAX_POINTS;
   let NOTIFY_ON_STUDENT_NAME_MISMATCH;
   let SCROLL_TO_SUBMIT_COMMENT_AFTER_COMMENT_LIBRARY_SELECTION;
+  let USE_TEAM_NAME_FOR_GROUP_PLACEHOLDER_REPLACEMENT;
   let SAVED_POINTS;
   let STUDENT_NAME_FORMAT;
   let STUDENT_NAMES;
@@ -101,6 +103,9 @@
       if (typeof settings.openCommentLibraryAfterSubmit !== 'undefined') {
         OPEN_COMMENT_LIBRARY_AFTER_SUBMIT = !!settings.openCommentLibraryAfterSubmit;
       }
+      if (typeof settings.autoSetCommentsToWholeGroupWhenAvailable !== 'undefined') {
+        AUTO_SET_COMMENTS_TO_WHOLE_GROUP_WHEN_AVAILABLE = !!settings.autoSetCommentsToWholeGroupWhenAvailable;
+      }
       if (typeof settings.autoFillFullPoints !== 'undefined') {
         AUTO_FILL_FULL_POINTS = !!settings.autoFillFullPoints;
       }
@@ -124,6 +129,9 @@
       }
       if (typeof settings.scrollToSubmitCommentAfterCommentLibrarySelection !== 'undefined') {
         SCROLL_TO_SUBMIT_COMMENT_AFTER_COMMENT_LIBRARY_SELECTION = !!settings.scrollToSubmitCommentAfterCommentLibrarySelection;
+      }
+      if (typeof settings.useTeamNameForGroupPlaceholderReplacement !== 'undefined') {
+        USE_TEAM_NAME_FOR_GROUP_PLACEHOLDER_REPLACEMENT = !!settings.useTeamNameForGroupPlaceholderReplacement;
       }
       if (settings.savedPoints && typeof settings.savedPoints === 'object') {
         SAVED_POINTS = settings.savedPoints;
@@ -179,6 +187,7 @@
           PlaceholderEngine.applySettingsToEditors();
           PlaceholderEngine.applySettingsToTextareas();
           PlaceholderEngine.attachCommentLibraryTextareaListeners();
+          CommentModeController.selectGroupCommentModeIfEnabled();
         } catch (e) {
           console.error('Error handling CSH_UPDATE_SETTINGS message:', e);
         }
@@ -217,6 +226,131 @@
       } catch (e) {
         console.error('Error handling student name change:', e);
       }
+    }
+  };
+
+  // ============================================================================
+  // NAMESPACE: CommentModeController
+  // Handles comment-mode selection behavior for group comments
+  // ============================================================================
+  const CommentModeController = {
+    __observerAttached: false,
+    __observerDebounceTimer: null,
+    __processedSubmitButtons: new WeakSet(),
+
+    /**
+     * Attempt to toggle a radio input using user-like interaction first,
+     * then fall back to native setter + events for framework-controlled inputs.
+     */
+    activateRadioInput(radioInput) {
+      if (!radioInput) return false;
+
+      try {
+        // Prefer real click semantics so React/Vue/Svelte listeners update internal state.
+        if (!radioInput.checked) {
+          radioInput.focus();
+          radioInput.click();
+        }
+
+        if (radioInput.checked) return true;
+
+        // If input click did not work, try clicking an associated label.
+        const associatedLabel = (radioInput.id && document.querySelector(`label[for="${radioInput.id}"]`))
+          || radioInput.closest('label');
+        if (associatedLabel) {
+          associatedLabel.click();
+        }
+
+        if (radioInput.checked) return true;
+
+        // Fallback: native setter + input/change events for controlled components.
+        const nativeCheckedSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'checked')?.set;
+        if (nativeCheckedSetter) {
+          nativeCheckedSetter.call(radioInput, true);
+        } else {
+          radioInput.checked = true;
+        }
+
+        radioInput.dispatchEvent(new Event('input', { bubbles: true }));
+        radioInput.dispatchEvent(new Event('change', { bubbles: true }));
+
+        return !!radioInput.checked;
+      } catch (e) {
+        console.error('Error activating radio input:', e);
+        return false;
+      }
+    },
+
+    /**
+     * Auto-select group mode once per newly rendered submit-comment button.
+     * This prevents overriding manual user choice on subsequent DOM mutations.
+     */
+    selectGroupCommentModeIfEnabled() {
+      try {
+        if (!AUTO_SET_COMMENTS_TO_WHOLE_GROUP_WHEN_AVAILABLE) return;
+
+        const submitButtons = document.querySelectorAll('button[data-testid="submit-comment-button"]');
+        if (!submitButtons || submitButtons.length === 0) return;
+
+        submitButtons.forEach((submitButton) => {
+          if (!submitButton || this.__processedSubmitButtons.has(submitButton)) return;
+
+          const groupModeRadio = document.querySelector('input[name="commentMode"][value="group"]');
+          if (!groupModeRadio) return;
+
+          this.activateRadioInput(groupModeRadio);
+          this.__processedSubmitButtons.add(submitButton);
+        });
+      } catch (e) {
+        console.error('Error applying group comment mode:', e);
+      }
+    },
+
+    /**
+     * Debounced scheduler for auto-select checks to reduce mutation churn.
+     */
+    scheduleAutoSelect() {
+      if (this.__observerDebounceTimer) {
+        clearTimeout(this.__observerDebounceTimer);
+      }
+
+      this.__observerDebounceTimer = setTimeout(() => {
+        this.__observerDebounceTimer = null;
+        this.selectGroupCommentModeIfEnabled();
+      }, 120);
+    },
+
+    /**
+     * Observe DOM updates so group mode can be applied when controls appear later.
+     */
+    attachCommentModeObserver() {
+      if (this.__observerAttached || !document.body) return;
+      this.__observerAttached = true;
+
+      this.selectGroupCommentModeIfEnabled();
+
+      const observer = new MutationObserver(() => {
+        this.scheduleAutoSelect();
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
+    },
+
+    /**
+     * Determine replacement label for placeholders based on active settings.
+     */
+    getReplacementName() {
+      if (USE_TEAM_NAME_FOR_GROUP_PLACEHOLDER_REPLACEMENT) {
+        const groupModeRadio = document.querySelector('input[name="commentMode"][value="group"]');
+        if (groupModeRadio) {
+          return 'Team';
+        }
+      }
+
+      return StudentNameService.getStudentName();
     }
   };
 
@@ -330,7 +464,7 @@
         const hasPlaceholder = PLACEHOLDERS.some(ph => content.includes(ph));
         if (!hasPlaceholder) return;
 
-        const name = StudentNameService.getStudentName();
+        const name = CommentModeController.getReplacementName();
         if (!name) return;
 
         let updated = content;
@@ -365,7 +499,7 @@
         const hasPlaceholder = PLACEHOLDERS.some(ph => content.includes(ph));
         if (!hasPlaceholder) return;
 
-        const name = StudentNameService.getStudentName();
+        const name = CommentModeController.getReplacementName();
         if (!name) return;
 
         let updated = content;
@@ -1171,6 +1305,9 @@
 
   // Start TinyMCE placeholder hooks and polling
   PlaceholderEngine.waitForTinyMCE();
+
+  // Watch for comment mode controls and apply group mode when configured.
+  CommentModeController.attachCommentModeObserver();
 
   // Handle rubric view button and auto-open logic
   RubricController.handleRubricFunctionality();
