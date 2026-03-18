@@ -722,6 +722,14 @@
       // Allow one retry attempt if button wasn't found, but prevent running again after button is found
       if (this.__rubricAutoOpenAttempted) return;
 
+      const rubricTable = document.querySelector('div.rubric_summary,[data-testid="rubric-assessment-traditional-view"]');
+      if (rubricTable) {
+        console.log('Rubric table already present');
+        this.attachAllRubricHandlers();
+        this.__rubricAutoOpenAttempted = true;
+        return;
+      }
+
       const rubricButton = document.querySelector('button[data-testid="view-rubric-button"]');
 
       if (!rubricButton) {
@@ -747,8 +755,8 @@
       // Button found, wait 2 seconds before checking for the rubric table
       if (!OPEN_RUBRIC_FOR_UNGRADED) return;
       setTimeout(() => {
-        const rubricTable = document.querySelector('div.rubric_summary');
-        if (!rubricTable) {
+        const currentRubricTable = document.querySelector('div.rubric_summary');
+        if (!currentRubricTable) {
           // Automatically open rubric if the rubric button is present and there's no rubric table (i.e. no previous evaluation exists).
           console.log('No rubric table found, clicking view-rubric-button to open it');
           rubricButton.click();
