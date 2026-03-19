@@ -99,8 +99,7 @@ This section is the developer reference for the project. The rest of this README
 - `extension/`: Popup, options page, and service worker.
 - `content/`: Content scripts that can use Chrome APIs and bridge into page context.
 - `page/`: SpeedGrader page-context code with direct Canvas DOM access.
-- `shared/`: Cross-context settings, message constants, and storage helpers.
-- `base.css`: Shared styling for extension UI.
+- `shared/`: Cross-context settings, message constants, storage helpers, other resources.
 
 ### Runtime contexts
 
