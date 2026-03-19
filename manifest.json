@@ -32,7 +32,7 @@
     },
     {
       "matches": ["https://runtime-app.powerapps.com/*", "https://runtime-app.powerplatform.com/*"],
-      "js": ["shared/storage-utils.js", "content/grading-queue.js"],
+      "js": ["shared/message-types.js", "shared/storage-utils.js", "content/grading-queue.js"],
       "run_at": "document_end",
       "all_frames": true
     },

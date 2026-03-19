@@ -154,7 +154,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       checkedAt: Date.now(),
     };
 
+    // Send result to the speedgrader tab
     safeSendToTab(pending.originTabId, resultPayload);
+
+    // Also broadcast to all other tabs (grading queue and others can listen and ignore if not relevant)
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach(tab => {
+        if (tab.id !== pending.originTabId) {
+          safeSendToTab(tab.id, resultPayload);
+        }
+      });
+    });
+
     pendingGroupsChecks.delete(groupsTabId);
     closeTabIfPresent(groupsTabId);
     sendResponse({ ok: true });

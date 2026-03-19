@@ -18,6 +18,7 @@
   let RUBRIC_AUTO_SCROLL_TO_FIRST_CRITERION_AFTER_OPENING;
   let CLEAR_COMMENT_BOX_ON_MAX_POINTS;
   let NOTIFY_ON_STUDENT_NAME_MISMATCH;
+  let AUTO_SELECT_ALREADY_GRADED_WHEN_GROUP_MATCHED;
   let SCROLL_TO_SUBMIT_COMMENT_AFTER_COMMENT_LIBRARY_SELECTION;
   let USE_TEAM_NAME_FOR_GROUP_PLACEHOLDER_REPLACEMENT;
   let SAVED_POINTS;
@@ -130,6 +131,9 @@
       }
       if (typeof settings.notifyOnStudentNameMismatch !== 'undefined') {
         NOTIFY_ON_STUDENT_NAME_MISMATCH = !!settings.notifyOnStudentNameMismatch;
+      }
+      if (typeof settings.autoSelectAlreadyGradedWhenGroupMatched !== 'undefined') {
+        AUTO_SELECT_ALREADY_GRADED_WHEN_GROUP_MATCHED = !!settings.autoSelectAlreadyGradedWhenGroupMatched;
       }
       if (typeof settings.scrollToSubmitCommentAfterCommentLibrarySelection !== 'undefined') {
         SCROLL_TO_SUBMIT_COMMENT_AFTER_COMMENT_LIBRARY_SELECTION = !!settings.scrollToSubmitCommentAfterCommentLibrarySelection;

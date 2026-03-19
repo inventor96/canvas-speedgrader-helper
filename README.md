@@ -31,6 +31,10 @@ When a mismatch notification appears, the extension can also help you verify whe
 - When they are in the same group, the original mismatch warning in SpeedGrader changes to a blue informational state indicating the mismatch is expected for a shared group.
 - The temporary Groups tab closes automatically after the check completes.
 
+#### Group Check Automation
+
+- **Automatically select "Already Graded" when a mismatched name check finds the names are in the same group**: When a group membership check confirms both names belong to the same group, the extension automatically sets the grading status dropdown on the Grading Queue page to "Already Graded". This helps quickly move past shared group submissions when the names differ but the work is shared.
+
 ### Rubric
 
 - **Open rubric automatically for ungraded submissions**: Opens the rubric panel when there is no prior evaluation.

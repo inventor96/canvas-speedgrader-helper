@@ -18,6 +18,7 @@ const SYNCED_SETTINGS = {
   rubricAutoScrollToFirstCriterionAfterOpening: false,
   clearCommentBoxOnMaxPoints: false,
   notifyOnStudentNameMismatch: false,
+  autoSelectAlreadyGradedWhenGroupMatched: false,
   savedPoints: {},
   savedPointsMeta: { lastUsed: {} },
 };
