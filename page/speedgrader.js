@@ -15,6 +15,7 @@
   let OPEN_COMMENT_BOX_AFTER_MAX_POINTS;
   let OPEN_COMMENT_BOX_AFTER_LESS_THAN_MAX_POINTS;
   let RUBRIC_AUTO_SCROLL_TO_NEXT_CRITERION;
+  let RUBRIC_AUTO_SCROLL_TO_FIRST_CRITERION_AFTER_OPENING;
   let CLEAR_COMMENT_BOX_ON_MAX_POINTS;
   let NOTIFY_ON_STUDENT_NAME_MISMATCH;
   let SCROLL_TO_SUBMIT_COMMENT_AFTER_COMMENT_LIBRARY_SELECTION;
@@ -120,6 +121,9 @@
       }
       if (typeof settings.rubricAutoScrollToNextCriterion !== 'undefined') {
         RUBRIC_AUTO_SCROLL_TO_NEXT_CRITERION = !!settings.rubricAutoScrollToNextCriterion;
+      }
+      if (typeof settings.rubricAutoScrollToFirstCriterionAfterOpening !== 'undefined') {
+        RUBRIC_AUTO_SCROLL_TO_FIRST_CRITERION_AFTER_OPENING = !!settings.rubricAutoScrollToFirstCriterionAfterOpening;
       }
       if (typeof settings.clearCommentBoxOnMaxPoints !== 'undefined') {
         CLEAR_COMMENT_BOX_ON_MAX_POINTS = !!settings.clearCommentBoxOnMaxPoints;
@@ -665,7 +669,43 @@
         if (!button) return;
 
         // Give the rubric UI time to load, then attach handlers
-        setTimeout(() => this.attachAllRubricHandlers(), 1000);
+        setTimeout(async () => {
+          this.attachAllRubricHandlers();
+
+          if (!RUBRIC_AUTO_SCROLL_TO_FIRST_CRITERION_AFTER_OPENING) return;
+
+          const rubricTableDisplayed = await this.waitForRubricTableDisplayed();
+          if (!rubricTableDisplayed) return;
+
+          StructuredRubricUX.scrollToFirstCriterionRow();
+        }, 1000);
+      });
+    },
+
+    /**
+     * Wait until the rubric table is displayed in the DOM.
+     */
+    waitForRubricTableDisplayed(timeoutMs = 6000, pollMs = 150) {
+      return new Promise((resolve) => {
+        const rubricSelector = 'div.rubric_summary,[data-testid="rubric-assessment-traditional-view"]';
+        const endTime = Date.now() + timeoutMs;
+
+        const check = () => {
+          const rubricTable = document.querySelector(rubricSelector);
+          if (rubricTable) {
+            resolve(true);
+            return;
+          }
+
+          if (Date.now() >= endTime) {
+            resolve(false);
+            return;
+          }
+
+          setTimeout(check, pollMs);
+        };
+
+        check();
       });
     },
 
@@ -1156,6 +1196,19 @@
       }
 
       this.scrollRowIntoGradingPanelCenter(nextRow);
+    },
+
+    /**
+     * Scroll to the first criterion row in the traditional rubric view.
+     */
+    scrollToFirstCriterionRow() {
+      const rubricRoot = this.getTraditionalRubricRoot();
+      if (!rubricRoot) return;
+
+      const firstRow = rubricRoot.firstElementChild;
+      if (!firstRow) return;
+
+      this.scrollRowIntoGradingPanelCenter(firstRow);
     },
 
     /**

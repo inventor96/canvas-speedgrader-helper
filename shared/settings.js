@@ -15,6 +15,7 @@ const SYNCED_SETTINGS = {
   openCommentBoxAfterMaxPoints: false,
   openCommentBoxAfterLessThanMaxPoints: false,
   rubricAutoScrollToNextCriterion: false,
+  rubricAutoScrollToFirstCriterionAfterOpening: false,
   clearCommentBoxOnMaxPoints: false,
   notifyOnStudentNameMismatch: false,
   savedPoints: {},

@@ -55,6 +55,9 @@ function loadPlaceholders() {
     const rubricAutoScrollToNextCriterionCb = document.getElementById('rubric-auto-scroll-to-next-criterion');
     if (rubricAutoScrollToNextCriterionCb) rubricAutoScrollToNextCriterionCb.checked = !!data.rubricAutoScrollToNextCriterion;
 
+    const rubricAutoScrollToFirstCriterionAfterOpeningCb = document.getElementById('rubric-auto-scroll-to-first-criterion-after-opening');
+    if (rubricAutoScrollToFirstCriterionAfterOpeningCb) rubricAutoScrollToFirstCriterionAfterOpeningCb.checked = !!data.rubricAutoScrollToFirstCriterionAfterOpening;
+
     const clearCommentBoxOnMaxPointsCb = document.getElementById('clear-comment-box-on-max-points');
     if (clearCommentBoxOnMaxPointsCb) clearCommentBoxOnMaxPointsCb.checked = !!data.clearCommentBoxOnMaxPoints;
 
@@ -308,6 +311,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const openCommentBoxAfterMaxPoints = !!document.getElementById('open-comment-box-after-max-points') && document.getElementById('open-comment-box-after-max-points').checked;
     const openCommentBoxAfterLessThanMaxPoints = !!document.getElementById('open-comment-box-after-less-than-max-points') && document.getElementById('open-comment-box-after-less-than-max-points').checked;
     const rubricAutoScrollToNextCriterion = !!document.getElementById('rubric-auto-scroll-to-next-criterion') && document.getElementById('rubric-auto-scroll-to-next-criterion').checked;
+    const rubricAutoScrollToFirstCriterionAfterOpening = !!document.getElementById('rubric-auto-scroll-to-first-criterion-after-opening') && document.getElementById('rubric-auto-scroll-to-first-criterion-after-opening').checked;
     const clearCommentBoxOnMaxPoints = !!document.getElementById('clear-comment-box-on-max-points') && document.getElementById('clear-comment-box-on-max-points').checked;
     const notifyOnStudentNameMismatch = !!document.getElementById('notify-student-name-mismatch') && document.getElementById('notify-student-name-mismatch').checked;
     const studentNameFormat = document.querySelector('input[name="student-name-format"]:checked')?.value || SYNCED_SETTINGS.studentNameFormat;
@@ -326,6 +330,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         openCommentBoxAfterMaxPoints: openCommentBoxAfterMaxPoints,
         openCommentBoxAfterLessThanMaxPoints: openCommentBoxAfterLessThanMaxPoints,
         rubricAutoScrollToNextCriterion: rubricAutoScrollToNextCriterion,
+        rubricAutoScrollToFirstCriterionAfterOpening: rubricAutoScrollToFirstCriterionAfterOpening,
         clearCommentBoxOnMaxPoints: clearCommentBoxOnMaxPoints,
         notifyOnStudentNameMismatch: notifyOnStudentNameMismatch,
         studentNameFormat: studentNameFormat
