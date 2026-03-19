@@ -11,15 +11,31 @@
    */
 
   /**
-   * Select the "Already Graded" option in the grading status dropdown for the given button's row
+   * Select the "Already Graded" option in the grading status dropdown for the given student name
    */
-  function selectAlreadyGradedForRow(button) {
-    if (!button) return;
+  function selectAlreadyGradedByStudentName(studentName) {
+    if (!studentName) {
+      console.warn('CSH: No student name provided');
+      return;
+    }
 
-    // Find the parent row that contains the button
-    const row = button.closest('[data-control-name="ActionButtons"]')?.parentElement;
+    // Find all student name elements
+    const studentNameElements = document.querySelectorAll('[data-control-name="txtStudentName"]');
+
+    // Find the one with matching text
+    const matchingElement = Array.from(studentNameElements).find(el =>
+      el.textContent.trim() === studentName.trim()
+    );
+
+    if (!matchingElement) {
+      console.warn('CSH: Could not find student name element for:', studentName);
+      return;
+    }
+
+    // Go up to find the parent row, then find the select
+    const row = matchingElement.closest('[data-control-name="ColumnLabels"]')?.parentElement;
     if (!row) {
-      console.warn('CSH: Could not find row for grading button');
+      console.warn('CSH: Could not find row for student name element');
       return;
     }
 
@@ -47,7 +63,7 @@
     // Trigger change event to ensure any listeners are notified
     gradingStatusSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-    console.log('CSH: Selected "Already Graded" for row');
+    console.log('CSH: Selected "Already Graded" for student:', studentName);
   }
 
   /**
@@ -62,7 +78,7 @@
             return;
           }
 
-          console.log('CSH: Received group match notification, looking for most recent grading button...');
+          console.log('CSH: Received group match notification for student:', message.queuedName);
 
           // Check if setting is enabled before acting
           chrome.storage.sync.get(['autoSelectAlreadyGradedWhenGroupMatched'], (data) => {
@@ -70,20 +86,7 @@
               return;
             }
 
-            // Find the most recently clicked grading button
-            const lastButton = window.__cshLastGradingButton;
-            if (lastButton && lastButton.closest('body')) {
-              // The button is still in the DOM, use it
-              selectAlreadyGradedForRow(lastButton);
-            } else {
-              // Button reference might be stale, try to find the button in the current row
-              // This is a fallback approach
-              const buttons = document.querySelectorAll('[data-control-name="GraderButton"] button');
-              if (buttons.length > 0) {
-                // Use the last button in the list as a heuristic
-                selectAlreadyGradedForRow(buttons[buttons.length - 1]);
-              }
-            }
+            selectAlreadyGradedByStudentName(message.queuedName);
           });
         } catch (e) {
           console.error('Error handling group check result message:', e);
@@ -102,9 +105,6 @@
     document.addEventListener('click', (event) => {
       const button = event.target.closest('[data-control-name="GraderButton"] button');
       if (!button) return;
-
-      // Store reference to the last clicked button for later use
-      window.__cshLastGradingButton = button;
 
       // Extract the student name from the queue item
       const studentNameElement = button
