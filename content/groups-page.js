@@ -11,6 +11,8 @@
 
   const MAX_WAIT_FOR_RESULTS_MS = 10000;
   const QUIET_WINDOW_MS = 700;
+  const MAX_WAIT_FOR_SEARCH_INPUT_MS = 10000;
+  const SEARCH_INPUT_POLL_MS = 150;
 
   function normalizeName(name) {
     return String(name || '')
@@ -116,6 +118,21 @@
     });
   }
 
+  async function waitForSearchInput() {
+    const startedAt = Date.now();
+
+    while (Date.now() - startedAt < MAX_WAIT_FOR_SEARCH_INPUT_MS) {
+      const input = document.querySelector(SEARCH_INPUT_SELECTOR);
+      if (input) {
+        return input;
+      }
+
+      await new Promise((resolve) => window.setTimeout(resolve, SEARCH_INPUT_POLL_MS));
+    }
+
+    return null;
+  }
+
   function parseGroups() {
     const groups = [];
     const containers = document.querySelectorAll(GROUPS_CONTAINER_SELECTOR);
@@ -208,12 +225,12 @@
       return;
     }
 
-    const searchInput = document.querySelector(SEARCH_INPUT_SELECTOR);
+    const searchInput = await waitForSearchInput();
     if (!searchInput) {
       await notifyComplete({
         sameGroup: false,
         groupsCount: 0,
-        error: 'Could not find groups search input on page.',
+        error: 'Timed out waiting for groups search input to appear on page.',
       });
       return;
     }
