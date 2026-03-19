@@ -1263,6 +1263,8 @@
   // Handles student name mismatch warnings and notifications
   // ============================================================================
   const NotificationUI = {
+    __groupsResultListenerAttached: false,
+
     /**
      * Escape HTML special characters for safe display in DOM
      */
@@ -1274,7 +1276,223 @@
         '"': '&quot;',
         "'": '&#039;'
       };
-      return text.replace(/[&<>"']/g, (m) => map[m]);
+      return String(text || '').replace(/[&<>"']/g, (m) => map[m]);
+    },
+
+    normalizeName(name) {
+      return String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    },
+
+    isGroupAssignmentDetected() {
+      const groupModeRadio = document.querySelector('input[name="commentMode"][value="group"]');
+      const wholeGroupNotice = Array.from(document.querySelectorAll('span')).some(
+        (span) => span.textContent?.trim() === 'All comments are sent to the whole group'
+      );
+
+      return !!groupModeRadio || wholeGroupNotice;
+    },
+
+    getOrCreateWarningContainer() {
+      let warningDiv = document.getElementById('csh-student-mismatch-warning');
+      if (warningDiv) return warningDiv;
+
+      warningDiv = document.createElement('div');
+      warningDiv.id = 'csh-student-mismatch-warning';
+      warningDiv.setAttribute('role', 'alert');
+      warningDiv.setAttribute('aria-live', 'assertive');
+      warningDiv.style.cssText = `
+        position: fixed;
+        top: 65px;
+        right: 20px;
+        border-radius: 4px;
+        padding: 15px 20px;
+        max-width: 420px;
+        z-index: 10000;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-size: 14px;
+        line-height: 1.5;
+        color: #333;
+      `;
+
+      document.body.appendChild(warningDiv);
+      return warningDiv;
+    },
+
+    applyWarningStyle(warningDiv) {
+      warningDiv.style.backgroundColor = '#fff3cd';
+      warningDiv.style.border = '2px solid #ff9800';
+      warningDiv.style.color = '#333';
+    },
+
+    applyInfoStyle(warningDiv) {
+      warningDiv.style.backgroundColor = '#e8f4ff';
+      warningDiv.style.border = '2px solid #2f7ed8';
+      warningDiv.style.color = '#123b66';
+    },
+
+    renderBanner({ queuedName, speedgraderName, sameGroup, matchedGroupHeader, statusText, showGroupsLink }) {
+      const warningDiv = this.getOrCreateWarningContainer();
+      warningDiv.dataset.queuedName = queuedName;
+      warningDiv.dataset.speedgraderName = speedgraderName;
+      warningDiv.dataset.checkInProgress = statusText === 'Checking course groups...' ? 'true' : 'false';
+
+      if (sameGroup) {
+        this.applyInfoStyle(warningDiv);
+      } else {
+        this.applyWarningStyle(warningDiv);
+      }
+
+      warningDiv.innerHTML = '';
+
+      const heading = document.createElement('h3');
+      heading.style.cssText = 'margin: 0px 24px 8px 0px; font-size: 16px; font-weight: 600;';
+      heading.style.color = sameGroup ? '#1f5fae' : '#ff6f00';
+      heading.textContent = sameGroup
+        ? 'ℹ️ Name Mismatch Resolved: Same Group'
+        : '⚠️ Student Name Mismatch';
+
+      const messageDiv = document.createElement('p');
+      messageDiv.style.cssText = `margin: 0 0 ${showGroupsLink || statusText || sameGroup ? '10px' : '0'} 0; color: ${sameGroup ? '#1a4d80' : '#666'};`;
+
+      let messageHtml = `<strong>Grading Queue:</strong> ${this.escapeHtml(queuedName)}<br><strong>SpeedGrader:</strong> ${this.escapeHtml(speedgraderName)}`;
+      if (sameGroup) {
+        messageHtml += '<br>These names are different, but both students appear in the same Canvas group.';
+        if (matchedGroupHeader) {
+          messageHtml += `<br><strong>Matched Group:</strong> ${this.escapeHtml(matchedGroupHeader)}`;
+        }
+      }
+      messageDiv.innerHTML = messageHtml;
+
+      warningDiv.appendChild(heading);
+      warningDiv.appendChild(messageDiv);
+
+      if (!sameGroup && showGroupsLink) {
+        const linkWrap = document.createElement('div');
+        linkWrap.style.cssText = 'margin: 0 0 8px 0;';
+        const link = document.createElement('a');
+        link.href = '#';
+        link.textContent = 'Open course groups and check membership';
+        link.style.cssText = 'color: #1e5aa8; text-decoration: underline; cursor: pointer;';
+        link.onclick = (event) => {
+          event.preventDefault();
+          this.startGroupsCheck(queuedName, speedgraderName);
+        };
+        linkWrap.appendChild(link);
+        warningDiv.appendChild(linkWrap);
+      }
+
+      if (statusText) {
+        const status = document.createElement('p');
+        status.style.cssText = `margin: 0; font-size: 13px; color: ${sameGroup ? '#1f5fae' : '#555'};`;
+        status.textContent = statusText;
+        warningDiv.appendChild(status);
+      }
+
+      const closeButton = document.createElement('button');
+      closeButton.textContent = '×';
+      closeButton.style.cssText = `
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: ${sameGroup ? '#1f5fae' : '#ff6f00'};
+        padding: 0;
+        width: 24px;
+        height: 24px;
+        line-height: 1;
+      `;
+      closeButton.onclick = () => warningDiv.remove();
+      warningDiv.appendChild(closeButton);
+    },
+
+    startGroupsCheck(queuedName, speedgraderName) {
+      const warningDiv = document.getElementById('csh-student-mismatch-warning');
+      if (!warningDiv) return;
+      if (warningDiv.dataset.checkInProgress === 'true') return;
+
+      this.renderBanner({
+        queuedName,
+        speedgraderName,
+        sameGroup: false,
+        matchedGroupHeader: '',
+        statusText: 'Checking course groups...',
+        showGroupsLink: false,
+      });
+
+      try {
+        window.postMessage({
+          type: CSH_MESSAGE_TYPES.START_GROUPS_CHECK,
+          queuedName,
+          speedgraderName,
+        }, '*');
+      } catch (e) {
+        this.renderBanner({
+          queuedName,
+          speedgraderName,
+          sameGroup: false,
+          matchedGroupHeader: '',
+          statusText: 'Could not start groups check.',
+          showGroupsLink: this.isGroupAssignmentDetected(),
+        });
+      }
+    },
+
+    maybeApplyGroupsResult(msg) {
+      const warningDiv = document.getElementById('csh-student-mismatch-warning');
+      if (!warningDiv) return;
+
+      const currentQueued = this.normalizeName(warningDiv.dataset.queuedName || '');
+      const currentSpeedgrader = this.normalizeName(warningDiv.dataset.speedgraderName || '');
+      const messageQueued = this.normalizeName(msg.queuedName || '');
+      const messageSpeedgrader = this.normalizeName(msg.speedgraderName || '');
+
+      if (!currentQueued || !currentSpeedgrader) return;
+      if (currentQueued !== messageQueued || currentSpeedgrader !== messageSpeedgrader) return;
+
+      if (msg.sameGroup) {
+        this.renderBanner({
+          queuedName: warningDiv.dataset.queuedName || msg.queuedName,
+          speedgraderName: warningDiv.dataset.speedgraderName || msg.speedgraderName,
+          sameGroup: true,
+          matchedGroupHeader: msg.matchedGroupHeader || '',
+          statusText: '',
+          showGroupsLink: false,
+        });
+        return;
+      }
+
+      const failureText = msg.error
+        ? `Groups check could not verify same-group status: ${msg.error}`
+        : 'Groups check completed and did not find both names in one group.';
+
+      this.renderBanner({
+        queuedName: warningDiv.dataset.queuedName || msg.queuedName,
+        speedgraderName: warningDiv.dataset.speedgraderName || msg.speedgraderName,
+        sameGroup: false,
+        matchedGroupHeader: '',
+        statusText: failureText,
+        showGroupsLink: this.isGroupAssignmentDetected(),
+      });
+    },
+
+    attachGroupsResultListener() {
+      if (this.__groupsResultListenerAttached) return;
+      this.__groupsResultListenerAttached = true;
+
+      window.addEventListener('message', (event) => {
+        try {
+          if (!event || event.source !== window) return;
+          const msg = event.data;
+          if (!msg || msg.type !== CSH_MESSAGE_TYPES.GROUPS_CHECK_RESULT) return;
+          this.maybeApplyGroupsResult(msg);
+        } catch (e) {
+          console.error('Error handling groups check result message:', e);
+        }
+      });
     },
 
     /**
@@ -1282,58 +1500,14 @@
      */
     showStudentNameMismatchWarning(queuedName, speedgraderName) {
       try {
-        // Create a warning container
-        const warningDiv = document.createElement('div');
-        warningDiv.id = 'csh-student-mismatch-warning';
-        warningDiv.setAttribute('role', 'alert');
-        warningDiv.setAttribute('aria-live', 'assertive');
-        warningDiv.style.cssText = `
-          position: fixed;
-          top: 65px;
-          right: 20px;
-          background-color: #fff3cd;
-          border: 2px solid #ff9800;
-          border-radius: 4px;
-          padding: 15px 20px;
-          max-width: 400px;
-          z-index: 10000;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-          font-size: 14px;
-          line-height: 1.5;
-          color: #333;
-        `;
-
-        const heading = document.createElement('h3');
-        heading.style.cssText = 'margin: 0px 24px 8px 0px; font-size: 16px; font-weight: 600; color: #ff6f00;';
-        heading.textContent = '⚠️ Student Name Mismatch';
-
-        const messageDiv = document.createElement('p');
-        messageDiv.style.cssText = 'margin: 0 0 10px 0; color: #666;';
-        messageDiv.innerHTML = `<strong>Grading Queue:</strong> ${this.escapeHtml(queuedName)}<br><strong>SpeedGrader:</strong> ${this.escapeHtml(speedgraderName)}`;
-
-        const closeButton = document.createElement('button');
-        closeButton.textContent = '×';
-        closeButton.style.cssText = `
-          position: absolute;
-          top: 10px;
-          right: 10px;
-          background: none;
-          border: none;
-          font-size: 24px;
-          cursor: pointer;
-          color: #ff6f00;
-          padding: 0;
-          width: 24px;
-          height: 24px;
-          line-height: 1;
-        `;
-        closeButton.onclick = () => warningDiv.remove();
-
-        warningDiv.appendChild(heading);
-        warningDiv.appendChild(messageDiv);
-        warningDiv.appendChild(closeButton);
-        document.body.appendChild(warningDiv);
+        this.renderBanner({
+          queuedName,
+          speedgraderName,
+          sameGroup: false,
+          matchedGroupHeader: '',
+          statusText: '',
+          showGroupsLink: this.isGroupAssignmentDetected(),
+        });
 
         console.warn('CSH: Student name mismatch detected!', {
           queued: queuedName,
@@ -1410,6 +1584,8 @@
 
   // Check for queued student name from the Grading Queue (with built-in retry mechanism)
   try {
+    NotificationUI.attachGroupsResultListener();
+
     // Wait a moment for the SpeedGrader navbar to load, then start checking
     setTimeout(() => NotificationUI.checkQueuedStudentName(), 500);
   } catch (e) {

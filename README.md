@@ -7,6 +7,7 @@ Small quality-of-life improvements for Canvas SpeedGrader. The extension runs on
 - Student name placeholders in comments, with automatic replacement in the rubric comment editor and free-form comment textareas.
 - Preferred student names per student_id, so you can use nicknames or chosen names in placeholders.
 - Student name mismatch detection when coming from the PowerApps Grading Queue, alerting you if the wrong student is loaded in SpeedGrader.
+- Group membership verification from the mismatch warning, so you can quickly confirm when two different names still belong to the same group submission.
 - Rubric helpers for ungraded submissions, comment library follow-up, and point entry shortcuts.
 - Optional auto-scroll to the next criterion in structured rubrics after selecting a rating.
 - Optional point memory for unstructured rubrics based on the comment you select or save.
@@ -18,6 +19,17 @@ Small quality-of-life improvements for Canvas SpeedGrader. The extension runs on
 This applies only to graders within BYU Pathway. At the time I started this project, that's where I was grading, hence this school-specific section.
 
 - **Display a notification when the student name is mismatched between the Grading Queue and SpeedGrader**: When you click a grading button in the PowerApps Grading Queue, the extension remembers the student name. If SpeedGrader then loads a different student (indicating a potential navigation error), a warning notification appears at the top of the page to alert you before you begin grading.
+
+#### Group Check from the Mismatch Notification
+
+When a mismatch notification appears, the extension can also help you verify whether both students are in the same Canvas group:
+
+- A link appears under the two names only when the current SpeedGrader submission appears to be a group assignment.
+- Clicking the link opens the course Groups page (`/courses/<course_id>/groups`) in a new tab.
+- The extension automatically searches groups using the Grading Queue name.
+- It scans group results and checks whether both names (Grading Queue and SpeedGrader) appear in the same group.
+- When they are in the same group, the original mismatch warning in SpeedGrader changes to a blue informational state indicating the mismatch is expected for a shared group.
+- The temporary Groups tab closes automatically after the check completes.
 
 ### Rubric
 

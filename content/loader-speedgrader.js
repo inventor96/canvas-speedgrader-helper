@@ -199,12 +199,77 @@
             logStorageWarning('CSH storage warning: failed clearing queuedStudentName.', chrome.runtime.lastError.message);
           }
         });
+        return;
+      }
+
+      if (msg.type === CSH_MESSAGE_TYPES.START_GROUPS_CHECK) {
+        if (!chrome.runtime || !chrome.runtime.sendMessage) return;
+        const queuedName = typeof msg.queuedName === 'string' ? msg.queuedName : '';
+        const speedgraderName = typeof msg.speedgraderName === 'string' ? msg.speedgraderName : '';
+        chrome.runtime.sendMessage({
+          type: CSH_MESSAGE_TYPES.START_GROUPS_CHECK,
+          queuedName,
+          speedgraderName,
+        }, (response) => {
+          if (chrome.runtime && chrome.runtime.lastError) {
+            logStorageWarning('CSH groups check warning: failed starting groups check.', chrome.runtime.lastError.message);
+            try {
+              window.postMessage({
+                type: CSH_MESSAGE_TYPES.GROUPS_CHECK_RESULT,
+                queuedName,
+                speedgraderName,
+                sameGroup: false,
+                groupsCount: 0,
+                error: chrome.runtime.lastError.message,
+              }, '*');
+            } catch (e) {
+              // ignore
+            }
+            return;
+          }
+
+          if (response && response.ok) return;
+
+          try {
+            window.postMessage({
+              type: CSH_MESSAGE_TYPES.GROUPS_CHECK_RESULT,
+              queuedName,
+              speedgraderName,
+              sameGroup: false,
+              groupsCount: 0,
+              error: (response && response.error) ? response.error : 'Failed to open groups page.',
+            }, '*');
+          } catch (e) {
+            // ignore
+          }
+        });
       }
       return;
     } catch (e) {
       // ignore errors
     }
   });
+
+  if (chrome.runtime && chrome.runtime.onMessage) {
+    chrome.runtime.onMessage.addListener((msg) => {
+      try {
+        if (!msg || msg.type !== CSH_MESSAGE_TYPES.GROUPS_CHECK_RESULT) return;
+
+        window.postMessage({
+          type: CSH_MESSAGE_TYPES.GROUPS_CHECK_RESULT,
+          queuedName: msg.queuedName || '',
+          speedgraderName: msg.speedgraderName || '',
+          sameGroup: !!msg.sameGroup,
+          matchedGroupHeader: msg.matchedGroupHeader || '',
+          groupsCount: Number.isFinite(msg.groupsCount) ? msg.groupsCount : 0,
+          error: msg.error || null,
+          checkedAt: msg.checkedAt || Date.now(),
+        }, '*');
+      } catch (e) {
+        // ignore
+      }
+    });
+  }
 
   // Listen for storage changes and propagate updates to the page script.
   if (chrome.storage && chrome.storage.onChanged) {
