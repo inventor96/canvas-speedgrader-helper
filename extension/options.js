@@ -40,6 +40,9 @@ function loadPlaceholders() {
     const scrollToSubmitCommentCb = document.getElementById('scroll-to-submit-comment-after-comment-library-selection');
     if (scrollToSubmitCommentCb) scrollToSubmitCommentCb.checked = !!data.scrollToSubmitCommentAfterCommentLibrarySelection;
 
+    const useTeamNameCb = document.getElementById('use-team-name-for-group-placeholder-replacement');
+    if (useTeamNameCb) useTeamNameCb.checked = !!data.useTeamNameForGroupPlaceholderReplacement;
+
     const autoFillCb = document.getElementById('auto-fill-full-points');
     if (autoFillCb) autoFillCb.checked = !!data.autoFillFullPoints;
 
