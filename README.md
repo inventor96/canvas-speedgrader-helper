@@ -8,8 +8,8 @@ Small quality-of-life improvements for Canvas SpeedGrader. The extension runs on
 - Preferred student names per student_id, so you can use nicknames or chosen names in placeholders.
 - Student name mismatch detection when coming from the PowerApps Grading Queue, alerting you if the wrong student is loaded in SpeedGrader.
 - Group membership verification from the mismatch warning, so you can quickly confirm when two different names still belong to the same group submission.
-- Rubric helpers for ungraded submissions, comment library follow-up, and point entry shortcuts.
-- Optional auto-scroll to the next criterion in structured rubrics after selecting a rating.
+- Rubric helpers for ungraded submissions, comment library follow-up, group comment mode, and point entry shortcuts.
+- Optional structured-rubric auto-scroll after opening the rubric and after selecting a rating.
 - Optional point memory for unstructured rubrics based on the comment you select or save.
 
 ## Options Page Overview
@@ -46,6 +46,7 @@ These options apply only to structured rubrics with preset point values:
 - **Clear criterion comment box when selecting maximum rubric points**: Automatically clears any existing comment and closes the comment box when you select the maximum point option for a criterion. Useful for enforcing a "no comment needed for perfect scores" workflow. Mutually exclusive with "Open comment box after selecting maximum rubric points".
 - **Open comment box after selecting less-than-maximum rubric points**: Automatically opens the comment input box and focuses it when you select any less-than-maximum point option for a criterion.
 - **Automatically scroll to the next criterion after selecting a rating**: Smoothly scrolls the grading panel to the next criterion row after a structured-rubric rating click. If the selected rating is configured to auto-open the criterion comment box, scrolling is skipped so focus stays on comment entry.
+- **Automatically scroll to the first criterion after opening the rubric**: Repositions the grading panel at the first criterion when the rubric opens.
 
 #### Unstructured Rubric Options
 
@@ -87,4 +88,59 @@ The toolbar popup lets you set or clear a preferred name for the current student
 - `https://apps.powerapps.com/*`: Run only on PowerApps (for the Grading Queue page).
 - `https://runtime-app.powerapps.com/*`: Run only on PowerApps (for the Grading Queue iframe, if it loads from this domain).
 - `https://runtime-app.powerplatform.com/*`: Run only on PowerApps (for the Grading Queue iframe, if it loads from this domain).
+
+## Development
+
+This section is the developer reference for the project. The rest of this README stays user-facing; the goal here is to help a new contributor get oriented quickly and know where to look next.
+
+### Project shape
+
+- `manifest.json`: Extension entry points, permissions, content-script registration, and web-accessible resources.
+- `extension/`: Popup, options page, and service worker.
+- `content/`: Content scripts that can use Chrome APIs and bridge into page context.
+- `page/`: SpeedGrader page-context code with direct Canvas DOM access.
+- `shared/`: Cross-context settings, message constants, and storage helpers.
+- `base.css`: Shared styling for extension UI.
+
+### Runtime contexts
+
+The extension is split across three execution contexts because Canvas DOM access and Chrome extension APIs are not available in the same place.
+
+1. **Extension context** (`extension/`)
+	Owns the popup, options page, and service worker. Use this for UI, storage writes initiated from extension pages, and browser-level extension behavior.
+2. **Content script context** (`content/`)
+	Runs on matching Canvas and PowerApps pages. It can use Chrome APIs, read storage, inject page scripts, and relay messages between the extension and the page.
+3. **Page context** (`page/`)
+	Runs inside SpeedGrader itself. Use this for Canvas DOM interaction, TinyMCE access, rubric behavior, placeholder replacement, and other page-native logic.
+
+When deciding where code belongs, start with the narrowest context that can do the job. DOM-heavy SpeedGrader behavior belongs in `page/speedgrader.js`; extension API work belongs in `content/` or `extension/`.
+
+### Data flow
+
+Most feature changes follow the same path:
+
+1. Add or update a setting in `shared/settings.js` if the behavior is configurable.
+2. Expose that setting in `extension/options.html` and `extension/options.js` if users need to control it.
+3. Read or forward the setting in `content/loader-speedgrader.js`.
+4. Implement the Canvas-facing behavior in `page/speedgrader.js`.
+
+Cross-context communication uses `window.postMessage()` and the constants in `shared/message-types.js`. Keep message names centralized there instead of hardcoding strings in multiple files.
+
+### Local development
+
+There is no build step. The extension is plain JavaScript loaded directly by the browser.
+
+1. Edit the relevant files.
+2. Reload the unpacked extension in `chrome://extensions`.
+3. Reload the target Canvas or PowerApps page.
+
+For a fresh install, load the repository root as an unpacked extension.
+
+### Practical guidelines
+
+- Add new settings defaults in `shared/settings.js` first so every context has a consistent schema.
+- Keep page-context code independent from `chrome.*`; use the content script as the bridge.
+- Keep shared files context-agnostic unless a file is explicitly intended for extension/content use only.
+- Update this README when a new feature changes the overall architecture, settings model, or developer workflow.
+- Prefer extending existing pathways over creating a new script unless the runtime context genuinely changes.
 
