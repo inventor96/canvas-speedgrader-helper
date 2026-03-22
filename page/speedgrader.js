@@ -1288,6 +1288,10 @@
               ? !!OPEN_COMMENT_BOX_AFTER_MAX_POINTS
               : !!OPEN_COMMENT_BOX_AFTER_LESS_THAN_MAX_POINTS;
 
+            const shouldAutoScrollToOpenedCommentBox = RUBRIC_AUTO_SCROLL_TO_NEXT_CRITERION
+              && rubricPointId !== 0
+              && shouldOpenCommentBox;
+
             if (RUBRIC_AUTO_SCROLL_TO_NEXT_CRITERION && !shouldOpenCommentBox) {
               this.scrollToNextCriterionRow(button);
             }
@@ -1302,6 +1306,9 @@
             const focusCommentTextArea = () => {
               const commentTextArea = document.querySelector(`textarea[data-testid="comment-text-area-${criterionId}"]`);
               if (commentTextArea) {
+                if (shouldAutoScrollToOpenedCommentBox) {
+                  this.scrollRowIntoGradingPanelCenter(commentTextArea);
+                }
                 commentTextArea.focus();
               }
             };
