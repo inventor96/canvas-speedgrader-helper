@@ -206,10 +206,12 @@
         if (!chrome.runtime || !chrome.runtime.sendMessage) return;
         const queuedName = typeof msg.queuedName === 'string' ? msg.queuedName : '';
         const speedgraderName = typeof msg.speedgraderName === 'string' ? msg.speedgraderName : '';
+        const noAutoClose = !!msg.noAutoClose;
         chrome.runtime.sendMessage({
           type: CSH_MESSAGE_TYPES.START_GROUPS_CHECK,
           queuedName,
           speedgraderName,
+          noAutoClose,
         }, (response) => {
           if (chrome.runtime && chrome.runtime.lastError) {
             logStorageWarning('CSH groups check warning: failed starting groups check.', chrome.runtime.lastError.message);

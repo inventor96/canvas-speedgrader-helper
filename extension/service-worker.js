@@ -102,6 +102,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         originTabUrl,
         queuedName,
         speedgraderName,
+        noAutoClose: !!message.noAutoClose,
         createdAt: Date.now(),
       });
 
@@ -167,7 +168,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
 
     pendingGroupsChecks.delete(groupsTabId);
-    closeTabIfPresent(groupsTabId);
+    if (!pending.noAutoClose) {
+      closeTabIfPresent(groupsTabId);
+    }
     sendResponse({ ok: true });
     return;
   }

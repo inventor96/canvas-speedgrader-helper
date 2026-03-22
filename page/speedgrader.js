@@ -1441,18 +1441,48 @@
       warningDiv.appendChild(messageDiv);
 
       if (!sameGroup && showGroupsLink) {
-        const linkWrap = document.createElement('div');
-        linkWrap.style.cssText = 'margin: 0 0 8px 0;';
-        const link = document.createElement('a');
-        link.href = '#';
-        link.textContent = 'Open course groups and check membership';
-        link.style.cssText = 'color: #1e5aa8; text-decoration: underline; cursor: pointer;';
-        link.onclick = (event) => {
+        // Auto-check link
+        const autoCheckWrap = document.createElement('div');
+        autoCheckWrap.style.cssText = 'margin: 0 0 8px 0;';
+        const autoCheckLink = document.createElement('a');
+        autoCheckLink.href = '#';
+        autoCheckLink.textContent = 'Open groups and auto-check membership';
+        autoCheckLink.style.cssText = 'color: #1e5aa8; text-decoration: underline; cursor: pointer;';
+        autoCheckLink.onclick = (event) => {
           event.preventDefault();
           this.startGroupsCheck(queuedName, speedgraderName);
         };
-        linkWrap.appendChild(link);
-        warningDiv.appendChild(linkWrap);
+        autoCheckWrap.appendChild(autoCheckLink);
+        warningDiv.appendChild(autoCheckWrap);
+
+        // Manual group links for each student
+        const openGroupWrap = document.createElement('div');
+        openGroupWrap.style.cssText = 'margin: 0 0 8px 0;';
+        const openGroupLabel = document.createElement('span');
+        openGroupLabel.style.cssText = 'color: #666;';
+        openGroupLabel.textContent = 'Or, open group for:';
+        const openGroupList = document.createElement('ul');
+        openGroupList.style.cssText = 'margin: 4px 0 0 0; padding-left: 20px;';
+
+        const makeGroupLi = (name, primaryName, secondaryName) => {
+          const li = document.createElement('li');
+          const a = document.createElement('a');
+          a.href = '#';
+          a.textContent = name;
+          a.style.cssText = 'color: #1e5aa8; text-decoration: underline; cursor: pointer;';
+          a.onclick = (event) => {
+            event.preventDefault();
+            this.startGroupsCheck(primaryName, secondaryName, true);
+          };
+          li.appendChild(a);
+          return li;
+        };
+
+        openGroupList.appendChild(makeGroupLi(queuedName, queuedName, speedgraderName));
+        openGroupList.appendChild(makeGroupLi(speedgraderName, speedgraderName, queuedName));
+        openGroupWrap.appendChild(openGroupLabel);
+        openGroupWrap.appendChild(openGroupList);
+        warningDiv.appendChild(openGroupWrap);
       }
 
       if (statusText) {
@@ -1482,7 +1512,7 @@
       warningDiv.appendChild(closeButton);
     },
 
-    startGroupsCheck(queuedName, speedgraderName) {
+    startGroupsCheck(queuedName, speedgraderName, noAutoClose = false) {
       const warningDiv = document.getElementById('csh-student-mismatch-warning');
       if (!warningDiv) return;
       if (warningDiv.dataset.checkInProgress === 'true') return;
@@ -1501,6 +1531,7 @@
           type: CSH_MESSAGE_TYPES.START_GROUPS_CHECK,
           queuedName,
           speedgraderName,
+          noAutoClose: !!noAutoClose,
         }, '*');
       } catch (e) {
         this.renderBanner({
