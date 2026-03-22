@@ -1284,15 +1284,13 @@
             const criterionId = parts[2];
             const rubricPointId = parseInt(parts[4], 10);
 
-            const shouldOpenCommentBox = rubricPointId === 0
-              ? !!OPEN_COMMENT_BOX_AFTER_MAX_POINTS
-              : !!OPEN_COMMENT_BOX_AFTER_LESS_THAN_MAX_POINTS;
+            // Determine if we should open the comment box based on the rubric point level and settings
+            const shouldOpenCommentBox = rubricPointId === 0 // Is this the max points level?
+              ? !!OPEN_COMMENT_BOX_AFTER_MAX_POINTS // Only open for max points if the setting is enabled
+              : !!OPEN_COMMENT_BOX_AFTER_LESS_THAN_MAX_POINTS; // Open for less-than-max points if the setting is enabled
 
-            const shouldAutoScrollToOpenedCommentBox = RUBRIC_AUTO_SCROLL_TO_NEXT_CRITERION
-              && rubricPointId !== 0
-              && shouldOpenCommentBox;
-
-            if (RUBRIC_AUTO_SCROLL_TO_NEXT_CRITERION && !shouldOpenCommentBox) {
+            // Reuse row-based scrolling for non-max selections, including when a comment box is opened.
+            if (RUBRIC_AUTO_SCROLL_TO_NEXT_CRITERION && (!shouldOpenCommentBox || rubricPointId !== 0)) {
               this.scrollToNextCriterionRow(button);
             }
 
@@ -1306,9 +1304,6 @@
             const focusCommentTextArea = () => {
               const commentTextArea = document.querySelector(`textarea[data-testid="comment-text-area-${criterionId}"]`);
               if (commentTextArea) {
-                if (shouldAutoScrollToOpenedCommentBox) {
-                  this.scrollRowIntoGradingPanelCenter(commentTextArea);
-                }
                 commentTextArea.focus();
               }
             };
