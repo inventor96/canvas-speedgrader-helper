@@ -675,15 +675,21 @@
         // Give the rubric UI time to load, then attach handlers
         setTimeout(async () => {
           this.attachAllRubricHandlers();
-
-          if (!RUBRIC_AUTO_SCROLL_TO_FIRST_CRITERION_AFTER_OPENING) return;
-
-          const rubricTableDisplayed = await this.waitForRubricTableDisplayed();
-          if (!rubricTableDisplayed) return;
-
-          StructuredRubricUX.scrollToFirstCriterionRow();
+          await this.scrollToFirstCriterionIfEnabled();
         }, 1000);
       });
+    },
+
+    /**
+     * Scroll to the first rubric criterion when enabled and rubric UI is available.
+     */
+    async scrollToFirstCriterionIfEnabled() {
+      if (!RUBRIC_AUTO_SCROLL_TO_FIRST_CRITERION_AFTER_OPENING) return;
+
+      const rubricTableDisplayed = await this.waitForRubricTableDisplayed();
+      if (!rubricTableDisplayed) return;
+
+      StructuredRubricUX.scrollToFirstCriterionRow();
     },
 
     /**
@@ -773,8 +779,9 @@
       const rubricTable = document.querySelector('div.rubric_summary,[data-testid="rubric-assessment-traditional-view"]');
       if (rubricTable) {
         console.log('Rubric table already present');
-        setTimeout(() => {
+        setTimeout(async () => {
           this.attachAllRubricHandlers();
+          await this.scrollToFirstCriterionIfEnabled();
           this.__rubricAutoOpenAttempted = true;
         }, 1000);
         return;
@@ -789,6 +796,7 @@
           // Rubric is already open, so skip the retry
           console.log('Rubric button not found, but rubric is already open');
           this.attachAllRubricHandlers();
+          this.scrollToFirstCriterionIfEnabled();
           this.__rubricAutoOpenAttempted = true;
           return;
         }
@@ -804,7 +812,7 @@
 
       // Button found, wait 2 seconds before checking for the rubric table
       if (!OPEN_RUBRIC_FOR_UNGRADED) return;
-      setTimeout(() => {
+      setTimeout(async () => {
         const currentRubricTable = document.querySelector('div.rubric_summary,[data-testid="rubric-assessment-traditional-view"]');
         if (!currentRubricTable) {
           // Automatically open rubric if the rubric button is present and there's no rubric table (i.e. no previous evaluation exists).
@@ -812,6 +820,7 @@
           rubricButton.click();
         } else {
           console.log('Rubric table already present, not opening rubric');
+          await this.scrollToFirstCriterionIfEnabled();
         }
       }, 2000);
     }
