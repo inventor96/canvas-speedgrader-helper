@@ -88,7 +88,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return;
     }
 
-    chrome.tabs.create({ url: groupsUrl, active: true }, (tab) => {
+    chrome.tabs.create({ url: groupsUrl, active: false }, (tab) => {
       if (chrome.runtime.lastError || !tab || !tab.id) {
         sendResponse({
           ok: false,
