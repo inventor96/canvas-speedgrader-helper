@@ -1337,6 +1337,8 @@
   // ============================================================================
   const NotificationUI = {
     __groupsResultListenerAttached: false,
+    GROUP_INDICATOR_WAIT_MS: 3500,
+    GROUP_INDICATOR_POLL_MS: 200,
 
     /**
      * Escape HTML special characters for safe display in DOM
@@ -1363,6 +1365,28 @@
       );
 
       return !!groupModeRadio || wholeGroupNotice;
+    },
+
+    waitForGroupIndicators(timeoutMs = this.GROUP_INDICATOR_WAIT_MS, pollMs = this.GROUP_INDICATOR_POLL_MS) {
+      return new Promise((resolve) => {
+        const endTime = Date.now() + timeoutMs;
+
+        const check = () => {
+          if (this.isGroupAssignmentDetected()) {
+            resolve(true);
+            return;
+          }
+
+          if (Date.now() >= endTime) {
+            resolve(false);
+            return;
+          }
+
+          setTimeout(check, pollMs);
+        };
+
+        check();
+      });
     },
 
     getOrCreateWarningContainer() {
@@ -1602,15 +1626,17 @@
     /**
      * Display a warning notification when student names don't match
      */
-    showStudentNameMismatchWarning(queuedName, speedgraderName) {
+    async showStudentNameMismatchWarning(queuedName, speedgraderName) {
       try {
+        const showGroupsLink = await this.waitForGroupIndicators();
+
         this.renderBanner({
           queuedName,
           speedgraderName,
           sameGroup: false,
           matchedGroupHeader: '',
           statusText: '',
-          showGroupsLink: this.isGroupAssignmentDetected(),
+          showGroupsLink,
         });
 
         console.warn('CSH: Student name mismatch detected!', {

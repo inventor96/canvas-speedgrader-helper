@@ -13,6 +13,8 @@
   const QUIET_WINDOW_MS = 700;
   const MAX_WAIT_FOR_SEARCH_INPUT_MS = 10000;
   const SEARCH_INPUT_POLL_MS = 150;
+  const GROUPS_READY_POLL_MS = 250;
+  const GROUPS_READY_MAX_WAIT_MS = 6000;
 
   function normalizeName(name) {
     return String(name || '')
@@ -164,6 +166,53 @@
     return groups;
   }
 
+  function hasTargetName(groups, targetName) {
+    const normalizedTarget = normalizeName(targetName);
+    if (!normalizedTarget) return false;
+
+    return groups.some((group) => group.memberNames.some((member) => normalizeName(member) === normalizedTarget));
+  }
+
+  async function waitForGroupsToLoad(queuedName, speedgraderName) {
+    const startedAt = Date.now();
+    let lastSignature = '';
+    let stablePollCount = 0;
+    let bestGroups = [];
+
+    while (Date.now() - startedAt < GROUPS_READY_MAX_WAIT_MS) {
+      const groups = parseGroups();
+      const totalMembers = groups.reduce((acc, group) => acc + group.memberNames.length, 0);
+      const signature = JSON.stringify(groups.map((group) => [group.header, group.memberNames]));
+      const queuedFound = hasTargetName(groups, queuedName);
+      const speedgraderFound = hasTargetName(groups, speedgraderName);
+
+      if (signature === lastSignature) {
+        stablePollCount += 1;
+      } else {
+        stablePollCount = 0;
+      }
+
+      lastSignature = signature;
+
+      if (groups.length > 0 || totalMembers > 0) {
+        bestGroups = groups;
+      }
+
+      if (queuedFound || speedgraderFound) {
+        return groups;
+      }
+
+      // Accept the result once it appears stable across consecutive polls.
+      if ((groups.length > 0 || totalMembers > 0) && stablePollCount >= 2) {
+        return groups;
+      }
+
+      await new Promise((resolve) => window.setTimeout(resolve, GROUPS_READY_POLL_MS));
+    }
+
+    return bestGroups;
+  }
+
   function evaluateSameGroup(groups, queuedName, speedgraderName) {
     const normalizedQueued = normalizeName(queuedName);
     const normalizedSpeedgrader = normalizeName(speedgraderName);
@@ -238,7 +287,7 @@
     fireSearchEvents(searchInput, queuedName);
     await waitForDebouncedResults();
 
-    const groups = parseGroups();
+    const groups = await waitForGroupsToLoad(queuedName, speedgraderName);
     const evaluation = evaluateSameGroup(groups, queuedName, speedgraderName);
 
     await notifyComplete({
