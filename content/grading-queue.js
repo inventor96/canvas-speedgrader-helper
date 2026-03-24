@@ -11,12 +11,12 @@
    */
 
   /**
-   * Select the "Already Graded" option in the grading status dropdown for the given student name
+   * Find the queue row container for a given student name.
    */
-  function selectAlreadyGradedByStudentName(studentName) {
+  function getQueueRowByStudentName(studentName) {
     if (!studentName) {
       console.warn('CSH: No student name provided');
-      return;
+      return null;
     }
 
     // Find all student name elements
@@ -29,24 +29,38 @@
 
     if (!matchingElement) {
       console.warn('CSH: Could not find student name element for:', studentName);
-      return;
+      return null;
     }
 
     // Go up to find the parent row, then find the select
     const row = matchingElement.closest('[data-control-name="ColumnLabels"]')?.parentElement;
     if (!row) {
       console.warn('CSH: Could not find row for student name element');
-      return;
+      return null;
     }
 
-    // Find the grading status select within this row
-    const gradingStatusSelect = row.querySelector('[data-control-name="GradingStatusCmbx"] select');
-    if (!gradingStatusSelect) {
+    return row;
+  }
+
+  /**
+   * Find grading status select for a queue row.
+   */
+  function getGradingStatusSelect(row) {
+    if (!row) return null;
+    const select = row.querySelector('[data-control-name="GradingStatusCmbx"] select');
+    if (!select) {
       console.warn('CSH: Could not find grading status select in row');
-      return;
+      return null;
     }
+    return select;
+  }
 
-    // Find the "Already Graded" option by its text content
+  /**
+   * Find the option value for "Already Graded" in a select.
+   */
+  function getAlreadyGradedOptionValue(gradingStatusSelect) {
+    if (!gradingStatusSelect) return null;
+
     const options = Array.from(gradingStatusSelect.options);
     const alreadyGradedOption = options.find(option =>
       option.textContent.trim() === 'Already Graded'
@@ -54,16 +68,94 @@
 
     if (!alreadyGradedOption) {
       console.warn('CSH: Could not find "Already Graded" option in grading status select');
-      return;
+      return null;
     }
 
-    // Select the option using the value attribute
-    gradingStatusSelect.value = alreadyGradedOption.value;
+    return alreadyGradedOption.value;
+  }
 
-    // Trigger change event to ensure any listeners are notified
+  /**
+   * Wait until a select reflects the expected value.
+   */
+  function waitForSelectValue(select, expectedValue, timeoutMs = 5000) {
+    return new Promise((resolve) => {
+      if (!select || !select.isConnected) {
+        resolve(false);
+        return;
+      }
+
+      if (String(select.value) === String(expectedValue)) {
+        resolve(true);
+        return;
+      }
+
+      const startedAt = Date.now();
+      const poll = () => {
+        if (!select.isConnected) {
+          resolve(false);
+          return;
+        }
+
+        if (String(select.value) === String(expectedValue)) {
+          resolve(true);
+          return;
+        }
+
+        if (Date.now() - startedAt >= timeoutMs) {
+          resolve(false);
+          return;
+        }
+
+        setTimeout(poll, 100);
+      };
+
+      poll();
+    });
+  }
+
+  /**
+   * Select the "Already Graded" option in the grading status dropdown for the given student name.
+   */
+  function selectAlreadyGradedByStudentName(studentName) {
+    const row = getQueueRowByStudentName(studentName);
+    if (!row) {
+      return { selected: false, select: null, expectedValue: null };
+    }
+
+    const gradingStatusSelect = getGradingStatusSelect(row);
+    if (!gradingStatusSelect) {
+      return { selected: false, select: null, expectedValue: null };
+    }
+
+    const alreadyGradedValue = getAlreadyGradedOptionValue(gradingStatusSelect);
+    if (!alreadyGradedValue) {
+      return { selected: false, select: gradingStatusSelect, expectedValue: null };
+    }
+
+    gradingStatusSelect.value = alreadyGradedValue;
+
     gradingStatusSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
     console.log('CSH: Selected "Already Graded" for student:', studentName);
+    return { selected: true, select: gradingStatusSelect, expectedValue: alreadyGradedValue };
+  }
+
+  /**
+   * Click "Complete" for the given student row.
+   */
+  function clickCompleteByStudentName(studentName) {
+    const row = getQueueRowByStudentName(studentName);
+    if (!row) return false;
+
+    const completeButton = row.querySelector('[data-control-name="CompleteButton"] button');
+    if (!completeButton || completeButton.disabled) {
+      console.warn('CSH: Could not find enabled Complete button for student:', studentName);
+      return false;
+    }
+
+    completeButton.click();
+    console.log('CSH: Clicked Complete for student:', studentName);
+    return true;
   }
 
   /**
@@ -73,20 +165,43 @@
     try {
       chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         try {
-          // Check if this is a group check result indicating same group was found
-          if (!message || message.type !== CSH_MESSAGE_TYPES.GROUPS_CHECK_RESULT || !message.sameGroup) {
+          // Listen for the enriched grading status message from SpeedGrader.
+          if (!message || message.type !== CSH_MESSAGE_TYPES.GROUPS_CHECK_GRADING_STATUS || !message.sameGroup) {
             return;
           }
 
-          console.log('CSH: Received group match notification for student:', message.queuedName);
+          console.log('CSH: Received group match grading status for student:', message.queuedName, '| isGraded:', message.isGraded);
 
-          // Check if setting is enabled before acting
-          chrome.storage.sync.get(['autoSelectAlreadyGradedWhenGroupMatched'], (data) => {
-            if (!data.autoSelectAlreadyGradedWhenGroupMatched) {
+          chrome.storage.sync.get({
+            autoSelectAlreadyGradedWhenGroupMatched: false,
+            autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded: false,
+          }, async (data) => {
+            const shouldAutoSelectAlreadyGraded = !!data.autoSelectAlreadyGradedWhenGroupMatched && !!message.isGraded;
+            const shouldAutoCompleteAfterGroupMatch = !!data.autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded;
+
+            if (!shouldAutoSelectAlreadyGraded && !shouldAutoCompleteAfterGroupMatch) {
               return;
             }
 
-            selectAlreadyGradedByStudentName(message.queuedName);
+            if (shouldAutoSelectAlreadyGraded) {
+              const selectionResult = selectAlreadyGradedByStudentName(message.queuedName);
+              if (!selectionResult.selected) {
+                return;
+              }
+
+              // If completion automation is also active, wait until the select value settles first.
+              if (shouldAutoCompleteAfterGroupMatch) {
+                const settled = await waitForSelectValue(selectionResult.select, selectionResult.expectedValue, 5000);
+                if (!settled) {
+                  console.warn('CSH: Timed out waiting for grading status select to update before completion');
+                  return;
+                }
+              }
+            }
+
+            if (shouldAutoCompleteAfterGroupMatch) {
+              clickCompleteByStudentName(message.queuedName);
+            }
           });
         } catch (e) {
           console.error('Error handling group check result message:', e);

@@ -13,6 +13,8 @@ const MESSAGE_TYPES = (typeof CSH_MESSAGE_TYPES !== 'undefined')
       GROUPS_GET_PENDING_CONTEXT: 'CSH_GROUPS_GET_PENDING_CONTEXT',
       GROUPS_CHECK_COMPLETE: 'CSH_GROUPS_CHECK_COMPLETE',
       GROUPS_CHECK_RESULT: 'CSH_GROUPS_CHECK_RESULT',
+      GROUPS_CHECK_GRADING_STATUS: 'CSH_GROUPS_CHECK_GRADING_STATUS',
+      CLOSE_SPEEDGRADER_TAB: 'CSH_CLOSE_SPEEDGRADER_TAB',
     };
 
 const PENDING_CHECK_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -171,6 +173,31 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (!pending.noAutoClose) {
       closeTabIfPresent(groupsTabId);
     }
+    sendResponse({ ok: true });
+    return;
+  }
+
+  if (message.type === MESSAGE_TYPES.GROUPS_CHECK_GRADING_STATUS) {
+    const senderTabId = sender?.tab?.id;
+    const payload = {
+      type: MESSAGE_TYPES.GROUPS_CHECK_GRADING_STATUS,
+      queuedName: message.queuedName || '',
+      sameGroup: !!message.sameGroup,
+      isGraded: !!message.isGraded,
+    };
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach(tab => {
+        if (tab.id !== senderTabId) {
+          safeSendToTab(tab.id, payload);
+        }
+      });
+    });
+    sendResponse({ ok: true });
+    return;
+  }
+
+  if (message.type === MESSAGE_TYPES.CLOSE_SPEEDGRADER_TAB) {
+    closeTabIfPresent(sender?.tab?.id);
     sendResponse({ ok: true });
     return;
   }

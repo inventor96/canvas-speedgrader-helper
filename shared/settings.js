@@ -20,6 +20,7 @@ const SYNCED_SETTINGS = {
   notifyOnStudentNameMismatch: false,
   autoGroupCheckOnNameMismatch: false,
   autoSelectAlreadyGradedWhenGroupMatched: false,
+  autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded: false,
   autoOpenNextQueueItemAfterComplete: false,
   savedPoints: {},
   savedPointsMeta: { lastUsed: {} },

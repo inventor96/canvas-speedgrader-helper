@@ -73,6 +73,9 @@ function loadPlaceholders() {
     const autoSelectAlreadyGradedCb = document.getElementById('auto-select-already-graded-when-group-matched');
     if (autoSelectAlreadyGradedCb) autoSelectAlreadyGradedCb.checked = !!data.autoSelectAlreadyGradedWhenGroupMatched;
 
+    const autoCloseSpeedgraderTabWhenGroupMatchedAndUngradedCb = document.getElementById('auto-close-speedgrader-tab-when-group-matched-and-ungraded');
+    if (autoCloseSpeedgraderTabWhenGroupMatchedAndUngradedCb) autoCloseSpeedgraderTabWhenGroupMatchedAndUngradedCb.checked = !!data.autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded;
+
     const autoOpenNextQueueItemAfterCompleteCb = document.getElementById('auto-open-next-queue-item-after-complete');
     if (autoOpenNextQueueItemAfterCompleteCb) autoOpenNextQueueItemAfterCompleteCb.checked = !!data.autoOpenNextQueueItemAfterComplete;
 
@@ -328,6 +331,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const notifyOnStudentNameMismatch = !!document.getElementById('notify-student-name-mismatch') && document.getElementById('notify-student-name-mismatch').checked;
     const autoGroupCheckOnNameMismatch = !!document.getElementById('auto-group-check-on-name-mismatch') && document.getElementById('auto-group-check-on-name-mismatch').checked;
     const autoSelectAlreadyGradedWhenGroupMatched = !!document.getElementById('auto-select-already-graded-when-group-matched') && document.getElementById('auto-select-already-graded-when-group-matched').checked;
+    const autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded = !!document.getElementById('auto-close-speedgrader-tab-when-group-matched-and-ungraded') && document.getElementById('auto-close-speedgrader-tab-when-group-matched-and-ungraded').checked;
     const autoOpenNextQueueItemAfterComplete = !!document.getElementById('auto-open-next-queue-item-after-complete') && document.getElementById('auto-open-next-queue-item-after-complete').checked;
     const studentNameFormat = document.querySelector('input[name="student-name-format"]:checked')?.value || SYNCED_SETTINGS.studentNameFormat;
 
@@ -350,6 +354,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         notifyOnStudentNameMismatch: notifyOnStudentNameMismatch,
         autoGroupCheckOnNameMismatch: autoGroupCheckOnNameMismatch,
         autoSelectAlreadyGradedWhenGroupMatched: autoSelectAlreadyGradedWhenGroupMatched,
+        autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded: autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded,
         autoOpenNextQueueItemAfterComplete: autoOpenNextQueueItemAfterComplete,
         studentNameFormat: studentNameFormat
       }, () => {

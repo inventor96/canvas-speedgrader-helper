@@ -257,11 +257,36 @@
       try {
         if (!msg || msg.type !== CSH_MESSAGE_TYPES.GROUPS_CHECK_RESULT) return;
 
+        const sameGroup = !!msg.sameGroup;
+        const isGraded = !!document.querySelector('[data-testid="graded-icon"]');
+
+        if (sameGroup) {
+          // Check if we should auto-close this SpeedGrader tab when ungraded
+          chrome.storage.sync.get(['autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded'], (data) => {
+            if (data.autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded && !isGraded) {
+              chrome.runtime.sendMessage({ type: CSH_MESSAGE_TYPES.CLOSE_SPEEDGRADER_TAB }, () => {
+                void chrome.runtime?.lastError;
+              });
+            }
+          });
+
+          // Broadcast grading status to other tabs (e.g. grading queue)
+          chrome.runtime.sendMessage({
+            type: CSH_MESSAGE_TYPES.GROUPS_CHECK_GRADING_STATUS,
+            queuedName: msg.queuedName || '',
+            sameGroup: true,
+            isGraded,
+          }, () => {
+            void chrome.runtime?.lastError;
+          });
+        }
+
         window.postMessage({
           type: CSH_MESSAGE_TYPES.GROUPS_CHECK_RESULT,
           queuedName: msg.queuedName || '',
           speedgraderName: msg.speedgraderName || '',
-          sameGroup: !!msg.sameGroup,
+          sameGroup,
+          isGraded,
           matchedGroupHeader: msg.matchedGroupHeader || '',
           groupsCount: Number.isFinite(msg.groupsCount) ? msg.groupsCount : 0,
           error: msg.error || null,
