@@ -261,9 +261,9 @@
         const isGraded = !!document.querySelector('[data-testid="graded-icon"]');
 
         if (sameGroup) {
-          // Check if we should auto-close this SpeedGrader tab when ungraded
+          // Check if we should auto-close this SpeedGrader tab when graded
           chrome.storage.sync.get(['autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded'], (data) => {
-            if (data.autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded && !isGraded) {
+            if (data.autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded && isGraded) {
               chrome.runtime.sendMessage({ type: CSH_MESSAGE_TYPES.CLOSE_SPEEDGRADER_TAB }, () => {
                 void chrome.runtime?.lastError;
               });

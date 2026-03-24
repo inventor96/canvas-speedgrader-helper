@@ -177,7 +177,7 @@
             autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded: false,
           }, async (data) => {
             const shouldAutoSelectAlreadyGraded = !!data.autoSelectAlreadyGradedWhenGroupMatched && !!message.isGraded;
-            const shouldAutoCompleteAfterGroupMatch = !!data.autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded;
+            const shouldAutoCompleteAfterGroupMatch = !!data.autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded && !!message.isGraded;
 
             if (!shouldAutoSelectAlreadyGraded && !shouldAutoCompleteAfterGroupMatch) {
               return;

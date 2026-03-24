@@ -31,14 +31,14 @@
           <p style="margin-top: 5px; margin-left: 2em; margin-bottom: 0;"><b>Note:</b> If this is not enabled, the automatic group check can still be started from the mismatched name notification.</p>
           <label>
             <input id="auto-select-already-graded-when-group-matched" type="checkbox" />
-            Automatically select "Already Graded" when a mismatched name check finds the names are in the same group
+            Automatically select "Already Graded" when a mismatched name check finds the names are in the same group (only when the assignment is graded)
           </label>
           <br>
           <label>
             <input id="auto-close-speedgrader-tab-when-group-matched-and-ungraded" type="checkbox" />
-            Automatically mark the assignment as complete when a mismatched name check finds the names are in the same group (and auto-close SpeedGrader when the assignment is ungraded)
+            Automatically mark the assignment as complete when a mismatched name check finds the names are in the same group (and auto-close SpeedGrader when the assignment is graded)
           </label>
-          <p style="margin-top: 5px; margin-left: 2em; margin-bottom: 0;"><b>Note:</b> It is highly recommended to also enable "Automatically select 'Already Graded' when a mismatched name check finds the names are in the same group" when this option is enabled.</p>
+          <p style="margin-top: 5px; margin-left: 2em; margin-bottom: 0;"><b>Note:</b> This automation only runs when the SpeedGrader submission is already graded. It is highly recommended to also enable "Automatically select 'Already Graded' when a mismatched name check finds the names are in the same group" when this option is enabled.</p>
           <label>
             <input id="auto-open-next-queue-item-after-complete" type="checkbox" />
             Automatically open the next item in the queue after an assignment has been marked as complete

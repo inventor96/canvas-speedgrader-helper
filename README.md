@@ -19,22 +19,12 @@ Small quality-of-life improvements for Canvas SpeedGrader. The extension runs on
 This applies only to graders within BYU Pathway. At the time I started this project, that's where I was grading, hence this school-specific section.
 
 - **Display a notification when the student name is mismatched between the Grading Queue and SpeedGrader**: When you click a grading button in the PowerApps Grading Queue, the extension remembers the student name. If SpeedGrader then loads a different student (indicating a potential navigation error), a warning notification appears at the top of the page to alert you before you begin grading.
+- **Automatically proceed with automatic group check when applicable for a name mismatch**: When a mismatch warning appears and the current submission is a group assignment, the extension automatically opens the course Groups page in a temporary tab, searches using the Grading Queue name, and checks whether both names appear in the same group. If this option is off, you can still start the same check manually from the mismatch notification.
+- **Automatically select "Already Graded" when a mismatched name check finds the names are in the same group**: After a group check confirms both names belong to the same group, the extension sets the Grading Queue status dropdown to "Already Graded" for that row only when the current SpeedGrader submission is already graded.
+- **Automatically mark the assignment as complete when a mismatched name check finds the names are in the same group (and auto-close SpeedGrader when the assignment is graded)**: After a successful group match, the extension marks the queue item complete and closes the SpeedGrader tab only when the current submission is already graded. If the submission is ungraded, neither action runs.
 - **Automatically open the next item in the queue after an assignment has been marked as complete**: When you mark an item complete in the PowerApps Grading Queue, the extension waits until that completion control is removed from the page, then clicks the first available `Grade` button to open the next submission.
 
-#### Group Check from the Mismatch Notification
-
-When a mismatch notification appears, the extension can also help you verify whether both students are in the same Canvas group:
-
-- A link appears under the two names only when the current SpeedGrader submission appears to be a group assignment.
-- Clicking the link opens the course Groups page (`/courses/<course_id>/groups`) in a new tab.
-- The extension automatically searches groups using the Grading Queue name.
-- It scans group results and checks whether both names (Grading Queue and SpeedGrader) appear in the same group.
-- When they are in the same group, the original mismatch warning in SpeedGrader changes to a blue informational state indicating the mismatch is expected for a shared group.
-- The temporary Groups tab closes automatically after the check completes.
-
-#### Group Check Automation
-
-- **Automatically select "Already Graded" when a mismatched name check finds the names are in the same group**: When a group membership check confirms both names belong to the same group, the extension automatically sets the grading status dropdown on the Grading Queue page to "Already Graded". This helps quickly move past shared group submissions when the names differ but the work is shared.
+When a group check confirms both names are in the same group, the mismatch warning in SpeedGrader changes to an informational state so it is clear the mismatch is expected for that submission.
 
 ### Rubric
 
