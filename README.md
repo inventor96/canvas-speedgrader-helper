@@ -9,8 +9,8 @@ Small quality-of-life improvements for Canvas SpeedGrader. The extension runs on
 - Student name mismatch detection when coming from the PowerApps Grading Queue, alerting you if the wrong student is loaded in SpeedGrader.
 - Group membership verification from the mismatch warning, so you can quickly confirm when two different names still belong to the same group submission.
 - Rubric helpers for ungraded submissions, comment library follow-up, group comment mode, and point entry shortcuts.
-- Optional structured-rubric auto-scroll after opening the rubric and after selecting a rating.
-- Optional point memory for unstructured rubrics based on the comment you select or save.
+- Structured-rubric auto-scroll after opening the rubric and after selecting a rating.
+- Point memory for unstructured rubrics based on the comment you select or save.
 
 ## Options Page Overview
 
