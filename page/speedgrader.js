@@ -18,6 +18,7 @@
   let RUBRIC_AUTO_SCROLL_TO_FIRST_CRITERION_AFTER_OPENING;
   let CLEAR_COMMENT_BOX_ON_MAX_POINTS;
   let NOTIFY_ON_STUDENT_NAME_MISMATCH;
+  let AUTO_GROUP_CHECK_ON_NAME_MISMATCH;
   let AUTO_SELECT_ALREADY_GRADED_WHEN_GROUP_MATCHED;
   let SCROLL_TO_SUBMIT_COMMENT_AFTER_COMMENT_LIBRARY_SELECTION;
   let USE_TEAM_NAME_FOR_GROUP_PLACEHOLDER_REPLACEMENT;
@@ -131,6 +132,9 @@
       }
       if (typeof settings.notifyOnStudentNameMismatch !== 'undefined') {
         NOTIFY_ON_STUDENT_NAME_MISMATCH = !!settings.notifyOnStudentNameMismatch;
+      }
+      if (typeof settings.autoGroupCheckOnNameMismatch !== 'undefined') {
+        AUTO_GROUP_CHECK_ON_NAME_MISMATCH = !!settings.autoGroupCheckOnNameMismatch;
       }
       if (typeof settings.autoSelectAlreadyGradedWhenGroupMatched !== 'undefined') {
         AUTO_SELECT_ALREADY_GRADED_WHEN_GROUP_MATCHED = !!settings.autoSelectAlreadyGradedWhenGroupMatched;
@@ -1633,6 +1637,10 @@
           statusText: '',
           showGroupsLink,
         });
+
+        if (showGroupsLink && AUTO_GROUP_CHECK_ON_NAME_MISMATCH) {
+          this.startGroupsCheck(queuedName, speedgraderName);
+        }
 
         console.warn('CSH: Student name mismatch detected!', {
           queued: queuedName,

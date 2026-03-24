@@ -67,6 +67,9 @@ function loadPlaceholders() {
     const notifyMismatchCb = document.getElementById('notify-student-name-mismatch');
     if (notifyMismatchCb) notifyMismatchCb.checked = data.notifyOnStudentNameMismatch !== false;
 
+    const autoGroupCheckCb = document.getElementById('auto-group-check-on-name-mismatch');
+    if (autoGroupCheckCb) autoGroupCheckCb.checked = !!data.autoGroupCheckOnNameMismatch;
+
     const autoSelectAlreadyGradedCb = document.getElementById('auto-select-already-graded-when-group-matched');
     if (autoSelectAlreadyGradedCb) autoSelectAlreadyGradedCb.checked = !!data.autoSelectAlreadyGradedWhenGroupMatched;
 
@@ -320,6 +323,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const rubricAutoScrollToFirstCriterionAfterOpening = !!document.getElementById('rubric-auto-scroll-to-first-criterion-after-opening') && document.getElementById('rubric-auto-scroll-to-first-criterion-after-opening').checked;
     const clearCommentBoxOnMaxPoints = !!document.getElementById('clear-comment-box-on-max-points') && document.getElementById('clear-comment-box-on-max-points').checked;
     const notifyOnStudentNameMismatch = !!document.getElementById('notify-student-name-mismatch') && document.getElementById('notify-student-name-mismatch').checked;
+    const autoGroupCheckOnNameMismatch = !!document.getElementById('auto-group-check-on-name-mismatch') && document.getElementById('auto-group-check-on-name-mismatch').checked;
     const autoSelectAlreadyGradedWhenGroupMatched = !!document.getElementById('auto-select-already-graded-when-group-matched') && document.getElementById('auto-select-already-graded-when-group-matched').checked;
     const studentNameFormat = document.querySelector('input[name="student-name-format"]:checked')?.value || SYNCED_SETTINGS.studentNameFormat;
 
@@ -340,6 +344,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         rubricAutoScrollToFirstCriterionAfterOpening: rubricAutoScrollToFirstCriterionAfterOpening,
         clearCommentBoxOnMaxPoints: clearCommentBoxOnMaxPoints,
         notifyOnStudentNameMismatch: notifyOnStudentNameMismatch,
+        autoGroupCheckOnNameMismatch: autoGroupCheckOnNameMismatch,
         autoSelectAlreadyGradedWhenGroupMatched: autoSelectAlreadyGradedWhenGroupMatched,
         studentNameFormat: studentNameFormat
       }, () => {
