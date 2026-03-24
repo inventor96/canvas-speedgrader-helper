@@ -5,12 +5,23 @@ Small quality-of-life improvements for Canvas SpeedGrader. The extension runs on
 ## Features
 
 - Student name placeholders in comments, with automatic replacement in the rubric comment editor and free-form comment textareas.
-- Preferred student names per student_id, so you can use nicknames or chosen names in placeholders.
+- Preferred student names per student_id, so you can use preferred or chosen names in placeholders.
 - Student name mismatch detection when coming from the PowerApps Grading Queue, alerting you if the wrong student is loaded in SpeedGrader.
 - Group membership verification from the mismatch warning, so you can quickly confirm when two different names still belong to the same group submission.
 - Rubric helpers for ungraded submissions, comment library follow-up, group comment mode, and point entry shortcuts.
 - Structured-rubric auto-scroll after opening the rubric and after selecting a rating.
 - Point memory for unstructured rubrics based on the comment you select or save.
+
+## Installation
+
+I'm too lazy to publish this in the Chrome Web Store, so you have to load it as an unpacked extension:
+1. [Download the zip](https://github.com/inventor96/canvas-speedgrader-helper/archive/refs/heads/main.zip) of the repository and extract it somewhere you'll remember (e.g. your Documents folder). Or, if you're comfortable with Git, clone the repository instead.
+2. Open `chrome://extensions` in your Chrome browser.
+3. Enable "Developer mode" using the toggle in the top right corner.
+4. Click "Load unpacked" and select the folder where you saved the repository.
+
+### Updates
+To update the extension with the latest features and fixes, download the zip again, and replace everything in your existing extension folder with the extraction of the new zip file. If you cloned the repository, you can simply `git pull` the latest changes. Then reload the extension in `chrome://extensions`.
 
 ## Options Page Overview
 
