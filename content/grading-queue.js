@@ -98,11 +98,84 @@
   }
 
   /**
+   * Wait until an element is detached from the DOM.
+   */
+  function waitForElementRemoval(element, timeoutMs = 15000) {
+    return new Promise((resolve) => {
+      if (!element || !element.isConnected) {
+        resolve(true);
+        return;
+      }
+
+      const timeoutId = setTimeout(() => {
+        observer.disconnect();
+        resolve(false);
+      }, timeoutMs);
+
+      const observer = new MutationObserver(() => {
+        if (!element.isConnected) {
+          clearTimeout(timeoutId);
+          observer.disconnect();
+          resolve(true);
+        }
+      });
+
+      observer.observe(document.documentElement, {
+        childList: true,
+        subtree: true,
+      });
+    });
+  }
+
+  /**
+   * Click the first available grade button in the queue.
+   */
+  function clickFirstGradeButton() {
+    const gradeButtons = Array.from(document.querySelectorAll('[data-control-name="GraderButton"] button'));
+    const firstAvailable = gradeButtons.find((button) => !button.disabled && button.isConnected);
+    if (!firstAvailable) {
+      console.log('CSH: No available grade button found after completion');
+      return;
+    }
+
+    firstAvailable.click();
+    console.log('CSH: Opened next queue item after completion');
+  }
+
+  /**
+   * Handle completion clicks by optionally opening the next queue item.
+   */
+  function maybeOpenNextQueueItemAfterComplete(completeButton) {
+    if (!completeButton) return;
+
+    chrome.storage.sync.get({ autoOpenNextQueueItemAfterComplete: false }, async (data) => {
+      if (!data.autoOpenNextQueueItemAfterComplete) {
+        return;
+      }
+
+      const wasRemoved = await waitForElementRemoval(completeButton);
+      if (!wasRemoved) {
+        console.warn('CSH: Timed out waiting for completion control removal');
+        return;
+      }
+
+      clickFirstGradeButton();
+    });
+  }
+
+  /**
    * Initialize the page by setting up click listeners on grading buttons
    */
   function initializeGradingQueueListener() {
     // Use event delegation to handle dynamically added buttons
     document.addEventListener('click', (event) => {
+      // First check if a complete button was clicked, and handle that separately
+      const completeButton = event.target.closest('[data-control-name="CompleteButton"] button');
+      if (completeButton) {
+        maybeOpenNextQueueItemAfterComplete(completeButton);
+      }
+
+      // Check if a grading button was clicked
       const button = event.target.closest('[data-control-name="GraderButton"] button');
       if (!button) return;
 

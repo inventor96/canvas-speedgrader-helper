@@ -19,6 +19,7 @@ Small quality-of-life improvements for Canvas SpeedGrader. The extension runs on
 This applies only to graders within BYU Pathway. At the time I started this project, that's where I was grading, hence this school-specific section.
 
 - **Display a notification when the student name is mismatched between the Grading Queue and SpeedGrader**: When you click a grading button in the PowerApps Grading Queue, the extension remembers the student name. If SpeedGrader then loads a different student (indicating a potential navigation error), a warning notification appears at the top of the page to alert you before you begin grading.
+- **Automatically open the next item in the queue after an assignment has been marked as complete**: When you mark an item complete in the PowerApps Grading Queue, the extension waits until that completion control is removed from the page, then clicks the first available `Grade` button to open the next submission.
 
 #### Group Check from the Mismatch Notification
 

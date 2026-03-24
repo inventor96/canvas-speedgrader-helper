@@ -73,6 +73,9 @@ function loadPlaceholders() {
     const autoSelectAlreadyGradedCb = document.getElementById('auto-select-already-graded-when-group-matched');
     if (autoSelectAlreadyGradedCb) autoSelectAlreadyGradedCb.checked = !!data.autoSelectAlreadyGradedWhenGroupMatched;
 
+    const autoOpenNextQueueItemAfterCompleteCb = document.getElementById('auto-open-next-queue-item-after-complete');
+    if (autoOpenNextQueueItemAfterCompleteCb) autoOpenNextQueueItemAfterCompleteCb.checked = !!data.autoOpenNextQueueItemAfterComplete;
+
     const format = data && data.studentNameFormat ? data.studentNameFormat : SYNCED_SETTINGS.studentNameFormat;
     const formatRadio = document.querySelector(`input[name="student-name-format"][value="${format}"]`);
     if (formatRadio) formatRadio.checked = true;
@@ -325,6 +328,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const notifyOnStudentNameMismatch = !!document.getElementById('notify-student-name-mismatch') && document.getElementById('notify-student-name-mismatch').checked;
     const autoGroupCheckOnNameMismatch = !!document.getElementById('auto-group-check-on-name-mismatch') && document.getElementById('auto-group-check-on-name-mismatch').checked;
     const autoSelectAlreadyGradedWhenGroupMatched = !!document.getElementById('auto-select-already-graded-when-group-matched') && document.getElementById('auto-select-already-graded-when-group-matched').checked;
+    const autoOpenNextQueueItemAfterComplete = !!document.getElementById('auto-open-next-queue-item-after-complete') && document.getElementById('auto-open-next-queue-item-after-complete').checked;
     const studentNameFormat = document.querySelector('input[name="student-name-format"]:checked')?.value || SYNCED_SETTINGS.studentNameFormat;
 
     saveStudentsFromDOM(() => {
@@ -346,6 +350,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         notifyOnStudentNameMismatch: notifyOnStudentNameMismatch,
         autoGroupCheckOnNameMismatch: autoGroupCheckOnNameMismatch,
         autoSelectAlreadyGradedWhenGroupMatched: autoSelectAlreadyGradedWhenGroupMatched,
+        autoOpenNextQueueItemAfterComplete: autoOpenNextQueueItemAfterComplete,
         studentNameFormat: studentNameFormat
       }, () => {
         // Show saved status
