@@ -22,24 +22,73 @@
 
   let closeSpeedgraderTabAfterSubmitCommentEnabled = false;
   let closeOnSubmitCommentListenerAttached = false;
+  let closeOnSubmitCommentPending = false;
+
+  function getPersistedCommentCount() {
+    const commentElements = document.querySelectorAll('div[data-testid^="comment-"]');
+    return Array.from(commentElements).filter((el) => {
+      const testId = el.getAttribute('data-testid') || '';
+      return /^comment-\d+$/.test(testId);
+    }).length;
+  }
+
+  function waitForPersistedCommentCountIncrease(previousCount, timeoutMs = 15000) {
+    return new Promise((resolve) => {
+      const hasIncreased = () => getPersistedCommentCount() > previousCount;
+
+      if (hasIncreased()) {
+        resolve(true);
+        return;
+      }
+
+      let finished = false;
+
+      const finish = (result) => {
+        if (finished) return;
+        finished = true;
+        clearTimeout(timeoutId);
+        observer.disconnect();
+        resolve(result);
+      };
+
+      const observer = new MutationObserver(() => {
+        if (hasIncreased()) {
+          finish(true);
+        }
+      });
+
+      observer.observe(document.body || document.documentElement, {
+        childList: true,
+        subtree: true,
+      });
+
+      const timeoutId = setTimeout(() => finish(false), timeoutMs);
+    });
+  }
 
   function attachCloseOnSubmitCommentListener() {
     if (closeOnSubmitCommentListenerAttached) return;
     closeOnSubmitCommentListenerAttached = true;
 
     // Delegate on document so behavior survives Canvas UI re-renders.
-    document.addEventListener('click', (event) => {
+    document.addEventListener('click', async (event) => {
       const submitCommentButton = event.target.closest('button[data-testid="submit-comment-button"]');
       if (!submitCommentButton) return;
       if (!closeSpeedgraderTabAfterSubmitCommentEnabled) return;
+      if (closeOnSubmitCommentPending) return;
 
-      // Allow Canvas submit API requests to complete before closing the tab.
-      setTimeout(() => {
-        if (!chrome.runtime || !chrome.runtime.sendMessage) return;
-        chrome.runtime.sendMessage({ type: CSH_MESSAGE_TYPES.CLOSE_SPEEDGRADER_TAB }, () => {
-          void chrome.runtime?.lastError;
-        });
-      }, 2000);
+      closeOnSubmitCommentPending = true;
+      const previousCount = getPersistedCommentCount();
+
+      const commentAppeared = await waitForPersistedCommentCountIncrease(previousCount);
+      closeOnSubmitCommentPending = false;
+
+      if (!commentAppeared) return;
+
+      if (!chrome.runtime || !chrome.runtime.sendMessage) return;
+      chrome.runtime.sendMessage({ type: CSH_MESSAGE_TYPES.CLOSE_SPEEDGRADER_TAB }, () => {
+        void chrome.runtime?.lastError;
+      });
     }, true);
   }
 
