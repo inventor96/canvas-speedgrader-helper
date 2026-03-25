@@ -20,6 +20,41 @@
     }
   }
 
+  let closeSpeedgraderTabAfterSubmitCommentEnabled = false;
+  let closeOnSubmitCommentListenerAttached = false;
+
+  function attachCloseOnSubmitCommentListener() {
+    if (closeOnSubmitCommentListenerAttached) return;
+    closeOnSubmitCommentListenerAttached = true;
+
+    // Delegate on document so behavior survives Canvas UI re-renders.
+    document.addEventListener('click', (event) => {
+      const submitCommentButton = event.target.closest('button[data-testid="submit-comment-button"]');
+      if (!submitCommentButton) return;
+      if (!closeSpeedgraderTabAfterSubmitCommentEnabled) return;
+
+      // Allow Canvas submit API requests to complete before closing the tab.
+      setTimeout(() => {
+        if (!chrome.runtime || !chrome.runtime.sendMessage) return;
+        chrome.runtime.sendMessage({ type: CSH_MESSAGE_TYPES.CLOSE_SPEEDGRADER_TAB }, () => {
+          void chrome.runtime?.lastError;
+        });
+      }, 2000);
+    }, true);
+  }
+
+  function initializeCloseOnSubmitCommentSetting() {
+    if (!chrome.storage || !chrome.storage.sync || !chrome.storage.sync.get) {
+      attachCloseOnSubmitCommentListener();
+      return;
+    }
+
+    chrome.storage.sync.get({ closeSpeedgraderTabAfterSubmitComment: false }, (data) => {
+      closeSpeedgraderTabAfterSubmitCommentEnabled = !!data.closeSpeedgraderTabAfterSubmitComment;
+      attachCloseOnSubmitCommentListener();
+    });
+  }
+
   // Inject the page script with settings via a data attribute.
   function inject(settings) {
     // First inject the shared message types so speedgrader.js can access them
@@ -98,6 +133,8 @@
       ...LOCAL_SETTINGS,
     });
   }
+
+  initializeCloseOnSubmitCommentSetting();
 
   // Listen for messages from page script to save points data
   window.addEventListener('message', (event) => {
@@ -246,6 +283,14 @@
           }
         });
       }
+
+      if (msg.type === CSH_MESSAGE_TYPES.CLOSE_SPEEDGRADER_TAB) {
+        if (!chrome.runtime || !chrome.runtime.sendMessage) return;
+
+        chrome.runtime.sendMessage({ type: CSH_MESSAGE_TYPES.CLOSE_SPEEDGRADER_TAB }, () => {
+          void chrome.runtime?.lastError;
+        });
+      }
       return;
     } catch (e) {
       // ignore errors
@@ -301,6 +346,10 @@
   // Listen for storage changes and propagate updates to the page script.
   if (chrome.storage && chrome.storage.onChanged) {
     chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName === 'sync' && changes.closeSpeedgraderTabAfterSubmitComment) {
+        closeSpeedgraderTabAfterSubmitCommentEnabled = !!changes.closeSpeedgraderTabAfterSubmitComment.newValue;
+      }
+
       const changeKeys = Object.keys(changes || {});
       const nonMetaKeys = changeKeys.filter((key) => key !== 'savedPointsMeta' && key !== 'studentNamesMeta');
       if (nonMetaKeys.length === 0) return;

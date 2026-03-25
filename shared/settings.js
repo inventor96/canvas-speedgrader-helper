@@ -6,6 +6,7 @@ const SYNCED_SETTINGS = {
   placeholders: ["STUDENT_NAME"],
   openRubricForUngraded: false,
   openCommentLibraryAfterSubmit: false,
+  closeSpeedgraderTabAfterSubmitComment: false,
   autoSetCommentsToWholeGroupWhenAvailable: false,
   scrollToSubmitCommentAfterCommentLibrarySelection: false,
   useTeamNameForGroupPlaceholderReplacement: false,

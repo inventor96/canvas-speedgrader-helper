@@ -41,6 +41,7 @@ When a group check confirms both names are in the same group, the mismatch warni
 
 - **Open rubric automatically for ungraded submissions**: Opens the rubric panel when there is no prior evaluation.
 - **Open the Comment Library after submitting the assessment**: Opens the comment library after clicking Submit Assessment.
+- **Close the SpeedGrader tab after submitting a comment on the assignment**: After you click the submit-comment button, waits 2 seconds to allow Canvas API requests to finish, then closes the current SpeedGrader tab.
 - **Automatically set comments to be sent to the whole group when available**: When the submit-comment controls load, automatically selects the group comment mode if Canvas provides it.
 - **Automatically scroll to the submit comment button after selecting a comment from the comment library**: After you select a comment in the comment library, automatically scroll down to the submit comment button to save time if you are using the comment library frequently.
 

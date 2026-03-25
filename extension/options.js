@@ -34,6 +34,9 @@ function loadPlaceholders() {
     const commentLibCb = document.getElementById('open-comment-library');
     if (commentLibCb) commentLibCb.checked = !!data.openCommentLibraryAfterSubmit;
 
+    const closeSpeedgraderAfterSubmitCommentCb = document.getElementById('close-speedgrader-tab-after-submit-comment');
+    if (closeSpeedgraderAfterSubmitCommentCb) closeSpeedgraderAfterSubmitCommentCb.checked = !!data.closeSpeedgraderTabAfterSubmitComment;
+
     const autoSetCommentsToWholeGroupCb = document.getElementById('auto-set-comments-to-whole-group-when-available');
     if (autoSetCommentsToWholeGroupCb) autoSetCommentsToWholeGroupCb.checked = !!data.autoSetCommentsToWholeGroupWhenAvailable;
 
@@ -318,6 +321,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const toSave = inputs.length ? inputs : SYNCED_SETTINGS.placeholders;
     const openRubric = !!document.getElementById('open-rubric') && document.getElementById('open-rubric').checked;
     const openCommentLibrary = !!document.getElementById('open-comment-library') && document.getElementById('open-comment-library').checked;
+    const closeSpeedgraderTabAfterSubmitComment = !!document.getElementById('close-speedgrader-tab-after-submit-comment') && document.getElementById('close-speedgrader-tab-after-submit-comment').checked;
     const autoSetCommentsToWholeGroupWhenAvailable = !!document.getElementById('auto-set-comments-to-whole-group-when-available') && document.getElementById('auto-set-comments-to-whole-group-when-available').checked;
     const scrollToSubmitCommentAfterCommentLibrarySelection = !!document.getElementById('scroll-to-submit-comment-after-comment-library-selection') && document.getElementById('scroll-to-submit-comment-after-comment-library-selection').checked;
     const useTeamNameForGroupPlaceholderReplacement = !!document.getElementById('use-team-name-for-group-placeholder-replacement') && document.getElementById('use-team-name-for-group-placeholder-replacement').checked;
@@ -341,6 +345,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         placeholders: toSave,
         openRubricForUngraded: openRubric,
         openCommentLibraryAfterSubmit: openCommentLibrary,
+        closeSpeedgraderTabAfterSubmitComment: closeSpeedgraderTabAfterSubmitComment,
         autoSetCommentsToWholeGroupWhenAvailable: autoSetCommentsToWholeGroupWhenAvailable,
         scrollToSubmitCommentAfterCommentLibrarySelection: scrollToSubmitCommentAfterCommentLibrarySelection,
         useTeamNameForGroupPlaceholderReplacement: useTeamNameForGroupPlaceholderReplacement,
