@@ -836,34 +836,38 @@
   // ============================================================================
   const CommentLibraryController = {
     /**
-     * Attach click listener to the save rubric button
+     * Attach click listeners to rubric submit buttons
      */
     attachCommentLibraryHandler() {
-      const saveButton = document.querySelector('button[data-testid="save-rubric-assessment-button"]');
-      if (!saveButton) return;
+      const submitButtons = document.querySelectorAll(
+        'button[data-testid="save-rubric-assessment-button"], button[data-testid^="submit-same-score-"]'
+      );
+      if (!submitButtons || submitButtons.length === 0) return;
 
-      // Attach the click listener to "Submit Assessment" button with idempotency check
-      attachEventListenerIdempotent(saveButton, 'click', () => {
-        // Apply placeholder replacement to textareas before submission
-        PlaceholderEngine.applySettingsToTextareas();
+      // Attach the same submit workflow to all rubric submit variants.
+      submitButtons.forEach((submitButton) => {
+        attachEventListenerIdempotent(submitButton, 'click', () => {
+          // Apply placeholder replacement to textareas before submission
+          PlaceholderEngine.applySettingsToTextareas();
 
-        // Handle points saving for comments if feature is enabled
-        if (REMEMBER_POINTS_FOR_COMMENTS) {
-          this.handlePointsSaving();
-        }
-
-        // Wait 1 second after submission
-        setTimeout(() => {
-          // Skip if the setting is disabled
-          if (!OPEN_COMMENT_LIBRARY_AFTER_SUBMIT) return;
-
-          // Find and click the comment library button
-          const commentLibButton = document.querySelector('button[data-testid="comment-library-button"]');
-          if (commentLibButton) {
-            commentLibButton.click();
+          // Handle points saving for comments if feature is enabled
+          if (REMEMBER_POINTS_FOR_COMMENTS) {
+            this.handlePointsSaving();
           }
-        }, 1000);
-      }, '__commentLibrarySubmitListenerAttached');
+
+          // Wait 1 second after submission
+          setTimeout(() => {
+            // Skip if the setting is disabled
+            if (!OPEN_COMMENT_LIBRARY_AFTER_SUBMIT) return;
+
+            // Find and click the comment library button
+            const commentLibButton = document.querySelector('button[data-testid="comment-library-button"]');
+            if (commentLibButton) {
+              commentLibButton.click();
+            }
+          }, 1000);
+        }, '__commentLibrarySubmitListenerAttached');
+      });
     },
 
     /**
