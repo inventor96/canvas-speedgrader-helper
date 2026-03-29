@@ -171,6 +171,29 @@
     });
   }
 
+  function handleSameGroupGradingStatus(queuedName, isGraded) {
+    if (!chrome.runtime || !chrome.runtime.sendMessage) return;
+
+    if (isGraded) {
+      chrome.storage.sync.get(['autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded'], (data) => {
+        if (data.autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded) {
+          chrome.runtime.sendMessage({ type: CSH_MESSAGE_TYPES.CLOSE_SPEEDGRADER_TAB }, () => {
+            void chrome.runtime?.lastError;
+          });
+        }
+      });
+    }
+
+    chrome.runtime.sendMessage({
+      type: CSH_MESSAGE_TYPES.GROUPS_CHECK_GRADING_STATUS,
+      queuedName: queuedName || '',
+      sameGroup: true,
+      isGraded: !!isGraded,
+    }, () => {
+      void chrome.runtime?.lastError;
+    });
+  }
+
   if (typeof chrome !== 'undefined' && chrome.storage) {
     // Read synced settings first, then local (non-synced) student name map, then merge.
     getAllSettings((settings) => {
@@ -331,6 +354,56 @@
             // ignore
           }
         });
+        return;
+      }
+
+      if (msg.type === CSH_MESSAGE_TYPES.GROUP_TRIPLET_CACHE_UPSERT) {
+        if (!chrome.runtime || !chrome.runtime.sendMessage) return;
+
+        chrome.runtime.sendMessage({
+          type: CSH_MESSAGE_TYPES.GROUP_TRIPLET_CACHE_UPSERT,
+          courseId: msg.courseId,
+          assignmentId: msg.assignmentId,
+          studentId: msg.studentId,
+        }, () => {
+          void chrome.runtime?.lastError;
+        });
+        return;
+      }
+
+      if (msg.type === CSH_MESSAGE_TYPES.GROUP_TRIPLET_CACHE_LOOKUP) {
+        if (!chrome.runtime || !chrome.runtime.sendMessage) return;
+
+        chrome.runtime.sendMessage({
+          type: CSH_MESSAGE_TYPES.GROUP_TRIPLET_CACHE_LOOKUP,
+          requestId: msg.requestId,
+          courseId: msg.courseId,
+          assignmentId: msg.assignmentId,
+          studentId: msg.studentId,
+        }, (response) => {
+          const error = chrome.runtime?.lastError?.message || (response && response.error) || null;
+
+          try {
+            window.postMessage({
+              type: CSH_MESSAGE_TYPES.GROUP_TRIPLET_CACHE_LOOKUP_RESULT,
+              requestId: msg.requestId,
+              courseId: msg.courseId || '',
+              assignmentId: msg.assignmentId || '',
+              studentId: msg.studentId || '',
+              hit: !!response?.hit,
+              createdAt: response?.createdAt || null,
+              error,
+            }, '*');
+          } catch (e) {
+            // ignore
+          }
+        });
+        return;
+      }
+
+      if (msg.type === CSH_MESSAGE_TYPES.TRIGGER_GROUP_MATCH_GRADING_STATUS) {
+        handleSameGroupGradingStatus(msg.queuedName || '', !!msg.isGraded);
+        return;
       }
 
       if (msg.type === CSH_MESSAGE_TYPES.CLOSE_SPEEDGRADER_TAB) {
@@ -355,24 +428,7 @@
         const isGraded = !!document.querySelector('[data-testid="graded-icon"]');
 
         if (sameGroup) {
-          // Check if we should auto-close this SpeedGrader tab when graded
-          chrome.storage.sync.get(['autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded'], (data) => {
-            if (data.autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded && isGraded) {
-              chrome.runtime.sendMessage({ type: CSH_MESSAGE_TYPES.CLOSE_SPEEDGRADER_TAB }, () => {
-                void chrome.runtime?.lastError;
-              });
-            }
-          });
-
-          // Broadcast grading status to other tabs (e.g. grading queue)
-          chrome.runtime.sendMessage({
-            type: CSH_MESSAGE_TYPES.GROUPS_CHECK_GRADING_STATUS,
-            queuedName: msg.queuedName || '',
-            sameGroup: true,
-            isGraded,
-          }, () => {
-            void chrome.runtime?.lastError;
-          });
+          handleSameGroupGradingStatus(msg.queuedName || '', isGraded);
         }
 
         window.postMessage({

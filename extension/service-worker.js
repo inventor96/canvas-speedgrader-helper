@@ -10,15 +10,25 @@ const MESSAGE_TYPES = (typeof CSH_MESSAGE_TYPES !== 'undefined')
   ? CSH_MESSAGE_TYPES
   : {
       START_GROUPS_CHECK: 'CSH_START_GROUPS_CHECK',
+      GROUP_TRIPLET_CACHE_UPSERT: 'CSH_GROUP_TRIPLET_CACHE_UPSERT',
+      GROUP_TRIPLET_CACHE_LOOKUP: 'CSH_GROUP_TRIPLET_CACHE_LOOKUP',
       GROUPS_GET_PENDING_CONTEXT: 'CSH_GROUPS_GET_PENDING_CONTEXT',
       GROUPS_CHECK_COMPLETE: 'CSH_GROUPS_CHECK_COMPLETE',
       GROUPS_CHECK_RESULT: 'CSH_GROUPS_CHECK_RESULT',
       GROUPS_CHECK_GRADING_STATUS: 'CSH_GROUPS_CHECK_GRADING_STATUS',
+      TRIGGER_GROUP_MATCH_GRADING_STATUS: 'CSH_TRIGGER_GROUP_MATCH_GRADING_STATUS',
+      GROUP_TRIPLET_CACHE_LOOKUP_RESULT: 'CSH_GROUP_TRIPLET_CACHE_LOOKUP_RESULT',
       CLOSE_SPEEDGRADER_TAB: 'CSH_CLOSE_SPEEDGRADER_TAB',
     };
 
 const PENDING_CHECK_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const GROUP_TRIPLET_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+const GROUP_TRIPLET_CACHE_STORAGE_KEY = 'groupTripletCache';
 const pendingGroupsChecks = new Map();
+const groupTripletCache = new Map();
+let hasLoadedGroupTripletCache = false;
+let isLoadingGroupTripletCache = false;
+const groupTripletCacheLoadQueue = [];
 
 function cleanupStaleChecks() {
   const now = Date.now();
@@ -27,6 +37,114 @@ function cleanupStaleChecks() {
       pendingGroupsChecks.delete(groupsTabId);
     }
   }
+
+  pruneGroupTripletCache(now);
+}
+
+function getGroupTripletCacheKey(courseId, assignmentId, studentId) {
+  const normalizedCourseId = String(courseId || '').trim();
+  const normalizedAssignmentId = String(assignmentId || '').trim();
+  const normalizedStudentId = String(studentId || '').trim();
+
+  if (!normalizedCourseId || !normalizedAssignmentId || !normalizedStudentId) {
+    return null;
+  }
+
+  return `${normalizedCourseId}|${normalizedAssignmentId}|${normalizedStudentId}`;
+}
+
+function pruneGroupTripletCache(now = Date.now()) {
+  let removedAny = false;
+
+  for (const [key, entry] of groupTripletCache.entries()) {
+    if (!entry || (now - (entry.createdAt || 0)) > GROUP_TRIPLET_CACHE_TTL_MS) {
+      groupTripletCache.delete(key);
+      removedAny = true;
+    }
+  }
+
+  return removedAny;
+}
+
+function loadGroupTripletCache(callback) {
+  if (hasLoadedGroupTripletCache) {
+    callback();
+    return;
+  }
+
+  groupTripletCacheLoadQueue.push(callback);
+  if (isLoadingGroupTripletCache) {
+    return;
+  }
+
+  isLoadingGroupTripletCache = true;
+
+  if (!chrome.storage || !chrome.storage.local || !chrome.storage.local.get) {
+    hasLoadedGroupTripletCache = true;
+    isLoadingGroupTripletCache = false;
+    while (groupTripletCacheLoadQueue.length) {
+      const queuedCallback = groupTripletCacheLoadQueue.shift();
+      try {
+        queuedCallback();
+      } catch (e) {
+        // Ignore callback failures.
+      }
+    }
+    return;
+  }
+
+  chrome.storage.local.get({ [GROUP_TRIPLET_CACHE_STORAGE_KEY]: {} }, (data) => {
+    const storedEntries = data && data[GROUP_TRIPLET_CACHE_STORAGE_KEY];
+
+    if (storedEntries && typeof storedEntries === 'object') {
+      Object.entries(storedEntries).forEach(([key, value]) => {
+        const createdAt = value && Number.isFinite(value.createdAt) ? value.createdAt : 0;
+        if (key && createdAt > 0) {
+          groupTripletCache.set(key, { createdAt });
+        }
+      });
+    }
+
+    hasLoadedGroupTripletCache = true;
+    isLoadingGroupTripletCache = false;
+
+    while (groupTripletCacheLoadQueue.length) {
+      const queuedCallback = groupTripletCacheLoadQueue.shift();
+      try {
+        queuedCallback();
+      } catch (e) {
+        // Ignore callback failures.
+      }
+    }
+  });
+}
+
+function persistGroupTripletCache(callback) {
+  if (!chrome.storage || !chrome.storage.local || !chrome.storage.local.set) {
+    if (typeof callback === 'function') callback();
+    return;
+  }
+
+  const serialized = {};
+  groupTripletCache.forEach((entry, key) => {
+    serialized[key] = { createdAt: entry.createdAt };
+  });
+
+  chrome.storage.local.set({ [GROUP_TRIPLET_CACHE_STORAGE_KEY]: serialized }, () => {
+    if (typeof callback === 'function') callback();
+  });
+}
+
+function withGroupTripletCache(callback) {
+  loadGroupTripletCache(() => {
+    const removedAny = pruneGroupTripletCache();
+    if (removedAny) {
+      persistGroupTripletCache(() => callback());
+      return;
+    }
+
+    callback();
+  });
 }
 
 function normalizeCourseGroupsUrl(tabUrl) {
@@ -110,6 +228,43 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
 
       sendResponse({ ok: true, groupsTabId: tab.id });
+    });
+
+    return true;
+  }
+
+  if (message.type === MESSAGE_TYPES.GROUP_TRIPLET_CACHE_UPSERT) {
+    const key = getGroupTripletCacheKey(message.courseId, message.assignmentId, message.studentId);
+    if (!key) {
+      sendResponse({ ok: false, error: 'Invalid triplet cache upsert request.' });
+      return;
+    }
+
+    withGroupTripletCache(() => {
+      groupTripletCache.set(key, { createdAt: Date.now() });
+      persistGroupTripletCache(() => {
+        sendResponse({ ok: true, key });
+      });
+    });
+
+    return true;
+  }
+
+  if (message.type === MESSAGE_TYPES.GROUP_TRIPLET_CACHE_LOOKUP) {
+    const key = getGroupTripletCacheKey(message.courseId, message.assignmentId, message.studentId);
+    if (!key) {
+      sendResponse({ ok: false, error: 'Invalid triplet cache lookup request.' });
+      return;
+    }
+
+    withGroupTripletCache(() => {
+      const entry = groupTripletCache.get(key) || null;
+      sendResponse({
+        ok: true,
+        hit: !!entry,
+        key,
+        createdAt: entry ? entry.createdAt : null,
+      });
     });
 
     return true;

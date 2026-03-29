@@ -1340,6 +1340,7 @@
   // ============================================================================
   const NotificationUI = {
     __groupsResultListenerAttached: false,
+    __pendingTripletLookup: null,
     GROUP_INDICATOR_WAIT_MS: 3500,
     GROUP_INDICATOR_POLL_MS: 200,
 
@@ -1359,6 +1360,86 @@
 
     normalizeName(name) {
       return String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    },
+
+    getCurrentTripletContext() {
+      try {
+        const parsedUrl = new URL(window.location.href);
+        const courseMatch = parsedUrl.pathname.match(/\/courses\/(\d+)/i);
+        const courseId = courseMatch && courseMatch[1] ? courseMatch[1] : '';
+        const assignmentId = parsedUrl.searchParams.get('assignment_id') || '';
+        const studentId = parsedUrl.searchParams.get('student_id') || '';
+
+        if (!courseId || !assignmentId || !studentId) {
+          return null;
+        }
+
+        return { courseId, assignmentId, studentId };
+      } catch (e) {
+        return null;
+      }
+    },
+
+    getTripletContextKey(context) {
+      if (!context || !context.courseId || !context.assignmentId || !context.studentId) {
+        return '';
+      }
+
+      return `${context.courseId}|${context.assignmentId}|${context.studentId}`;
+    },
+
+    isCurrentSubmissionAlreadyGraded() {
+      return !!document.querySelector('[data-testid="graded-icon"]');
+    },
+
+    upsertCurrentTripletCache() {
+      const context = this.getCurrentTripletContext();
+      if (!context) return;
+
+      try {
+        window.postMessage({
+          type: CSH_MESSAGE_TYPES.GROUP_TRIPLET_CACHE_UPSERT,
+          courseId: context.courseId,
+          assignmentId: context.assignmentId,
+          studentId: context.studentId,
+        }, '*');
+      } catch (e) {
+        console.warn('CSH: Failed to upsert group triplet cache entry.', e);
+      }
+    },
+
+    async checkMatchedStudentNameForCachedGroupContext(queuedName) {
+      const startingContext = this.getCurrentTripletContext();
+      if (!startingContext) return;
+
+      const startingContextKey = this.getTripletContextKey(startingContext);
+      const showGroupsLink = await this.waitForGroupIndicators();
+      if (!showGroupsLink) return;
+
+      const currentContext = this.getCurrentTripletContext();
+      if (!currentContext || this.getTripletContextKey(currentContext) !== startingContextKey) {
+        return;
+      }
+
+      const requestId = `csh-triplet-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      this.__pendingTripletLookup = {
+        requestId,
+        queuedName,
+        contextKey: startingContextKey,
+      };
+
+      try {
+        window.postMessage({
+          type: CSH_MESSAGE_TYPES.GROUP_TRIPLET_CACHE_LOOKUP,
+          requestId,
+          courseId: currentContext.courseId,
+          assignmentId: currentContext.assignmentId,
+          studentId: currentContext.studentId,
+        }, '*');
+      } catch (e) {
+        this.__pendingTripletLookup = null;
+        console.warn('CSH: Failed to request group triplet cache lookup.', e);
+      }
     },
 
     isGroupAssignmentDetected() {
@@ -1585,6 +1666,7 @@
       if (currentQueued !== messageQueued || currentSpeedgrader !== messageSpeedgrader) return;
 
       if (msg.sameGroup) {
+        this.upsertCurrentTripletCache();
         this.renderBanner({
           queuedName: warningDiv.dataset.queuedName || msg.queuedName,
           speedgraderName: warningDiv.dataset.speedgraderName || msg.speedgraderName,
@@ -1610,6 +1692,37 @@
       });
     },
 
+    maybeApplyTripletCacheLookupResult(msg) {
+      const pendingLookup = this.__pendingTripletLookup;
+      if (!pendingLookup) return;
+      if (!msg || msg.requestId !== pendingLookup.requestId) return;
+
+      this.__pendingTripletLookup = null;
+
+      const currentContext = this.getCurrentTripletContext();
+      if (!currentContext || this.getTripletContextKey(currentContext) !== pendingLookup.contextKey) {
+        return;
+      }
+
+      if (msg.error || !msg.hit || !this.isGroupAssignmentDetected()) {
+        return;
+      }
+
+      if (!this.isCurrentSubmissionAlreadyGraded()) {
+        return;
+      }
+
+      try {
+        window.postMessage({
+          type: CSH_MESSAGE_TYPES.TRIGGER_GROUP_MATCH_GRADING_STATUS,
+          queuedName: pendingLookup.queuedName,
+          isGraded: true,
+        }, '*');
+      } catch (e) {
+        console.warn('CSH: Failed to trigger cached same-group graded flow.', e);
+      }
+    },
+
     attachGroupsResultListener() {
       if (this.__groupsResultListenerAttached) return;
       this.__groupsResultListenerAttached = true;
@@ -1618,8 +1731,16 @@
         try {
           if (!event || event.source !== window) return;
           const msg = event.data;
-          if (!msg || msg.type !== CSH_MESSAGE_TYPES.GROUPS_CHECK_RESULT) return;
-          this.maybeApplyGroupsResult(msg);
+          if (!msg || !msg.type) return;
+
+          if (msg.type === CSH_MESSAGE_TYPES.GROUPS_CHECK_RESULT) {
+            this.maybeApplyGroupsResult(msg);
+            return;
+          }
+
+          if (msg.type === CSH_MESSAGE_TYPES.GROUP_TRIPLET_CACHE_LOOKUP_RESULT) {
+            this.maybeApplyTripletCacheLookupResult(msg);
+          }
         } catch (e) {
           console.error('Error handling groups check result message:', e);
         }
@@ -1693,6 +1814,7 @@
         }
       } else {
         console.log('CSH: Student names match! ✓');
+        this.checkMatchedStudentNameForCachedGroupContext(queued.name);
       }
     }
   };
