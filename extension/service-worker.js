@@ -1,7 +1,7 @@
 /* global CSH_MESSAGE_TYPES */
 
 try {
-  importScripts('shared/message-types.js');
+  importScripts('../shared/message-types.js');
 } catch (e) {
   // Keep running with fallback message constants.
 }
@@ -70,6 +70,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   cleanupStaleChecks();
 
   if (!message || !message.type) {
+    sendResponse({ ok: false, error: 'Missing message type.' });
     return;
   }
 
@@ -201,4 +202,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ ok: true });
     return;
   }
+
+  // Always respond to avoid "message port closed" for unknown/unhandled message types.
+  sendResponse({ ok: false, error: `Unhandled message type: ${message.type}` });
+  return;
 });
