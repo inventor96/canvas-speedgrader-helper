@@ -75,30 +75,30 @@
   }
 
   /**
-   * Wait until a select reflects the expected value.
+   * Wait until the grading status select for a student keeps the expected value
+   * across PowerApps row re-renders for a short stability window.
    */
-  function waitForSelectValue(select, expectedValue, timeoutMs = 5000) {
+  function waitForSelectValueByStudentName(studentName, expectedValue, timeoutMs = 5000, stableMs = 750) {
     return new Promise((resolve) => {
-      if (!select || !select.isConnected) {
-        resolve(false);
-        return;
-      }
-
-      if (String(select.value) === String(expectedValue)) {
-        resolve(true);
-        return;
-      }
-
       const startedAt = Date.now();
-      const poll = () => {
-        if (!select.isConnected) {
-          resolve(false);
-          return;
-        }
+      let matchedSince = null;
 
-        if (String(select.value) === String(expectedValue)) {
-          resolve(true);
-          return;
+      const poll = () => {
+        const row = getQueueRowByStudentName(studentName);
+        const select = getGradingStatusSelect(row);
+        const currentValue = select ? String(select.value) : null;
+
+        if (currentValue === String(expectedValue)) {
+          if (matchedSince === null) {
+            matchedSince = Date.now();
+          }
+
+          if (Date.now() - matchedSince >= stableMs) {
+            resolve(true);
+            return;
+          }
+        } else {
+          matchedSince = null;
         }
 
         if (Date.now() - startedAt >= timeoutMs) {
@@ -191,9 +191,14 @@
 
               // If completion automation is also active, wait until the select value settles first.
               if (shouldAutoCompleteAfterGroupMatch) {
-                const settled = await waitForSelectValue(selectionResult.select, selectionResult.expectedValue, 5000);
+                const settled = await waitForSelectValueByStudentName(
+                  message.queuedName,
+                  selectionResult.expectedValue,
+                  5000,
+                  750
+                );
                 if (!settled) {
-                  console.warn('CSH: Timed out waiting for grading status select to update before completion');
+                  console.warn('CSH: Timed out waiting for grading status select to persist before completion');
                   return;
                 }
               }
