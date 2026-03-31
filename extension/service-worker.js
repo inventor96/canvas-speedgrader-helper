@@ -6,21 +6,6 @@ try {
   // Keep running with fallback message constants.
 }
 
-const MESSAGE_TYPES = (typeof CSH_MESSAGE_TYPES !== 'undefined')
-  ? CSH_MESSAGE_TYPES
-  : {
-      START_GROUPS_CHECK: 'CSH_START_GROUPS_CHECK',
-      GROUP_TRIPLET_CACHE_UPSERT: 'CSH_GROUP_TRIPLET_CACHE_UPSERT',
-      GROUP_TRIPLET_CACHE_LOOKUP: 'CSH_GROUP_TRIPLET_CACHE_LOOKUP',
-      GROUPS_GET_PENDING_CONTEXT: 'CSH_GROUPS_GET_PENDING_CONTEXT',
-      GROUPS_CHECK_COMPLETE: 'CSH_GROUPS_CHECK_COMPLETE',
-      GROUPS_CHECK_RESULT: 'CSH_GROUPS_CHECK_RESULT',
-      GROUPS_CHECK_GRADING_STATUS: 'CSH_GROUPS_CHECK_GRADING_STATUS',
-      TRIGGER_GROUP_MATCH_GRADING_STATUS: 'CSH_TRIGGER_GROUP_MATCH_GRADING_STATUS',
-      GROUP_TRIPLET_CACHE_LOOKUP_RESULT: 'CSH_GROUP_TRIPLET_CACHE_LOOKUP_RESULT',
-      CLOSE_SPEEDGRADER_TAB: 'CSH_CLOSE_SPEEDGRADER_TAB',
-    };
-
 const PENDING_CHECK_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const GROUP_TRIPLET_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
 const GROUP_TRIPLET_CACHE_STORAGE_KEY = 'groupTripletCache';
@@ -192,7 +177,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return;
   }
 
-  if (message.type === MESSAGE_TYPES.START_GROUPS_CHECK) {
+  if (message.type === CSH_MESSAGE_TYPES.START_GROUPS_CHECK) {
     const originTabId = sender?.tab?.id;
     const originTabUrl = sender?.tab?.url;
     const queuedName = typeof message.queuedName === 'string' ? message.queuedName.trim() : '';
@@ -233,7 +218,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
-  if (message.type === MESSAGE_TYPES.GROUP_TRIPLET_CACHE_UPSERT) {
+  if (message.type === CSH_MESSAGE_TYPES.GROUP_TRIPLET_CACHE_UPSERT) {
     const key = getGroupTripletCacheKey(message.courseId, message.assignmentId, message.studentId);
     if (!key) {
       sendResponse({ ok: false, error: 'Invalid triplet cache upsert request.' });
@@ -250,7 +235,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
-  if (message.type === MESSAGE_TYPES.GROUP_TRIPLET_CACHE_LOOKUP) {
+  if (message.type === CSH_MESSAGE_TYPES.GROUP_TRIPLET_CACHE_LOOKUP) {
     const key = getGroupTripletCacheKey(message.courseId, message.assignmentId, message.studentId);
     if (!key) {
       sendResponse({ ok: false, error: 'Invalid triplet cache lookup request.' });
@@ -270,7 +255,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
-  if (message.type === MESSAGE_TYPES.GROUPS_GET_PENDING_CONTEXT) {
+  if (message.type === CSH_MESSAGE_TYPES.GROUPS_GET_PENDING_CONTEXT) {
     const groupsTabId = sender?.tab?.id;
     if (!groupsTabId || !pendingGroupsChecks.has(groupsTabId)) {
       sendResponse({ ok: false, error: 'No pending groups check for this tab.' });
@@ -288,7 +273,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return;
   }
 
-  if (message.type === MESSAGE_TYPES.GROUPS_CHECK_COMPLETE) {
+  if (message.type === CSH_MESSAGE_TYPES.GROUPS_CHECK_COMPLETE) {
     const groupsTabId = sender?.tab?.id;
     if (!groupsTabId) {
       sendResponse({ ok: false, error: 'Missing groups tab id.' });
@@ -303,7 +288,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 
     const resultPayload = {
-      type: MESSAGE_TYPES.GROUPS_CHECK_RESULT,
+      type: CSH_MESSAGE_TYPES.GROUPS_CHECK_RESULT,
       queuedName: pending.queuedName,
       speedgraderName: pending.speedgraderName,
       sameGroup: !!message.sameGroup,
@@ -333,10 +318,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return;
   }
 
-  if (message.type === MESSAGE_TYPES.GROUPS_CHECK_GRADING_STATUS) {
+  if (message.type === CSH_MESSAGE_TYPES.GROUPS_CHECK_GRADING_STATUS) {
     const senderTabId = sender?.tab?.id;
     const payload = {
-      type: MESSAGE_TYPES.GROUPS_CHECK_GRADING_STATUS,
+      type: CSH_MESSAGE_TYPES.GROUPS_CHECK_GRADING_STATUS,
       queuedName: message.queuedName || '',
       sameGroup: !!message.sameGroup,
       isGraded: !!message.isGraded,
@@ -352,7 +337,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return;
   }
 
-  if (message.type === MESSAGE_TYPES.CLOSE_SPEEDGRADER_TAB) {
+  if (message.type === CSH_MESSAGE_TYPES.CLOSE_SPEEDGRADER_TAB) {
     closeTabIfPresent(sender?.tab?.id);
     sendResponse({ ok: true });
     return;
