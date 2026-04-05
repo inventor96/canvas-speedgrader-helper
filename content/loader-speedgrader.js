@@ -156,6 +156,37 @@
     return merged;
   }
 
+  function getCurrentCanvasStudentFullName() {
+    const selectedStudent = document.querySelector(
+      'button[data-testid="student-select-trigger"] [data-testid="selected-student"]'
+    );
+    let fullName = selectedStudent?.textContent?.trim() || '';
+
+    if (!fullName) {
+      return '';
+    }
+
+    // Canvas can truncate long names with an ellipsis; use the name attribute fallback when present.
+    if (fullName.endsWith('…')) {
+      try {
+        const truncatedName = fullName.slice(0, -1).trim();
+        if (truncatedName) {
+          const fullNameElement = document.querySelector(
+            `button[data-testid="student-select-trigger"] [name^="${truncatedName}"]`
+          );
+          const attrName = fullNameElement?.getAttribute('name');
+          if (attrName && attrName.trim()) {
+            fullName = attrName.trim();
+          }
+        }
+      } catch (e) {
+        // Keep the visible value if the fallback query fails.
+      }
+    }
+
+    return fullName;
+  }
+
   // Helper to get all settings as a merged object.
   function getAllSettings(cb) {
     getSync((syncData) => {
@@ -420,8 +451,45 @@
   });
 
   if (chrome.runtime && chrome.runtime.onMessage) {
-    chrome.runtime.onMessage.addListener((msg) => {
+    chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       try {
+        if (msg && msg.type === CSH_MESSAGE_TYPES.POPUP_JUMP_TO_STUDENT_GROUPS) {
+          const canvasFullName = getCurrentCanvasStudentFullName();
+          if (!canvasFullName) {
+            sendResponse({ ok: false, error: 'Could not determine the current Canvas student name.' });
+            return;
+          }
+
+          if (!chrome.runtime || !chrome.runtime.sendMessage) {
+            sendResponse({ ok: false, error: 'Runtime messaging is not available.' });
+            return;
+          }
+
+          chrome.runtime.sendMessage({
+            type: CSH_MESSAGE_TYPES.START_GROUPS_CHECK,
+            queuedName: canvasFullName,
+            speedgraderName: canvasFullName,
+            noAutoClose: true,
+          }, (response) => {
+            if (chrome.runtime && chrome.runtime.lastError) {
+              sendResponse({ ok: false, error: chrome.runtime.lastError.message });
+              return;
+            }
+
+            if (!response || !response.ok) {
+              sendResponse({
+                ok: false,
+                error: (response && response.error) ? response.error : 'Could not open groups page.',
+              });
+              return;
+            }
+
+            sendResponse({ ok: true, studentName: canvasFullName });
+          });
+
+          return true;
+        }
+
         if (!msg || msg.type !== CSH_MESSAGE_TYPES.GROUPS_CHECK_RESULT) return;
 
         const sameGroup = !!msg.sameGroup;

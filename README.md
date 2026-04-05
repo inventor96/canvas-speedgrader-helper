@@ -81,6 +81,11 @@ These options apply only to unstructured rubrics without preset point values:
 
 The toolbar popup lets you set or clear a preferred name for the current student while you are on a SpeedGrader page. This is a quick shortcut to the preferred-name list in settings.
 
+It also includes a **Jump to this student's groups** button. When clicked on a SpeedGrader page, it opens the Canvas course Groups page, focuses that tab, and runs the search automatically for the current student.
+
+- The search uses the student's actual Canvas name (not your saved preferred-name override).
+- The Groups tab remains open for manual review (it is not auto-closed).
+
 ## Data and Privacy
 
 - Synced settings use browser sync storage (if supported).

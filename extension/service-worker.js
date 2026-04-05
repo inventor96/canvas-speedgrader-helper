@@ -194,7 +194,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return;
     }
 
-    chrome.tabs.create({ url: groupsUrl, active: false }, (tab) => {
+    const noAutoClose = !!message.noAutoClose;
+
+    chrome.tabs.create({ url: groupsUrl, active: noAutoClose }, (tab) => {
       if (chrome.runtime.lastError || !tab || !tab.id) {
         sendResponse({
           ok: false,
@@ -208,7 +210,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         originTabUrl,
         queuedName,
         speedgraderName,
-        noAutoClose: !!message.noAutoClose,
+        noAutoClose,
         createdAt: Date.now(),
       });
 

@@ -10,12 +10,28 @@ document.addEventListener('DOMContentLoaded', async () => {
   const statusEl = document.getElementById('status');
   const noStudentEl = document.getElementById('no-student');
   const formEl = document.getElementById('form');
+  const jumpGroupsWrapEl = document.getElementById('jump-groups-wrap');
+  const jumpGroupsBtn = document.getElementById('jump-groups');
+  const jumpGroupsStatusEl = document.getElementById('jump-groups-status');
   const openSettingsBtn = document.getElementById('open-settings');
+  let activeSpeedgraderTabId = null;
 
   // Helper to show status messages
   function showStatus(msg, timeout = 1500) {
     statusEl.textContent = msg;
     if (timeout) setTimeout(() => (statusEl.textContent = ''), timeout);
+  }
+
+  function showJumpGroupsError(msg, timeout = 3000) {
+    if (!jumpGroupsStatusEl) return;
+    jumpGroupsStatusEl.textContent = msg || '';
+    if (timeout && msg) {
+      setTimeout(() => {
+        if (jumpGroupsStatusEl.textContent === msg) {
+          jumpGroupsStatusEl.textContent = '';
+        }
+      }, timeout);
+    }
   }
 
   // Get the active tab URL and extract student_id
@@ -49,6 +65,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     studentIdEl.textContent = sid;
     formEl.style.display = '';
+    jumpGroupsWrapEl.style.display = '';
+    activeSpeedgraderTabId = tab.id;
 
     // Load existing mapping from local storage
     chrome.storage.local.get({ studentNames: {} }, (data) => {
@@ -85,6 +103,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         saveMapping();
       }
     });
+
+    if (jumpGroupsBtn) {
+      jumpGroupsBtn.addEventListener('click', () => {
+        if (!activeSpeedgraderTabId) {
+          showJumpGroupsError('Open SpeedGrader first');
+          return;
+        }
+
+        showJumpGroupsError('');
+        jumpGroupsBtn.disabled = true;
+
+        chrome.tabs.sendMessage(activeSpeedgraderTabId, {
+          type: CSH_MESSAGE_TYPES.POPUP_JUMP_TO_STUDENT_GROUPS,
+        }, (response) => {
+          jumpGroupsBtn.disabled = false;
+
+          if (chrome.runtime && chrome.runtime.lastError) {
+            showJumpGroupsError('Could not reach SpeedGrader tab');
+            return;
+          }
+
+          if (!response || !response.ok) {
+            showJumpGroupsError((response && response.error) ? response.error : 'Could not open groups page');
+            return;
+          }
+        });
+      });
+    }
   });
 
   function openOptionsPage() {
