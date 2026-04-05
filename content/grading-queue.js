@@ -78,10 +78,17 @@
    * Wait until the grading status select for a student keeps the expected value
    * across PowerApps row re-renders for a short stability window.
    */
-  function waitForSelectValueByStudentName(studentName, expectedValue, timeoutMs = 5000, stableMs = 750) {
+  function waitForSelectValueByStudentName(
+    studentName,
+    expectedValue,
+    timeoutMs = 5000,
+    stableMs = 750,
+    retryAfterChecks = 3
+  ) {
     return new Promise((resolve) => {
       const startedAt = Date.now();
       let matchedSince = null;
+      let checksSinceRetry = 0;
 
       const poll = () => {
         const row = getQueueRowByStudentName(studentName);
@@ -89,6 +96,8 @@
         const currentValue = select ? String(select.value) : null;
 
         if (currentValue === String(expectedValue)) {
+          checksSinceRetry = 0;
+
           if (matchedSince === null) {
             matchedSince = Date.now();
           }
@@ -99,6 +108,17 @@
           }
         } else {
           matchedSince = null;
+
+          if (select) {
+            checksSinceRetry += 1;
+
+            if (checksSinceRetry >= retryAfterChecks) {
+              checksSinceRetry = 0;
+              select.value = String(expectedValue);
+              select.dispatchEvent(new Event('change', { bubbles: true }));
+              console.log('CSH: Re-applied grading status while waiting for value to settle:', studentName);
+            }
+          }
         }
 
         if (Date.now() - startedAt >= timeoutMs) {
