@@ -350,6 +350,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const payload = {
       type: CSH_MESSAGE_TYPES.CLICK_QUEUE_COMPLETE_AFTER_COMMENT,
       queuedName: message.queuedName || '',
+      autoOpenNextQueueItemAfterComplete: message.autoOpenNextQueueItemAfterComplete,
     };
     chrome.tabs.query({}, (tabs) => {
       tabs.forEach(tab => {

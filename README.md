@@ -25,6 +25,8 @@ To update the extension with the latest features and fixes, download the zip aga
 
 ## Options Page Overview
 
+Options marked with † can also be toggled on a case-by-case basis in a popup that appears when hovering over the applicable trigger (e.g. the "Submit Comment" button).
+
 ### Grading Queue Integration
 
 This applies only to graders within BYU Pathway. At the time I started this project, that's where I was grading, hence this school-specific section.
@@ -33,8 +35,8 @@ This applies only to graders within BYU Pathway. At the time I started this proj
 - **Automatically proceed with automatic group check when applicable for a name mismatch**: When a mismatch warning appears and the current submission is a group assignment, the extension automatically opens the course Groups page in a temporary tab, searches using the Grading Queue name, and checks whether both names appear in the same group. If this option is off, you can still start the same check manually from the mismatch notification.
 - **Automatically select "Already Graded" when a mismatched name check finds the names are in the same group**: After a group check confirms both names belong to the same group, the extension sets the Grading Queue status dropdown to "Already Graded" for that row only when the current SpeedGrader submission is already graded.
 - **Automatically mark the assignment as complete when a mismatched name check finds the names are in the same group (and auto-close SpeedGrader when the assignment is graded)**: After a successful group match, the extension marks the queue item complete and closes the SpeedGrader tab only when the current submission is already graded. If the submission is ungraded, neither action runs.
-- **Automatically click the "Complete" button in the queue after submitting an assignment comment**: After you click the submit-comment button in SpeedGrader and the comment has been saved, automatically clicks the "Complete" button for the current student in the grading queue tab.
-- **Automatically open the next item in the queue after an assignment has been marked as complete**: When you mark an item complete in the PowerApps Grading Queue, the extension waits until that completion control is removed from the page, then clicks the first available `Grade` button to open the next submission.
+- **Automatically click the "Complete" button in the queue after submitting an assignment comment†**: After you click the submit-comment button in SpeedGrader and the comment has been saved, automatically clicks the "Complete" button for the current student in the grading queue tab.
+- **Automatically open the next item in the queue after an assignment has been marked as complete†**: When you mark an item complete in the PowerApps Grading Queue, the extension waits until that completion control is removed from the page, then clicks the first available `Grade` button to open the next submission.
 
 When a group check confirms both names are in the same group, the mismatch warning in SpeedGrader changes to an informational state so it is clear the mismatch is expected for that submission.
 
@@ -42,7 +44,7 @@ When a group check confirms both names are in the same group, the mismatch warni
 
 - **Open rubric automatically for ungraded submissions**: Opens the rubric panel when there is no prior evaluation.
 - **Open the Comment Library after submitting the assessment**: Opens the comment library after clicking Submit Assessment.
-- **Close the SpeedGrader tab after submitting a comment on the assignment**: After you click the submit-comment button, waits 2 seconds to allow Canvas API requests to finish, then closes the current SpeedGrader tab.
+- **Close the SpeedGrader tab after submitting a comment on the assignment†**: After you click the submit-comment button, waits 2 seconds to allow Canvas API requests to finish, then closes the current SpeedGrader tab.
 - **Automatically set comments to be sent to the whole group when available**: When the submit-comment controls load, automatically selects the group comment mode if Canvas provides it.
 - **Automatically scroll to the submit comment button after selecting a comment from the comment library**: After you select a comment in the comment library, automatically scroll down to the submit comment button to save time if you are using the comment library frequently.
 

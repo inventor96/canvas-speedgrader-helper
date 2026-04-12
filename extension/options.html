@@ -11,6 +11,7 @@
     <main>
       <h1>Settings</h1>
       <p class="muted">Configure your preferences for the Helper for Canvas SpeedGrader extension. Changes will take effect immediately after saving. Unless otherwise specified, your settings are synced between your devices (if supported by your browser).</p>
+      <p class="muted">Options marked with &dagger; can also be toggled on a case-by-case basis in a popup that appears when hovering over the applicable trigger (e.g. the "Submit Comment" button).</p>
 
       <hr>
 
@@ -41,12 +42,12 @@
           <p style="margin-top: 5px; margin-left: 2em; margin-bottom: 0;"><b>Note:</b> This automation only runs when the SpeedGrader submission is already graded. It is highly recommended to also enable "Automatically select 'Already Graded' when a mismatched name check finds the names are in the same group" when this option is enabled.</p>
           <label>
             <input id="auto-complete-queue-item-after-comment-submit" type="checkbox" />
-            Automatically click the "Complete" button in the queue after submitting an assignment comment
+            Automatically click the "Complete" button in the queue after submitting an assignment comment &dagger;
           </label>
           <br>
           <label>
             <input id="auto-open-next-queue-item-after-complete" type="checkbox" />
-            Automatically open the next item in the queue after an assignment has been marked as complete
+            Automatically open the next item in the queue after an assignment has been marked as complete &dagger;
           </label>
         </div>
       </section>
@@ -70,7 +71,7 @@
           <br>
           <label>
             <input id="close-speedgrader-tab-after-submit-comment" type="checkbox" />
-            Close the SpeedGrader tab after submitting a comment on the assignment
+            Close the SpeedGrader tab after submitting a comment on the assignment &dagger;
           </label>
           <br>
           <label>

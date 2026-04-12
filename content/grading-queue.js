@@ -231,6 +231,9 @@
           // Handle auto-complete after comment submission
           if (message && message.type === CSH_MESSAGE_TYPES.CLICK_QUEUE_COMPLETE_AFTER_COMMENT) {
             console.log('CSH: Received request to complete queue item for student:', message.queuedName);
+            if (typeof message.autoOpenNextQueueItemAfterComplete === 'boolean') {
+              _pendingAutoOpenOverride = message.autoOpenNextQueueItemAfterComplete;
+            }
             clickCompleteByStudentName(message.queuedName);
             return;
           }
@@ -288,11 +291,29 @@
     console.log('CSH: Opened next queue item after completion');
   }
 
+  let _pendingAutoOpenOverride = null;
+
   /**
    * Handle completion clicks by optionally opening the next queue item.
    */
   function maybeOpenNextQueueItemAfterComplete(completeButton) {
     if (!completeButton) return;
+
+    // Capture and clear any transient override set by the comment-submit flow.
+    const override = _pendingAutoOpenOverride;
+    _pendingAutoOpenOverride = null;
+
+    if (typeof override === 'boolean') {
+      if (!override) return;
+      waitForElementRemoval(completeButton).then((wasRemoved) => {
+        if (!wasRemoved) {
+          console.warn('CSH: Timed out waiting for completion control removal');
+          return;
+        }
+        clickFirstGradeButton();
+      });
+      return;
+    }
 
     chrome.storage.sync.get({ autoOpenNextQueueItemAfterComplete: false }, async (data) => {
       if (!data.autoOpenNextQueueItemAfterComplete) {
