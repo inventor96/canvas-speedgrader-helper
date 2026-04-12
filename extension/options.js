@@ -37,6 +37,9 @@ function loadPlaceholders() {
     const closeSpeedgraderAfterSubmitCommentCb = document.getElementById('close-speedgrader-tab-after-submit-comment');
     if (closeSpeedgraderAfterSubmitCommentCb) closeSpeedgraderAfterSubmitCommentCb.checked = !!data.closeSpeedgraderTabAfterSubmitComment;
 
+    const autoCompleteQueueItemAfterCommentSubmitCb = document.getElementById('auto-complete-queue-item-after-comment-submit');
+    if (autoCompleteQueueItemAfterCommentSubmitCb) autoCompleteQueueItemAfterCommentSubmitCb.checked = !!data.autoCompleteQueueItemAfterCommentSubmit;
+
     const autoSetCommentsToWholeGroupCb = document.getElementById('auto-set-comments-to-whole-group-when-available');
     if (autoSetCommentsToWholeGroupCb) autoSetCommentsToWholeGroupCb.checked = !!data.autoSetCommentsToWholeGroupWhenAvailable;
 
@@ -322,6 +325,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const openRubric = !!document.getElementById('open-rubric') && document.getElementById('open-rubric').checked;
     const openCommentLibrary = !!document.getElementById('open-comment-library') && document.getElementById('open-comment-library').checked;
     const closeSpeedgraderTabAfterSubmitComment = !!document.getElementById('close-speedgrader-tab-after-submit-comment') && document.getElementById('close-speedgrader-tab-after-submit-comment').checked;
+    const autoCompleteQueueItemAfterCommentSubmit = !!document.getElementById('auto-complete-queue-item-after-comment-submit') && document.getElementById('auto-complete-queue-item-after-comment-submit').checked;
     const autoSetCommentsToWholeGroupWhenAvailable = !!document.getElementById('auto-set-comments-to-whole-group-when-available') && document.getElementById('auto-set-comments-to-whole-group-when-available').checked;
     const scrollToSubmitCommentAfterCommentLibrarySelection = !!document.getElementById('scroll-to-submit-comment-after-comment-library-selection') && document.getElementById('scroll-to-submit-comment-after-comment-library-selection').checked;
     const useTeamNameForGroupPlaceholderReplacement = !!document.getElementById('use-team-name-for-group-placeholder-replacement') && document.getElementById('use-team-name-for-group-placeholder-replacement').checked;
@@ -346,6 +350,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         openRubricForUngraded: openRubric,
         openCommentLibraryAfterSubmit: openCommentLibrary,
         closeSpeedgraderTabAfterSubmitComment: closeSpeedgraderTabAfterSubmitComment,
+        autoCompleteQueueItemAfterCommentSubmit: autoCompleteQueueItemAfterCommentSubmit,
         autoSetCommentsToWholeGroupWhenAvailable: autoSetCommentsToWholeGroupWhenAvailable,
         scrollToSubmitCommentAfterCommentLibrarySelection: scrollToSubmitCommentAfterCommentLibrarySelection,
         useTeamNameForGroupPlaceholderReplacement: useTeamNameForGroupPlaceholderReplacement,

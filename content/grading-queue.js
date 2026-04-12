@@ -179,61 +179,67 @@
   }
 
   /**
-   * Listen for group check result messages from the service worker
+   * Listen for group check result messages and auto-complete messages from the service worker
    */
   function attachGroupCheckResultListener() {
     try {
       chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         try {
-          // Listen for the enriched grading status message from SpeedGrader.
-          if (!message || message.type !== CSH_MESSAGE_TYPES.GROUPS_CHECK_GRADING_STATUS || !message.sameGroup) {
-            return;
-          }
+          // Handle group check grading status messages
+          if (message && message.type === CSH_MESSAGE_TYPES.GROUPS_CHECK_GRADING_STATUS && message.sameGroup) {
+            console.log('CSH: Received group match grading status for student:', message.queuedName, '| isGraded:', message.isGraded);
 
-          console.log('CSH: Received group match grading status for student:', message.queuedName, '| isGraded:', message.isGraded);
+            chrome.storage.sync.get({
+              autoSelectAlreadyGradedWhenGroupMatched: false,
+              autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded: false,
+            }, async (data) => {
+              const shouldAutoSelectAlreadyGraded = !!data.autoSelectAlreadyGradedWhenGroupMatched && !!message.isGraded;
+              const shouldAutoCompleteAfterGroupMatch = !!data.autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded && !!message.isGraded;
 
-          chrome.storage.sync.get({
-            autoSelectAlreadyGradedWhenGroupMatched: false,
-            autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded: false,
-          }, async (data) => {
-            const shouldAutoSelectAlreadyGraded = !!data.autoSelectAlreadyGradedWhenGroupMatched && !!message.isGraded;
-            const shouldAutoCompleteAfterGroupMatch = !!data.autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded && !!message.isGraded;
-
-            if (!shouldAutoSelectAlreadyGraded && !shouldAutoCompleteAfterGroupMatch) {
-              return;
-            }
-
-            if (shouldAutoSelectAlreadyGraded) {
-              const selectionResult = selectAlreadyGradedByStudentName(message.queuedName);
-              if (!selectionResult.selected) {
+              if (!shouldAutoSelectAlreadyGraded && !shouldAutoCompleteAfterGroupMatch) {
                 return;
               }
 
-              // If completion automation is also active, wait until the select value settles first.
-              if (shouldAutoCompleteAfterGroupMatch) {
-                const settled = await waitForSelectValueByStudentName(
-                  message.queuedName,
-                  selectionResult.expectedValue,
-                  5000,
-                  750
-                );
-                if (!settled) {
-                  console.warn('CSH: Timed out waiting for grading status select to persist before completion');
+              if (shouldAutoSelectAlreadyGraded) {
+                const selectionResult = selectAlreadyGradedByStudentName(message.queuedName);
+                if (!selectionResult.selected) {
                   return;
                 }
-              }
-            }
 
-            if (shouldAutoCompleteAfterGroupMatch) {
-              clickCompleteByStudentName(message.queuedName);
-            }
-          });
+                // If completion automation is also active, wait until the select value settles first.
+                if (shouldAutoCompleteAfterGroupMatch) {
+                  const settled = await waitForSelectValueByStudentName(
+                    message.queuedName,
+                    selectionResult.expectedValue,
+                    5000,
+                    750
+                  );
+                  if (!settled) {
+                    console.warn('CSH: Timed out waiting for grading status select to persist before completion');
+                    return;
+                  }
+                }
+              }
+
+              if (shouldAutoCompleteAfterGroupMatch) {
+                clickCompleteByStudentName(message.queuedName);
+              }
+            });
+            return;
+          }
+
+          // Handle auto-complete after comment submission
+          if (message && message.type === CSH_MESSAGE_TYPES.CLICK_QUEUE_COMPLETE_AFTER_COMMENT) {
+            console.log('CSH: Received request to complete queue item for student:', message.queuedName);
+            clickCompleteByStudentName(message.queuedName);
+            return;
+          }
         } catch (e) {
-          console.error('Error handling group check result message:', e);
+          console.error('Error handling message:', e);
         }
       });
     } catch (e) {
-      console.error('Error attaching group check result listener:', e);
+      console.error('Error attaching message listener:', e);
     }
   }
 

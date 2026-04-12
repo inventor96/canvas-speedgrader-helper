@@ -345,6 +345,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return;
   }
 
+  if (message.type === CSH_MESSAGE_TYPES.CLICK_QUEUE_COMPLETE_AFTER_COMMENT) {
+    const senderTabId = sender?.tab?.id;
+    const payload = {
+      type: CSH_MESSAGE_TYPES.CLICK_QUEUE_COMPLETE_AFTER_COMMENT,
+      queuedName: message.queuedName || '',
+    };
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach(tab => {
+        if (tab.id !== senderTabId) {
+          safeSendToTab(tab.id, payload);
+        }
+      });
+    });
+    sendResponse({ ok: true });
+    return;
+  }
+
   // Always respond to avoid "message port closed" for unknown/unhandled message types.
   sendResponse({ ok: false, error: `Unhandled message type: ${message.type}` });
   return;

@@ -21,6 +21,7 @@
   }
 
   let closeSpeedgraderTabAfterSubmitCommentEnabled = false;
+  let autoCompleteQueueItemAfterCommentSubmitEnabled = false;
   let closeOnSubmitCommentListenerAttached = false;
   let closeOnSubmitCommentPending = false;
 
@@ -74,7 +75,8 @@
     document.addEventListener('click', async (event) => {
       const submitCommentButton = event.target.closest('button[data-testid="submit-comment-button"]');
       if (!submitCommentButton) return;
-      if (!closeSpeedgraderTabAfterSubmitCommentEnabled) return;
+      // Only proceed if at least one relevant setting is enabled
+      if (!closeSpeedgraderTabAfterSubmitCommentEnabled && !autoCompleteQueueItemAfterCommentSubmitEnabled) return;
       if (closeOnSubmitCommentPending) return;
 
       closeOnSubmitCommentPending = true;
@@ -86,9 +88,26 @@
       if (!commentAppeared) return;
 
       if (!chrome.runtime || !chrome.runtime.sendMessage) return;
-      chrome.runtime.sendMessage({ type: CSH_MESSAGE_TYPES.CLOSE_SPEEDGRADER_TAB }, () => {
-        void chrome.runtime?.lastError;
-      });
+
+      // Handle close tab setting
+      if (closeSpeedgraderTabAfterSubmitCommentEnabled) {
+        chrome.runtime.sendMessage({ type: CSH_MESSAGE_TYPES.CLOSE_SPEEDGRADER_TAB }, () => {
+          void chrome.runtime?.lastError;
+        });
+      }
+
+      // Handle auto-complete queue item setting
+      if (autoCompleteQueueItemAfterCommentSubmitEnabled) {
+        const studentName = getCurrentCanvasStudentFullName();
+        if (studentName) {
+          chrome.runtime.sendMessage({
+            type: CSH_MESSAGE_TYPES.CLICK_QUEUE_COMPLETE_AFTER_COMMENT,
+            queuedName: studentName
+          }, () => {
+            void chrome.runtime?.lastError;
+          });
+        }
+      }
     }, true);
   }
 
@@ -98,8 +117,12 @@
       return;
     }
 
-    chrome.storage.sync.get({ closeSpeedgraderTabAfterSubmitComment: false }, (data) => {
+    chrome.storage.sync.get({
+      closeSpeedgraderTabAfterSubmitComment: false,
+      autoCompleteQueueItemAfterCommentSubmit: false
+    }, (data) => {
       closeSpeedgraderTabAfterSubmitCommentEnabled = !!data.closeSpeedgraderTabAfterSubmitComment;
+      autoCompleteQueueItemAfterCommentSubmitEnabled = !!data.autoCompleteQueueItemAfterCommentSubmit;
       attachCloseOnSubmitCommentListener();
     });
   }
