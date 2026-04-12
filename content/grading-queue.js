@@ -1,6 +1,10 @@
 (() => {
   'use strict';
 
+  let _pendingAutoOpenOverride = null;
+  let _defaultAutoOpenNextQueueItemAfterComplete = false;
+  const _queuePopupStateByStudentName = Object.create(null);
+
   /**
    * Grading Queue Helper Script
    * 
@@ -40,6 +44,98 @@
     }
 
     return row;
+  }
+
+  /**
+   * Return the display student name for a queue row.
+   */
+  function getStudentNameFromRow(row) {
+    if (!row) return '';
+    const studentNameElement = row.querySelector('[data-control-name="txtStudentName"]');
+    return studentNameElement?.textContent?.trim() || '';
+  }
+
+  /**
+   * Find the queue row container from a row action button element.
+   */
+  function getQueueRowFromActionButton(button) {
+    if (!button || typeof button.closest !== 'function') return null;
+    return button.closest('[data-control-name="ActionButtons"]')?.parentElement || null;
+  }
+
+  /**
+   * Find the queue row container from a completion button element.
+   */
+  function getQueueRowFromCompleteButton(completeButton) {
+    if (!completeButton || typeof completeButton.closest !== 'function') return null;
+
+    // Complete controls can be wrapped differently across PowerApps renders.
+    const actionButtonsParent = completeButton.closest('[data-control-name="ActionButtons"]')?.parentElement;
+    if (actionButtonsParent) return actionButtonsParent;
+
+    const columnLabelsParent = completeButton.closest('[data-control-name="ColumnLabels"]')?.parentElement;
+    if (columnLabelsParent) return columnLabelsParent;
+
+    const completeControl = completeButton.closest('[data-control-name="CompleteButton"]');
+    if (!completeControl) return null;
+
+    return completeControl.closest('[data-control-name="ColumnLabels"]')?.parentElement || completeControl.parentElement || null;
+  }
+
+  /**
+   * Get a normalized student key used for transient popup state.
+   */
+  function getStudentKey(studentName) {
+    return String(studentName || '').trim();
+  }
+
+  /**
+   * Read per-student queue popup state, creating it from extension defaults if needed.
+   */
+  function getStudentQueuePopupState(studentName) {
+    const key = getStudentKey(studentName);
+    if (!key) {
+      return {
+        autoOpenNextQueueItemAfterComplete: _defaultAutoOpenNextQueueItemAfterComplete,
+      };
+    }
+
+    if (!_queuePopupStateByStudentName[key]) {
+      _queuePopupStateByStudentName[key] = {
+        autoOpenNextQueueItemAfterComplete: _defaultAutoOpenNextQueueItemAfterComplete,
+      };
+    }
+
+    return _queuePopupStateByStudentName[key];
+  }
+
+  /**
+   * Write per-student queue popup state.
+   */
+  function setStudentQueuePopupState(studentName, patch) {
+    const key = getStudentKey(studentName);
+    if (!key) return;
+
+    const existing = getStudentQueuePopupState(key);
+    _queuePopupStateByStudentName[key] = {
+      ...existing,
+      ...patch,
+    };
+  }
+
+  /**
+   * Seed queue popup defaults from synced extension settings.
+   */
+  function initializeQueuePopupDefaults(callback) {
+    if (!chrome.storage || !chrome.storage.sync || !chrome.storage.sync.get) {
+      callback();
+      return;
+    }
+
+    chrome.storage.sync.get({ autoOpenNextQueueItemAfterComplete: false }, (data) => {
+      _defaultAutoOpenNextQueueItemAfterComplete = !!data.autoOpenNextQueueItemAfterComplete;
+      callback();
+    });
   }
 
   /**
@@ -291,12 +387,149 @@
     console.log('CSH: Opened next queue item after completion');
   }
 
-  let _pendingAutoOpenOverride = null;
+  const QueueCompletePopup = (() => {
+    let _el = null;
+    let _hideTimer = null;
+    let _activeStudentName = '';
+    const HIDE_DELAY_MS = 1500;
+
+    function _isPopup(node) {
+      if (!_el || !node) return false;
+      return node === _el || (typeof _el.contains === 'function' && _el.contains(node));
+    }
+
+    function _isCompleteButton(node) {
+      return !!(node && typeof node.closest === 'function' && node.closest('[data-control-name="CompleteButton"] button'));
+    }
+
+    function _cancelHideTimer() {
+      if (_hideTimer !== null) {
+        clearTimeout(_hideTimer);
+        _hideTimer = null;
+      }
+    }
+
+    function _startHideTimer() {
+      _cancelHideTimer();
+      _hideTimer = setTimeout(() => {
+        if (_el) _el.style.display = 'none';
+      }, HIDE_DELAY_MS);
+    }
+
+    function _syncCheckboxesForStudent(studentName) {
+      const state = getStudentQueuePopupState(studentName);
+      const cbNext = document.getElementById('csh-queue-open-next-cb');
+      if (cbNext) {
+        cbNext.checked = !!state.autoOpenNextQueueItemAfterComplete;
+      }
+    }
+
+    function _show(completeButtonEl, studentName) {
+      if (!_el) return;
+
+      _activeStudentName = studentName || '';
+      _syncCheckboxesForStudent(_activeStudentName);
+
+      const rect = completeButtonEl.getBoundingClientRect();
+      _el.style.left = rect.left + 'px';
+      _el.style.top = rect.top + 'px';
+      _el.style.display = 'block';
+    }
+
+    function _create() {
+      const el = document.createElement('div');
+      el.id = 'csh-queue-complete-popup';
+      el.style.cssText = [
+        'position:fixed',
+        'z-index:99999',
+        'background:#fff',
+        'border:1px solid #c7cdd1',
+        'border-radius:4px',
+        'box-shadow:0 2px 8px rgba(0,0,0,0.18)',
+        'padding:8px 12px',
+        'display:none',
+        'transform:translate(calc(-100% - 8px), 0)',
+        'min-width:220px',
+        'font-size:13px',
+        'line-height:1.5',
+        'color:#2d3b45',
+        'font-family:Lato,LatoWeb,sans-serif',
+        'user-select:none',
+      ].join(';');
+
+      const label = document.createElement('label');
+      label.style.cssText = 'display:flex;align-items:center;gap:7px;cursor:pointer;padding:2px 0;white-space:nowrap;';
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.id = 'csh-queue-open-next-cb';
+      cb.style.cssText = 'margin:0;cursor:pointer;flex-shrink:0;';
+
+      const span = document.createElement('span');
+      span.textContent = 'Start next queue submission';
+
+      label.appendChild(cb);
+      label.appendChild(span);
+      el.appendChild(label);
+
+      el.addEventListener('change', (event) => {
+        const target = event.target;
+        if (!target || target.type !== 'checkbox') return;
+        if (target.id !== 'csh-queue-open-next-cb') return;
+
+        setStudentQueuePopupState(_activeStudentName, {
+          autoOpenNextQueueItemAfterComplete: !!target.checked,
+        });
+      });
+
+      document.body.appendChild(el);
+      return el;
+    }
+
+    function init() {
+      if (_el) return;
+      _el = _create();
+
+      document.addEventListener('mouseover', (event) => {
+        if (_isCompleteButton(event.target)) {
+          const completeButton = event.target.closest('[data-control-name="CompleteButton"] button');
+          const row = getQueueRowFromCompleteButton(completeButton);
+          const studentName = getStudentNameFromRow(row);
+
+          _cancelHideTimer();
+          _show(completeButton, studentName);
+          return;
+        }
+
+        if (_isPopup(event.target)) {
+          _cancelHideTimer();
+        }
+      });
+
+      document.addEventListener('mouseout', (event) => {
+        if (!_el || _el.style.display === 'none') return;
+        const leaving = event.target;
+        const entering = event.relatedTarget;
+
+        if (!_isCompleteButton(leaving) && !_isPopup(leaving)) return;
+        if (_isCompleteButton(entering) || _isPopup(entering)) return;
+
+        _startHideTimer();
+      });
+    }
+
+    function hideAfterDelay() {
+      if (!_el || _el.style.display === 'none') return;
+      _startHideTimer();
+    }
+
+    return { init, hideAfterDelay };
+  })();
 
   /**
    * Handle completion clicks by optionally opening the next queue item.
    */
-  function maybeOpenNextQueueItemAfterComplete(completeButton) {
+  function maybeOpenNextQueueItemAfterComplete(completeButton, studentName) {
     if (!completeButton) return;
 
     // Capture and clear any transient override set by the comment-submit flow.
@@ -315,12 +548,12 @@
       return;
     }
 
-    chrome.storage.sync.get({ autoOpenNextQueueItemAfterComplete: false }, async (data) => {
-      if (!data.autoOpenNextQueueItemAfterComplete) {
-        return;
-      }
+    const studentState = getStudentQueuePopupState(studentName);
+    if (!studentState.autoOpenNextQueueItemAfterComplete) {
+      return;
+    }
 
-      const wasRemoved = await waitForElementRemoval(completeButton);
+    waitForElementRemoval(completeButton).then((wasRemoved) => {
       if (!wasRemoved) {
         console.warn('CSH: Timed out waiting for completion control removal');
         return;
@@ -339,7 +572,10 @@
       // First check if a complete button was clicked, and handle that separately
       const completeButton = event.target.closest('[data-control-name="CompleteButton"] button');
       if (completeButton) {
-        maybeOpenNextQueueItemAfterComplete(completeButton);
+        const completeRow = getQueueRowFromCompleteButton(completeButton);
+        const completeStudentName = getStudentNameFromRow(completeRow);
+        QueueCompletePopup.hideAfterDelay();
+        maybeOpenNextQueueItemAfterComplete(completeButton, completeStudentName);
       }
 
       // Check if a grading button was clicked
@@ -347,19 +583,10 @@
       if (!button) return;
 
       // Extract the student name from the queue item
-      const studentNameElement = button
-        .closest('[data-control-name="ActionButtons"]')
-        ?.parentElement
-        ?.querySelector('[data-control-name="txtStudentName"]');
-
-      if (!studentNameElement) {
-        console.warn('CSH: Could not find student name element in Grading Queue');
-        return;
-      }
-
-      const studentName = studentNameElement.textContent.trim();
+      const row = getQueueRowFromActionButton(button);
+      const studentName = getStudentNameFromRow(row);
       if (!studentName) {
-        console.warn('CSH: Student name is empty in Grading Queue');
+        console.warn('CSH: Could not find student name element in Grading Queue');
         return;
       }
 
@@ -400,12 +627,18 @@
   // Wait for the page to be ready, then initialize
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-      initializeGradingQueueListener();
-      attachGroupCheckResultListener();
+      initializeQueuePopupDefaults(() => {
+        initializeGradingQueueListener();
+        attachGroupCheckResultListener();
+        QueueCompletePopup.init();
+      });
     });
   } else {
-    initializeGradingQueueListener();
-    attachGroupCheckResultListener();
+    initializeQueuePopupDefaults(() => {
+      initializeGradingQueueListener();
+      attachGroupCheckResultListener();
+      QueueCompletePopup.init();
+    });
   }
 
   console.log('CSH: Grading Queue listener initialized');

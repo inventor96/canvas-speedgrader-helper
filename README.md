@@ -25,7 +25,7 @@ To update the extension with the latest features and fixes, download the zip aga
 
 ## Options Page Overview
 
-Options marked with † can also be toggled on a case-by-case basis in a popup that appears when hovering over the applicable trigger (e.g. the "Submit Comment" button).
+Options marked with † can also be toggled on a case-by-case basis in a popup that appears when hovering over the applicable trigger (e.g. the "Submit Comment" button on the SpeedGrader page, or the "Complete" button in the Grading Queue).
 
 ### Grading Queue Integration
 
