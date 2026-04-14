@@ -24,6 +24,7 @@ const SYNCED_SETTINGS = {
   autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded: false,
   autoOpenNextQueueItemAfterComplete: false,
   autoClickLoadQueueWhenEmpty: false,
+  autoClickLoadQueueEveryHourWhenLessThanTenItems: false,
   autoCompleteQueueItemAfterCommentSubmit: false,
   savedPoints: {},
   savedPointsMeta: { lastUsed: {} },

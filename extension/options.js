@@ -88,6 +88,9 @@ function loadPlaceholders() {
     const autoClickLoadQueueWhenEmptyCb = document.getElementById('auto-click-load-queue-when-empty');
     if (autoClickLoadQueueWhenEmptyCb) autoClickLoadQueueWhenEmptyCb.checked = !!data.autoClickLoadQueueWhenEmpty;
 
+    const autoClickLoadQueueEveryHourWhenLessThanTenItemsCb = document.getElementById('auto-click-load-queue-every-hour-when-less-than-ten-items');
+    if (autoClickLoadQueueEveryHourWhenLessThanTenItemsCb) autoClickLoadQueueEveryHourWhenLessThanTenItemsCb.checked = !!data.autoClickLoadQueueEveryHourWhenLessThanTenItems;
+
     const format = data && data.studentNameFormat ? data.studentNameFormat : SYNCED_SETTINGS.studentNameFormat;
     const formatRadio = document.querySelector(`input[name="student-name-format"][value="${format}"]`);
     if (formatRadio) formatRadio.checked = true;
@@ -345,6 +348,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded = !!document.getElementById('auto-close-speedgrader-tab-when-group-matched-and-ungraded') && document.getElementById('auto-close-speedgrader-tab-when-group-matched-and-ungraded').checked;
     const autoOpenNextQueueItemAfterComplete = !!document.getElementById('auto-open-next-queue-item-after-complete') && document.getElementById('auto-open-next-queue-item-after-complete').checked;
     const autoClickLoadQueueWhenEmpty = !!document.getElementById('auto-click-load-queue-when-empty') && document.getElementById('auto-click-load-queue-when-empty').checked;
+    const autoClickLoadQueueEveryHourWhenLessThanTenItems = !!document.getElementById('auto-click-load-queue-every-hour-when-less-than-ten-items') && document.getElementById('auto-click-load-queue-every-hour-when-less-than-ten-items').checked;
     const studentNameFormat = document.querySelector('input[name="student-name-format"]:checked')?.value || SYNCED_SETTINGS.studentNameFormat;
 
     saveStudentsFromDOM(() => {
@@ -371,6 +375,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded: autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded,
         autoOpenNextQueueItemAfterComplete: autoOpenNextQueueItemAfterComplete,
         autoClickLoadQueueWhenEmpty: autoClickLoadQueueWhenEmpty,
+        autoClickLoadQueueEveryHourWhenLessThanTenItems: autoClickLoadQueueEveryHourWhenLessThanTenItems,
         studentNameFormat: studentNameFormat
       }, () => {
         // Show saved status

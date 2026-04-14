@@ -4,8 +4,13 @@
   let _pendingAutoOpenOverride = null;
   let _defaultAutoOpenNextQueueItemAfterComplete = false;
   let _autoClickLoadQueueWhenEmpty = false;
+  let _autoClickLoadQueueEveryHourWhenLessThanTenItems = false;
+  let _loadQueueHourlyTimerId = null;
   let _queueRepopulationRetryActive = false;
   const _queuePopupStateByStudentName = Object.create(null);
+  const LOAD_QUEUE_BUTTON_SELECTOR = 'div[data-control-name="ButtonCanvas1_1"] button';
+  const LOAD_QUEUE_HOURLY_INTERVAL_MS = 60 * 60 * 1000;
+  const LOAD_QUEUE_MIN_ITEMS_THRESHOLD = 10;
 
   /**
    * Grading Queue Helper Script
@@ -137,26 +142,134 @@
     chrome.storage.sync.get({
       autoOpenNextQueueItemAfterComplete: false,
       autoClickLoadQueueWhenEmpty: false,
+      autoClickLoadQueueEveryHourWhenLessThanTenItems: false,
     }, (data) => {
       _defaultAutoOpenNextQueueItemAfterComplete = !!data.autoOpenNextQueueItemAfterComplete;
       _autoClickLoadQueueWhenEmpty = !!data.autoClickLoadQueueWhenEmpty;
+      _autoClickLoadQueueEveryHourWhenLessThanTenItems = !!data.autoClickLoadQueueEveryHourWhenLessThanTenItems;
+      if (_autoClickLoadQueueEveryHourWhenLessThanTenItems) {
+        resetHourlyLoadQueueTimer('initial settings load');
+      }
       callback();
     });
   }
 
   /**
+   * Clear the hourly Load Queue timer if one exists.
+   */
+  function clearHourlyLoadQueueTimer(reason = 'not specified') {
+    if (_loadQueueHourlyTimerId === null) return;
+    clearTimeout(_loadQueueHourlyTimerId);
+    _loadQueueHourlyTimerId = null;
+    console.log('CSH: Cleared hourly Load Queue timer:', reason);
+  }
+
+  /**
+   * Count queue items currently visible in the grading queue.
+   */
+  function getCurrentQueueItemCount() {
+    const studentNameElements = Array.from(document.querySelectorAll('[data-control-name="txtStudentName"]'));
+    return studentNameElements.filter((element) => {
+      if (!element || !element.isConnected) return false;
+      return !!(element.textContent || '').trim();
+    }).length;
+  }
+
+  /**
+   * Run the hourly queue-size check and click Load Queue when below threshold.
+   */
+  function runHourlyLoadQueueCheck() {
+    _loadQueueHourlyTimerId = null;
+
+    if (!_autoClickLoadQueueEveryHourWhenLessThanTenItems) {
+      return;
+    }
+
+    const queueItemCount = getCurrentQueueItemCount();
+    if (queueItemCount < LOAD_QUEUE_MIN_ITEMS_THRESHOLD) {
+      console.log('CSH: Hourly queue check found fewer than 10 items; clicking Load Queue');
+      const didClickLoadQueue = clickLoadQueueButton('hourly queue check');
+
+      if (!didClickLoadQueue) {
+        resetHourlyLoadQueueTimer('hourly queue check click failed');
+      }
+      return;
+    }
+
+    console.log('CSH: Hourly queue check found', queueItemCount, 'items; no Load Queue click needed');
+    resetHourlyLoadQueueTimer('hourly queue check complete');
+  }
+
+  /**
+   * Start or restart the hourly Load Queue timer when the feature is enabled.
+   */
+  function resetHourlyLoadQueueTimer(reason = 'not specified') {
+    clearHourlyLoadQueueTimer('timer reset requested');
+
+    if (!_autoClickLoadQueueEveryHourWhenLessThanTenItems) {
+      return;
+    }
+
+    _loadQueueHourlyTimerId = setTimeout(runHourlyLoadQueueCheck, LOAD_QUEUE_HOURLY_INTERVAL_MS);
+    console.log('CSH: Started hourly Load Queue timer:', reason);
+  }
+
+  /**
+   * Handle any successful Load Queue click (manual or automatic).
+   */
+  function onLoadQueueButtonClicked(source) {
+    if (!_autoClickLoadQueueEveryHourWhenLessThanTenItems) {
+      return;
+    }
+
+    resetHourlyLoadQueueTimer(`Load Queue clicked (${source})`);
+  }
+
+  /**
    * Click the "Load Queue" button when queue items are exhausted.
    */
-  function clickLoadQueueButton() {
-    const loadQueueButton = document.querySelector('div[data-control-name="ButtonCanvas1_1"] button');
+  function clickLoadQueueButton(reason = 'automation') {
+    const loadQueueButton = document.querySelector(LOAD_QUEUE_BUTTON_SELECTOR);
     if (!loadQueueButton || loadQueueButton.disabled) {
       console.warn('CSH: Could not find enabled Load Queue button');
       return false;
     }
 
     loadQueueButton.click();
-    console.log('CSH: Clicked Load Queue because no Grade buttons were available');
+    console.log('CSH: Clicked Load Queue:', reason);
     return true;
+  }
+
+  /**
+   * Keep local queue settings in sync when extension settings are changed.
+   */
+  function attachSyncedSettingsChangeListener() {
+    if (!chrome.storage || !chrome.storage.onChanged) {
+      return;
+    }
+
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName !== 'sync') return;
+
+      if (changes.autoClickLoadQueueWhenEmpty) {
+        _autoClickLoadQueueWhenEmpty = !!changes.autoClickLoadQueueWhenEmpty.newValue;
+      }
+
+      if (changes.autoClickLoadQueueEveryHourWhenLessThanTenItems) {
+        const newEnabled = !!changes.autoClickLoadQueueEveryHourWhenLessThanTenItems.newValue;
+        const wasEnabled = _autoClickLoadQueueEveryHourWhenLessThanTenItems;
+        _autoClickLoadQueueEveryHourWhenLessThanTenItems = newEnabled;
+
+        if (!newEnabled) {
+          clearHourlyLoadQueueTimer('setting disabled');
+          return;
+        }
+
+        if (!wasEnabled && _loadQueueHourlyTimerId === null) {
+          resetHourlyLoadQueueTimer('setting enabled');
+        }
+      }
+    });
   }
 
   /**
@@ -633,6 +746,11 @@
   function initializeGradingQueueListener() {
     // Use event delegation to handle dynamically added buttons
     document.addEventListener('click', (event) => {
+      const loadQueueButton = event.target.closest(LOAD_QUEUE_BUTTON_SELECTOR);
+      if (loadQueueButton && !loadQueueButton.disabled) {
+        onLoadQueueButtonClicked(event.isTrusted ? 'manual' : 'automatic');
+      }
+
       // First check if a complete button was clicked, and handle that separately
       const completeButton = event.target.closest('[data-control-name="CompleteButton"] button');
       if (completeButton) {
@@ -694,6 +812,7 @@
       initializeQueuePopupDefaults(() => {
         initializeGradingQueueListener();
         attachGroupCheckResultListener();
+        attachSyncedSettingsChangeListener();
         QueueCompletePopup.init();
       });
     });
@@ -701,6 +820,7 @@
     initializeQueuePopupDefaults(() => {
       initializeGradingQueueListener();
       attachGroupCheckResultListener();
+      attachSyncedSettingsChangeListener();
       QueueCompletePopup.init();
     });
   }
