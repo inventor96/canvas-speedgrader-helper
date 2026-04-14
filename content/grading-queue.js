@@ -3,6 +3,8 @@
 
   let _pendingAutoOpenOverride = null;
   let _defaultAutoOpenNextQueueItemAfterComplete = false;
+  let _autoClickLoadQueueWhenEmpty = false;
+  let _queueRepopulationRetryActive = false;
   const _queuePopupStateByStudentName = Object.create(null);
 
   /**
@@ -132,10 +134,70 @@
       return;
     }
 
-    chrome.storage.sync.get({ autoOpenNextQueueItemAfterComplete: false }, (data) => {
+    chrome.storage.sync.get({
+      autoOpenNextQueueItemAfterComplete: false,
+      autoClickLoadQueueWhenEmpty: false,
+    }, (data) => {
       _defaultAutoOpenNextQueueItemAfterComplete = !!data.autoOpenNextQueueItemAfterComplete;
+      _autoClickLoadQueueWhenEmpty = !!data.autoClickLoadQueueWhenEmpty;
       callback();
     });
+  }
+
+  /**
+   * Click the "Load Queue" button when queue items are exhausted.
+   */
+  function clickLoadQueueButton() {
+    const loadQueueButton = document.querySelector('div[data-control-name="ButtonCanvas1_1"] button');
+    if (!loadQueueButton || loadQueueButton.disabled) {
+      console.warn('CSH: Could not find enabled Load Queue button');
+      return false;
+    }
+
+    loadQueueButton.click();
+    console.log('CSH: Clicked Load Queue because no Grade buttons were available');
+    return true;
+  }
+
+  /**
+   * Retry once for a short window so queue repopulation can finish before
+   * attempting to open the next submission.
+   */
+  function retryOpenNextAfterQueueLoad(maxChecks = 15, intervalMs = 1000) {
+    if (_queueRepopulationRetryActive) {
+      console.log('CSH: Queue repopulation retry already active; skipping duplicate retry');
+      return;
+    }
+
+    _queueRepopulationRetryActive = true;
+    let checksCompleted = 0;
+
+    const checkForGradeButton = () => {
+      if (tryClickFirstGradeButton()) {
+        _queueRepopulationRetryActive = false;
+        console.log('CSH: Opened next queue item after queue repopulation');
+        return;
+      }
+
+      checksCompleted += 1;
+      if (checksCompleted >= maxChecks) {
+        _queueRepopulationRetryActive = false;
+        console.warn('CSH: Queue repopulation retry timed out after 15 seconds');
+        return;
+      }
+
+      setTimeout(checkForGradeButton, intervalMs);
+    };
+
+    setTimeout(checkForGradeButton, intervalMs);
+  }
+
+  /**
+   * Get the first available grade button, if any.
+   */
+  function getFirstAvailableGradeButton() {
+    const gradeButtons = Array.from(document.querySelectorAll('[data-control-name="GraderButton"] button'));
+    return gradeButtons.find((button) => !button.disabled && button.isConnected) || null;
   }
 
   /**
@@ -373,18 +435,16 @@
   }
 
   /**
-   * Click the first available grade button in the queue.
+   * Attempt to click the first available grade button.
    */
-  function clickFirstGradeButton() {
-    const gradeButtons = Array.from(document.querySelectorAll('[data-control-name="GraderButton"] button'));
-    const firstAvailable = gradeButtons.find((button) => !button.disabled && button.isConnected);
+  function tryClickFirstGradeButton() {
+    const firstAvailable = getFirstAvailableGradeButton();
     if (!firstAvailable) {
-      console.log('CSH: No available grade button found after completion');
-      return;
+      return false;
     }
 
     firstAvailable.click();
-    console.log('CSH: Opened next queue item after completion');
+    return true;
   }
 
   const QueueCompletePopup = (() => {
@@ -535,23 +595,10 @@
     // Capture and clear any transient override set by the comment-submit flow.
     const override = _pendingAutoOpenOverride;
     _pendingAutoOpenOverride = null;
-
-    if (typeof override === 'boolean') {
-      if (!override) return;
-      waitForElementRemoval(completeButton).then((wasRemoved) => {
-        if (!wasRemoved) {
-          console.warn('CSH: Timed out waiting for completion control removal');
-          return;
-        }
-        clickFirstGradeButton();
-      });
-      return;
-    }
-
     const studentState = getStudentQueuePopupState(studentName);
-    if (!studentState.autoOpenNextQueueItemAfterComplete) {
-      return;
-    }
+    const shouldAutoOpenNextQueueItem = typeof override === 'boolean'
+      ? override
+      : !!studentState.autoOpenNextQueueItemAfterComplete;
 
     waitForElementRemoval(completeButton).then((wasRemoved) => {
       if (!wasRemoved) {
@@ -559,7 +606,24 @@
         return;
       }
 
-      clickFirstGradeButton();
+      if (shouldAutoOpenNextQueueItem && tryClickFirstGradeButton()) {
+        console.log('CSH: Opened next queue item after completion');
+        return;
+      }
+
+      const hasAvailableGradeButton = !!getFirstAvailableGradeButton();
+      if (hasAvailableGradeButton) {
+        return;
+      }
+
+      if (!_autoClickLoadQueueWhenEmpty) {
+        return;
+      }
+
+      const didClickLoadQueue = clickLoadQueueButton();
+      if (didClickLoadQueue && shouldAutoOpenNextQueueItem) {
+        retryOpenNextAfterQueueLoad(15, 1000);
+      }
     });
   }
 

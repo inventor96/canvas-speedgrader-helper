@@ -23,6 +23,7 @@ const SYNCED_SETTINGS = {
   autoSelectAlreadyGradedWhenGroupMatched: false,
   autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded: false,
   autoOpenNextQueueItemAfterComplete: false,
+  autoClickLoadQueueWhenEmpty: false,
   autoCompleteQueueItemAfterCommentSubmit: false,
   savedPoints: {},
   savedPointsMeta: { lastUsed: {} },

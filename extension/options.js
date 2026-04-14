@@ -85,6 +85,9 @@ function loadPlaceholders() {
     const autoOpenNextQueueItemAfterCompleteCb = document.getElementById('auto-open-next-queue-item-after-complete');
     if (autoOpenNextQueueItemAfterCompleteCb) autoOpenNextQueueItemAfterCompleteCb.checked = !!data.autoOpenNextQueueItemAfterComplete;
 
+    const autoClickLoadQueueWhenEmptyCb = document.getElementById('auto-click-load-queue-when-empty');
+    if (autoClickLoadQueueWhenEmptyCb) autoClickLoadQueueWhenEmptyCb.checked = !!data.autoClickLoadQueueWhenEmpty;
+
     const format = data && data.studentNameFormat ? data.studentNameFormat : SYNCED_SETTINGS.studentNameFormat;
     const formatRadio = document.querySelector(`input[name="student-name-format"][value="${format}"]`);
     if (formatRadio) formatRadio.checked = true;
@@ -341,6 +344,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const autoSelectAlreadyGradedWhenGroupMatched = !!document.getElementById('auto-select-already-graded-when-group-matched') && document.getElementById('auto-select-already-graded-when-group-matched').checked;
     const autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded = !!document.getElementById('auto-close-speedgrader-tab-when-group-matched-and-ungraded') && document.getElementById('auto-close-speedgrader-tab-when-group-matched-and-ungraded').checked;
     const autoOpenNextQueueItemAfterComplete = !!document.getElementById('auto-open-next-queue-item-after-complete') && document.getElementById('auto-open-next-queue-item-after-complete').checked;
+    const autoClickLoadQueueWhenEmpty = !!document.getElementById('auto-click-load-queue-when-empty') && document.getElementById('auto-click-load-queue-when-empty').checked;
     const studentNameFormat = document.querySelector('input[name="student-name-format"]:checked')?.value || SYNCED_SETTINGS.studentNameFormat;
 
     saveStudentsFromDOM(() => {
@@ -366,6 +370,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         autoSelectAlreadyGradedWhenGroupMatched: autoSelectAlreadyGradedWhenGroupMatched,
         autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded: autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded,
         autoOpenNextQueueItemAfterComplete: autoOpenNextQueueItemAfterComplete,
+        autoClickLoadQueueWhenEmpty: autoClickLoadQueueWhenEmpty,
         studentNameFormat: studentNameFormat
       }, () => {
         // Show saved status
