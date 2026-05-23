@@ -269,17 +269,31 @@
     typeScript.src = chrome.runtime.getURL('shared/message-types.js');
     typeScript.type = 'text/javascript';
     typeScript.onload = () => {
-      // After message types are loaded, inject the page script with settings
-      const script = document.createElement('script');
-      script.src = chrome.runtime.getURL('page/speedgrader.js');
-      script.type = 'text/javascript';
-      try {
-        script.dataset.settings = JSON.stringify(settings);
-      } catch (e) {
-        // ignore
-      }
-      //script.onload = () => script.remove();
-      document.documentElement.appendChild(script);
+      // After message types are loaded, inject adapter and dispatcher
+      const adapterScript = document.createElement('script');
+      adapterScript.src = chrome.runtime.getURL('page/submission-adapters/iframe-submission-adapter.js');
+      adapterScript.type = 'text/javascript';
+      adapterScript.onload = () => {
+        // After adapter is loaded, inject dispatcher
+        const dispatcherScript = document.createElement('script');
+        dispatcherScript.src = chrome.runtime.getURL('page/submission-dispatcher.js');
+        dispatcherScript.type = 'text/javascript';
+        dispatcherScript.onload = () => {
+          // After dispatcher is loaded, inject the page script with settings
+          const script = document.createElement('script');
+          script.src = chrome.runtime.getURL('page/speedgrader.js');
+          script.type = 'text/javascript';
+          try {
+            script.dataset.settings = JSON.stringify(settings);
+          } catch (e) {
+            // ignore
+          }
+          //script.onload = () => script.remove();
+          document.documentElement.appendChild(script);
+        };
+        document.documentElement.appendChild(dispatcherScript);
+      };
+      document.documentElement.appendChild(adapterScript);
     };
     document.documentElement.appendChild(typeScript);
   }

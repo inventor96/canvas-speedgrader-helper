@@ -1832,6 +1832,14 @@
   // Attach listener for live settings updates from the content script
   SettingsBridge.attachSettingsUpdateListener();
 
+  // Initialize submission coordinator for text extraction, highlighting, and scrolling
+  if (typeof SubmissionCoordinator !== 'undefined') {
+    SubmissionCoordinator.init().catch((e) => {
+      console.warn('CSH: SubmissionCoordinator initialization failed:', e.message);
+      // Not fatal; submission features simply won't be available
+    });
+  }
+
   // Start TinyMCE placeholder hooks and polling
   PlaceholderEngine.waitForTinyMCE();
 
