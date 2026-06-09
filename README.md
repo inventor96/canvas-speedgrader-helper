@@ -80,6 +80,7 @@ These options apply only to unstructured rubrics without preset point values:
 
 - **Local-only storage**: Preferred names are stored on this device and are not synced.
 - **Import/Export CSV**: Back up or migrate preferred names using CSV files.
+- **Name format sanity check**: When enabled, the extension detects all-uppercase or all-lowercase names and offers to save a properly formatted preferred name (e.g. `JOHN DOE` → `John Doe`, `mary-jane` → `Mary-Jane`). The check is skipped when a preferred name is already saved for the student.
 
 ## Popup (Quick Preferred Name)
 

@@ -514,6 +514,29 @@
         return;
       }
 
+      if (msg.type === CSH_MESSAGE_TYPES.SAVE_STUDENT_NAME) {
+        const studentId = typeof msg.studentId === 'string' ? msg.studentId : '';
+        const preferredName = typeof msg.preferredName === 'string' ? msg.preferredName : '';
+        if (!studentId || !preferredName) return;
+        if (!chrome.storage || !chrome.storage.local) return;
+
+        chrome.storage.local.get({ studentNames: {}, studentNamesMeta: { lastUsed: {} } }, (data) => {
+          const studentNames = data.studentNames || {};
+          const currentMeta = data.studentNamesMeta || { lastUsed: {} };
+          studentNames[studentId] = preferredName;
+          const touched = storageUtils
+            ? storageUtils.touchMeta(currentMeta, [studentId])
+            : currentMeta;
+
+          chrome.storage.local.set({ studentNames, studentNamesMeta: touched }, () => {
+            if (chrome.runtime && chrome.runtime.lastError) {
+              logStorageWarning('CSH storage warning: failed saving student name.', chrome.runtime.lastError.message);
+            }
+          });
+        });
+        return;
+      }
+
       if (msg.type === CSH_MESSAGE_TYPES.START_GROUPS_CHECK) {
         if (!chrome.runtime || !chrome.runtime.sendMessage) return;
         const queuedName = typeof msg.queuedName === 'string' ? msg.queuedName : '';

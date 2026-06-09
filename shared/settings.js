@@ -20,6 +20,7 @@ const SYNCED_SETTINGS = {
   clearCommentBoxOnMaxPoints: false,
   notifyOnStudentNameMismatch: false,
   autoGroupCheckOnNameMismatch: false,
+  enableNameSanityCheck: false,
   autoSelectAlreadyGradedWhenGroupMatched: false,
   autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded: false,
   autoOpenNextQueueItemAfterComplete: false,

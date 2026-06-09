@@ -76,6 +76,9 @@ function loadPlaceholders() {
     const autoGroupCheckCb = document.getElementById('auto-group-check-on-name-mismatch');
     if (autoGroupCheckCb) autoGroupCheckCb.checked = !!data.autoGroupCheckOnNameMismatch;
 
+    const enableNameSanityCheckCb = document.getElementById('enable-name-sanity-check');
+    if (enableNameSanityCheckCb) enableNameSanityCheckCb.checked = data.enableNameSanityCheck !== false;
+
     const autoSelectAlreadyGradedCb = document.getElementById('auto-select-already-graded-when-group-matched');
     if (autoSelectAlreadyGradedCb) autoSelectAlreadyGradedCb.checked = !!data.autoSelectAlreadyGradedWhenGroupMatched;
 
@@ -344,6 +347,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const clearCommentBoxOnMaxPoints = !!document.getElementById('clear-comment-box-on-max-points') && document.getElementById('clear-comment-box-on-max-points').checked;
     const notifyOnStudentNameMismatch = !!document.getElementById('notify-student-name-mismatch') && document.getElementById('notify-student-name-mismatch').checked;
     const autoGroupCheckOnNameMismatch = !!document.getElementById('auto-group-check-on-name-mismatch') && document.getElementById('auto-group-check-on-name-mismatch').checked;
+    const enableNameSanityCheck = !!document.getElementById('enable-name-sanity-check') && document.getElementById('enable-name-sanity-check').checked;
     const autoSelectAlreadyGradedWhenGroupMatched = !!document.getElementById('auto-select-already-graded-when-group-matched') && document.getElementById('auto-select-already-graded-when-group-matched').checked;
     const autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded = !!document.getElementById('auto-close-speedgrader-tab-when-group-matched-and-ungraded') && document.getElementById('auto-close-speedgrader-tab-when-group-matched-and-ungraded').checked;
     const autoOpenNextQueueItemAfterComplete = !!document.getElementById('auto-open-next-queue-item-after-complete') && document.getElementById('auto-open-next-queue-item-after-complete').checked;
@@ -371,6 +375,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         clearCommentBoxOnMaxPoints: clearCommentBoxOnMaxPoints,
         notifyOnStudentNameMismatch: notifyOnStudentNameMismatch,
         autoGroupCheckOnNameMismatch: autoGroupCheckOnNameMismatch,
+        enableNameSanityCheck: enableNameSanityCheck,
         autoSelectAlreadyGradedWhenGroupMatched: autoSelectAlreadyGradedWhenGroupMatched,
         autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded: autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded,
         autoOpenNextQueueItemAfterComplete: autoOpenNextQueueItemAfterComplete,

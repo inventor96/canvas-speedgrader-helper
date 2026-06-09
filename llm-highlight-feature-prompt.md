@@ -8,7 +8,7 @@ The grading interface presents:
 - A single-view page containing the student's submission as mostly plain text, potentially including some HTML formatting elements (e.g. `<ol>`, `<ul>`, `<li>`, `<strong>`, `<em>`)
 - A rubric structured as a table, where each row represents a scorable aspect with a plain-text description
 
-Ollama is running locally on `localhost:11434` and exposes an OpenAI-compatible REST API. Assume the model in use is `qwen2.5:3b`. CORS from `localhost` to `localhost:11434` should already be handled by Ollama, but note it if there are any concerns.
+Ollama is running locally on `localhost:11434` and exposes an OpenAI-compatible REST API. Assume the model in use is `qwen3.5:4b`. CORS from `localhost` to `localhost:11434` should already be handled by Ollama, but note it if there are any concerns.
 
 ---
 

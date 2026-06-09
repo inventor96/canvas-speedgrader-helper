@@ -25,6 +25,9 @@ const CSH_MESSAGE_TYPES = {
   CLOSE_SPEEDGRADER_TAB: 'CSH_CLOSE_SPEEDGRADER_TAB',
   CLICK_QUEUE_COMPLETE_AFTER_COMMENT: 'CSH_CLICK_QUEUE_COMPLETE_AFTER_COMMENT',
 
+  // Page → Content Script (student name operations)
+  SAVE_STUDENT_NAME: 'CSH_SAVE_STUDENT_NAME',
+
   // Popup → SpeedGrader content script
   POPUP_JUMP_TO_STUDENT_GROUPS: 'CSH_POPUP_JUMP_TO_STUDENT_GROUPS',
   // Page → Dispatcher (submission operations)
