@@ -269,31 +269,38 @@
     typeScript.src = chrome.runtime.getURL('shared/message-types.js');
     typeScript.type = 'text/javascript';
     typeScript.onload = () => {
-      // After message types are loaded, inject adapter and dispatcher
-      const adapterScript = document.createElement('script');
-      adapterScript.src = chrome.runtime.getURL('page/submission-adapters/iframe-submission-adapter.js');
-      adapterScript.type = 'text/javascript';
-      adapterScript.onload = () => {
-        // After adapter is loaded, inject dispatcher
-        const dispatcherScript = document.createElement('script');
-        dispatcherScript.src = chrome.runtime.getURL('page/submission-dispatcher.js');
-        dispatcherScript.type = 'text/javascript';
-        dispatcherScript.onload = () => {
-          // After dispatcher is loaded, inject the page script with settings
-          const script = document.createElement('script');
-          script.src = chrome.runtime.getURL('page/speedgrader.js');
-          script.type = 'text/javascript';
-          try {
-            script.dataset.settings = JSON.stringify(settings);
-          } catch (e) {
-            // ignore
-          }
-          script.onload = () => script.remove();
-          document.head.appendChild(script);
+      // After message types, inject highlight config
+      const highlightConfigScript = document.createElement('script');
+      highlightConfigScript.src = chrome.runtime.getURL('page/submission-adapters/highlight-config.js');
+      highlightConfigScript.type = 'text/javascript';
+      highlightConfigScript.onload = () => {
+        // After highlight config, inject adapter and dispatcher
+        const adapterScript = document.createElement('script');
+        adapterScript.src = chrome.runtime.getURL('page/submission-adapters/iframe-submission-adapter.js');
+        adapterScript.type = 'text/javascript';
+        adapterScript.onload = () => {
+          // After adapter is loaded, inject dispatcher
+          const dispatcherScript = document.createElement('script');
+          dispatcherScript.src = chrome.runtime.getURL('page/submission-dispatcher.js');
+          dispatcherScript.type = 'text/javascript';
+          dispatcherScript.onload = () => {
+            // After dispatcher is loaded, inject the page script with settings
+            const script = document.createElement('script');
+            script.src = chrome.runtime.getURL('page/speedgrader.js');
+            script.type = 'text/javascript';
+            try {
+              script.dataset.settings = JSON.stringify(settings);
+            } catch (e) {
+              // ignore
+            }
+            script.onload = () => script.remove();
+            document.head.appendChild(script);
+          };
+          document.head.appendChild(dispatcherScript);
         };
-        document.head.appendChild(dispatcherScript);
+        document.head.appendChild(adapterScript);
       };
-      document.head.appendChild(adapterScript);
+      document.head.appendChild(highlightConfigScript);
     };
     document.head.appendChild(typeScript);
   }

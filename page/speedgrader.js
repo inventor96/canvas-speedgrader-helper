@@ -53,6 +53,55 @@
   }
 
   // ============================================================================
+  // NAMESPACE: HighlightClassSelector
+  // Cycles through available highlight class names without repeating the same
+  // color too close together. After the full list is exhausted, all options
+  // except the last two used become available again, ensuring visual
+  // distinguishability between adjacent highlights.
+  // ============================================================================
+  const HighlightClassSelector = {
+    _config: (typeof CSH_HighlightConfig !== 'undefined') ? CSH_HighlightConfig : [],
+    _used: [],
+
+    /**
+     * Return the next highlight class name.
+     * @returns {string|null}
+     */
+    getNext() {
+      const all = this._config;
+      if (all.length === 0) return null;
+
+      const used = this._used;
+
+      if (used.length < all.length) {
+        const usedSet = new Set(used);
+        const available = all.filter((item) => !usedSet.has(item.className));
+        const chosen = available[Math.floor(Math.random() * available.length)];
+        used.push(chosen.className);
+        console.log('[CSH] HighlightClassSelector - choosing new class:', chosen.className, 'Used classes:', used);
+        return chosen.className;
+      }
+
+      const keepLast2 = used.slice(-2);
+      this._used = keepLast2.slice();
+
+      const excludedSet = new Set(keepLast2);
+      const available = all.filter((item) => !excludedSet.has(item.className));
+      const chosen = available[Math.floor(Math.random() * available.length)];
+      this._used.push(chosen.className);
+      console.log('[CSH] HighlightClassSelector - choosing new class after cleanup:', chosen.className, 'Used classes:', this._used);
+      return chosen.className;
+    },
+
+    /**
+     * Reset the cycle (for testing).
+     */
+    reset() {
+      this._used = [];
+    },
+  };
+
+  // ============================================================================
   // NAMESPACE: SettingsBridge
   // Handles settings initialization, validation, and live updates from extension
   // ============================================================================
@@ -2030,6 +2079,63 @@
           if (typeof text === 'string' && text.length > 500) {
             console.log('[CSH DEMO] ... (truncated, full length:', text.length, 'chars)');
           }
+
+          // --- Random highlight demo ---
+          if (typeof text !== 'string' || text.length < 20) {
+            console.log('%c[CSH DEMO] ⚠ Text too short for highlight demo, skipping', 'color:#f39c12');
+            return;
+          }
+
+          const ranges = [];
+          const count = 2 + Math.floor(Math.random() * 3); // 2-4 ranges
+          const minChunk = 10;
+          const maxChunk = 80;
+          const used = [];
+
+          for (let i = 0; i < count; i++) {
+            let start, end, attempts = 0;
+            do {
+              const chunkLen = minChunk + Math.floor(Math.random() * (maxChunk - minChunk + 1));
+              start = Math.floor(Math.random() * (text.length - chunkLen));
+              end = start + chunkLen;
+              attempts++;
+            } while (
+              attempts < 20 &&
+              used.some(([s, e]) => start < e && end > s)
+            );
+
+            if (attempts < 20) {
+              used.push([start, end]);
+              ranges.push({ start, end });
+            }
+          }
+
+          if (ranges.length === 0) return;
+
+          console.log('%c[CSH DEMO] 🎨 Applying ' + ranges.length + ' random highlight(s) individually...', 'font-weight:bold;color:#8e44ad');
+
+          let completed = 0;
+          ranges.forEach((r, i) => {
+            const snippet = text.slice(r.start, r.end).replace(/\s+/g, ' ').trim();
+            const className = HighlightClassSelector.getNext();
+            if (!className) {
+              console.log('[CSH DEMO]   Range ' + (i + 1) + ': skipped (no class available)');
+              return;
+            }
+
+            console.log('[CSH DEMO]   Range ' + (i + 1) + ': chars ' + r.start + '–' + r.end + ' → "' + snippet.slice(0, 60) + (snippet.length > 60 ? '…' : '') + '" (' + className + ')');
+
+            api.applyHighlights([r], className)
+              .then(() => {
+                completed++;
+                if (completed === ranges.length) {
+                  console.log('%c[CSH DEMO] ✓ All ' + ranges.length + ' highlights applied successfully!', 'font-weight:bold;color:#2ecc71');
+                }
+              })
+              .catch((err) => {
+                console.error('%c[CSH DEMO] ✗ Failed to apply range ' + (i + 1) + ' (' + className + '):', 'font-weight:bold;color:#e74c3c', err.message);
+              });
+          });
         })
         .catch((err) => {
           console.error('%c[CSH DEMO] ✗ Failed to fetch submission text:', 'font-weight:bold;color:#e74c3c', err.message);

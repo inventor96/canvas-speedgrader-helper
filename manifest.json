@@ -55,6 +55,7 @@
       ],
       "js": [
         "shared/message-types.js",
+        "page/submission-adapters/highlight-config.js",
         "page/submission-adapters/iframe-content/document-renderer-adapter.js",
         "page/submission-adapters/iframe-content/discussion-posts-adapter.js",
         "content/iframe-content-loader.js"
@@ -71,6 +72,7 @@
     {
       "resources": [
           "shared/message-types.js",
+          "page/submission-adapters/highlight-config.js",
           "page/speedgrader.js",
           "page/submission-dispatcher.js",
           "page/submission-adapters/iframe-submission-adapter.js",
