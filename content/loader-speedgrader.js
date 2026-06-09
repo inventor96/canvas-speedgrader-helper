@@ -288,14 +288,14 @@
           } catch (e) {
             // ignore
           }
-          //script.onload = () => script.remove();
-          document.documentElement.appendChild(script);
+          script.onload = () => script.remove();
+          document.head.appendChild(script);
         };
-        document.documentElement.appendChild(dispatcherScript);
+        document.head.appendChild(dispatcherScript);
       };
-      document.documentElement.appendChild(adapterScript);
+      document.head.appendChild(adapterScript);
     };
-    document.documentElement.appendChild(typeScript);
+    document.head.appendChild(typeScript);
   }
 
   // Helper to read synced settings.

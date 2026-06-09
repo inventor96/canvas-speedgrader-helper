@@ -40,4 +40,7 @@ const CSH_MESSAGE_TYPES = {
   // Dispatcher ↔ iframe content (submission iframe protocol)
   IFRAME_SUBMISSION_REQUEST: 'CSH_IFRAME_SUBMISSION_REQUEST',
   IFRAME_SUBMISSION_RESPONSE: 'CSH_IFRAME_SUBMISSION_RESPONSE',
+
+  // Iframe content → parent (adapter readiness signal)
+  IFRAME_SUBMISSION_ADAPTER_READY: 'CSH_IFRAME_SUBMISSION_ADAPTER_READY',
 };

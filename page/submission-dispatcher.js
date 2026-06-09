@@ -4,10 +4,10 @@
  * Central coordinator for submission operations. Detects submission type and routes
  * requests to appropriate adapter (iframe-based, direct DOM, etc.).
  * 
- * Public API:
- * - SubmissionCoordinator.getText() → Promise<string>
- * - SubmissionCoordinator.applyHighlights(ranges, name) → Promise<void>
- * - SubmissionCoordinator.scrollIntoView(selector, options) → Promise<void>
+ * Public API (accessible via whenReady callback):
+ * - api.getText() → Promise<string>
+ * - api.applyHighlights(ranges, name) → Promise<void>
+ * - api.scrollIntoView(selector, options) → Promise<void>
  */
 (() => {
   'use strict';
@@ -23,19 +23,71 @@
     _activeAdapter: null,
     _submissionElement: null,
     _isInitialized: false,
+    _initStarted: false,
     _initPromise: null,
 
+    // Readiness state
+    _ready: false,
+    _readyCallbacks: [],
+
     /**
-     * Initialize dispatcher by finding submission element and selecting adapter
+     * Register a callback to be called when the dispatcher is fully ready.
+     * If already ready, the callback is invoked immediately with the API.
+     * Triggers initialization if not yet started.
+     * @param {Function} callback - Receives { getText, applyHighlights, scrollIntoView }
      */
-    async init() {
-      if (this._isInitialized) {
+    whenReady(callback) {
+      if (this._ready) {
+        callback(this._createApi());
         return;
       }
+      this._readyCallbacks.push(callback);
+      this._startInit();
+    },
 
-      if (this._initPromise) {
-        return this._initPromise;
-      }
+    /**
+     * Create the API surface exposed to consumers
+     * @private
+     */
+    _createApi() {
+      const adapter = this._activeAdapter;
+      return {
+        getText: () => {
+          if (!adapter) return Promise.reject(new Error('SubmissionDispatcher: No active adapter'));
+          return adapter.getText();
+        },
+        applyHighlights: (ranges, cssHighlightName) => {
+          if (!adapter) return Promise.reject(new Error('SubmissionDispatcher: No active adapter'));
+          return adapter.applyHighlights(ranges, cssHighlightName);
+        },
+        scrollIntoView: (selector, options = {}) => {
+          if (!adapter) return Promise.reject(new Error('SubmissionDispatcher: No active adapter'));
+          return adapter.scrollIntoView(selector, options);
+        },
+      };
+    },
+
+    /**
+     * Mark the dispatcher as ready and drain pending callbacks
+     * @private
+     */
+    _markReady() {
+      if (this._ready) return;
+      this._ready = true;
+      console.log('[CSH] SubmissionDispatcher ready');
+      const cbs = this._readyCallbacks;
+      this._readyCallbacks = [];
+      const api = this._createApi();
+      cbs.forEach((cb) => cb(api));
+    },
+
+    /**
+     * Start initialization if not yet started
+     * @private
+     */
+    _startInit() {
+      if (this._initStarted) return;
+      this._initStarted = true;
 
       this._initPromise = (async () => {
         try {
@@ -59,46 +111,23 @@
           this._isInitialized = true;
 
           console.log('[CSH] SubmissionDispatcher initialized with adapter:', adapter.constructor.name || 'unknown');
+
+          // Wait for the adapter's own readiness (iframe content loaded, child adapter ready)
+          if (typeof adapter.whenReady === 'function') {
+            adapter.whenReady(() => {
+              this._markReady();
+            });
+          } else {
+            // For adapters that don't implement whenReady (e.g., future direct-DOM adapters)
+            this._markReady();
+          }
         } catch (e) {
           console.error('[CSH] SubmissionDispatcher initialization failed:', e.message);
-          throw e;
+          this._initStarted = false;
         }
       })();
 
       return this._initPromise;
-    },
-
-    /**
-     * Get text from submission
-     */
-    async getText() {
-      await this.init();
-      if (!this._activeAdapter) {
-        throw new Error('SubmissionDispatcher: No active adapter');
-      }
-      return this._activeAdapter.getText();
-    },
-
-    /**
-     * Apply highlights to submission
-     */
-    async applyHighlights(ranges, cssHighlightName) {
-      await this.init();
-      if (!this._activeAdapter) {
-        throw new Error('SubmissionDispatcher: No active adapter');
-      }
-      return this._activeAdapter.applyHighlights(ranges, cssHighlightName);
-    },
-
-    /**
-     * Scroll element into view
-     */
-    async scrollIntoView(selector, options = {}) {
-      await this.init();
-      if (!this._activeAdapter) {
-        throw new Error('SubmissionDispatcher: No active adapter');
-      }
-      return this._activeAdapter.scrollIntoView(selector, options);
     },
 
     /**
@@ -120,6 +149,7 @@
       if (typeof CSH_IframeSubmissionAdapter !== 'undefined') {
         this.registerAdapter({
           canHandle: (el) => CSH_IframeSubmissionAdapter.canHandle(el),
+          whenReady: (cb) => CSH_IframeSubmissionAdapter.whenReady(cb),
           init: (el) => CSH_IframeSubmissionAdapter.init(el),
           getText: () => CSH_IframeSubmissionAdapter.getText(),
           applyHighlights: (ranges, name) => CSH_IframeSubmissionAdapter.applyHighlights(ranges, name),
@@ -161,7 +191,10 @@
       this._activeAdapter = null;
       this._submissionElement = null;
       this._isInitialized = false;
+      this._initStarted = false;
       this._initPromise = null;
+      this._ready = false;
+      this._readyCallbacks = [];
     },
   };
 

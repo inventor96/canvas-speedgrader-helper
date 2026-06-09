@@ -1833,10 +1833,11 @@
   SettingsBridge.attachSettingsUpdateListener();
 
   // Initialize submission coordinator for text extraction, highlighting, and scrolling
+  // The API (getText, applyHighlights, scrollIntoView) is available inside the whenReady callback,
+  // ensuring no calls can happen until the submission content and adapter are fully loaded.
   if (typeof SubmissionCoordinator !== 'undefined') {
-    SubmissionCoordinator.init().catch((e) => {
-      console.warn('CSH: SubmissionCoordinator initialization failed:', e.message);
-      // Not fatal; submission features simply won't be available
+    SubmissionCoordinator.whenReady((api) => {
+      // Submission features available via api.getText(), api.applyHighlights(), api.scrollIntoView()
     });
   }
 

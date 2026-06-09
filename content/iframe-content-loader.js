@@ -42,12 +42,15 @@
 
   /**
    * Load adapter script based on iframe type
+   * @param {string} iframeType - The detected iframe type
+   * @param {Function} onReady - Callback when adapter script has loaded and listener is set up
    */
-  function loadAdapter(iframeType) {
+  function loadAdapter(iframeType, onReady) {
     const adapterName = getAdapterName(iframeType);
     if (!adapterName) {
       console.warn('[CSH] Unknown iframe type:', iframeType);
-      return false;
+      if (onReady) onReady(new Error('Unknown iframe type'));
+      return;
     }
 
     // Build the script path based on adapter type
@@ -60,7 +63,8 @@
 
     if (!scriptPath) {
       console.warn('[CSH] No script path for adapter:', adapterName);
-      return false;
+      if (onReady) onReady(new Error('No script path for adapter'));
+      return;
     }
 
     // Inject script into iframe (this script is running inside the iframe already)
@@ -69,11 +73,20 @@
       const scriptEl = document.createElement('script');
       scriptEl.src = chrome.runtime.getURL(scriptPath);
       scriptEl.type = 'text/javascript';
+      scriptEl.onload = () => {
+        // Adapter script loaded — now safe to set up message listener
+        setupMessageListener(adapterName);
+        console.log('[CSH] Iframe submission adapter ready:', adapterName);
+        if (onReady) onReady(null, adapterName);
+      };
+      scriptEl.onerror = () => {
+        console.error('[CSH] Failed to load adapter script:', scriptPath);
+        if (onReady) onReady(new Error('Failed to load adapter script'));
+      };
       (document.head || document.documentElement).appendChild(scriptEl);
-      return true;
     } else {
       console.warn('[CSH] chrome.runtime not available in iframe');
-      return false;
+      if (onReady) onReady(new Error('chrome.runtime not available'));
     }
   }
 
@@ -178,6 +191,18 @@
   }
 
   /**
+   * Notify parent window that the iframe content and adapter are ready
+   */
+  function notifyParentReady(adapterName) {
+    if (window.parent) {
+      window.parent.postMessage({
+        type: CSH_MESSAGE_TYPES.IFRAME_SUBMISSION_ADAPTER_READY,
+        adapterName,
+      }, '*');
+    }
+  }
+
+  /**
    * Initialize: detect iframe type and load appropriate adapter
    */
   function initialize() {
@@ -196,18 +221,15 @@
         return;
       }
 
-      // Load adapter script
-      if (!loadAdapter(iframeType)) {
-        console.error('[CSH] Failed to load adapter:', adapterName);
-        return;
-      }
-
-      // Wait for adapter to be loaded, then set up message listener
-      // Give the injected script time to execute
-      setTimeout(() => {
-        setupMessageListener(adapterName);
-        console.log('[CSH] Iframe submission adapter ready:', adapterName);
-      }, 100);
+      // Load adapter script; on success, message listener is set up
+      // Notify parent so it knows requests will be handled
+      loadAdapter(iframeType, (err, loadedAdapterName) => {
+        if (err) {
+          console.error('[CSH] Failed to load adapter:', err.message);
+          return;
+        }
+        notifyParentReady(loadedAdapterName);
+      });
     } catch (e) {
       console.error('[CSH] Iframe content loader initialization failed:', e);
     }

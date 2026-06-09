@@ -19,6 +19,12 @@
     _iframeElement: null,
     _pendingRequests: new Map(), // requestId → {resolve, reject, timeout}
 
+    // Readiness state
+    _ready: false,
+    _readyCallbacks: [],
+    _iframeLoaded: false,
+    _childAdapterReady: false,
+
     /**
      * Check if this adapter can handle the submission
      */
@@ -32,6 +38,32 @@
     },
 
     /**
+     * Register a callback to be called when the adapter is fully ready.
+     * If already ready, the callback is invoked immediately.
+     * @param {Function} callback - Receives the adapter as the argument
+     */
+    whenReady(callback) {
+      if (this._ready) {
+        callback(this);
+        return;
+      }
+      this._readyCallbacks.push(callback);
+    },
+
+    /**
+     * Mark the adapter as ready and drain pending callbacks
+     * @private
+     */
+    _markReady() {
+      if (this._ready) return;
+      this._ready = true;
+      console.log('[CSH] IframeSubmissionAdapter ready');
+      const cbs = this._readyCallbacks;
+      this._readyCallbacks = [];
+      cbs.forEach((cb) => cb(this));
+    },
+
+    /**
      * Initialize adapter with submission element
      */
     init(submissionElement) {
@@ -40,27 +72,74 @@
         throw new Error('IframeSubmissionAdapter: No iframe found in submission element');
       }
       this._setupMessageListener();
+      this._waitForIframeReady();
+    },
+
+    /**
+     * Monitor iframe content readiness: listens for both the iframe load
+     * event and the child adapter's ready message.
+     * @private
+     */
+    _waitForIframeReady() {
+      // Condition 1: iframe src has loaded (browser-level content load)
+      const checkIframeLoaded = () => {
+        if (this._iframeLoaded) return;
+        this._iframeLoaded = true;
+        this._checkBothReady();
+      };
+
+      // If the iframe already loaded before we set up the listener
+      if (this._iframeElement.contentDocument?.readyState === 'complete') {
+        this._iframeLoaded = true;
+      } else {
+        this._iframeElement.addEventListener('load', checkIframeLoaded, { once: true });
+      }
+
+      // Condition 2: child adapter script loaded and sent ready message
+      // Handled via _setupMessageListener's ADAPTER_READY handling
+    },
+
+    /**
+     * Check if both conditions are satisfied and mark ready
+     * @private
+     */
+    _checkBothReady() {
+      if (this._iframeLoaded && this._childAdapterReady) {
+        this._markReady();
+      }
     },
 
     /**
      * Get text from submission via iframe
      */
     async getText() {
-      return this._sendIframeRequest('getText', {});
+      return new Promise((resolve, reject) => {
+        this.whenReady(() => {
+          this._sendIframeRequest('getText', {}).then(resolve).catch(reject);
+        });
+      });
     },
 
     /**
      * Apply highlights to submission via iframe
      */
     async applyHighlights(ranges, cssHighlightName) {
-      return this._sendIframeRequest('applyHighlights', { ranges, cssHighlightName });
+      return new Promise((resolve, reject) => {
+        this.whenReady(() => {
+          this._sendIframeRequest('applyHighlights', { ranges, cssHighlightName }).then(resolve).catch(reject);
+        });
+      });
     },
 
     /**
      * Scroll element into view via iframe
      */
     async scrollIntoView(selector, options = {}) {
-      return this._sendIframeRequest('scrollIntoView', { selector, options });
+      return new Promise((resolve, reject) => {
+        this.whenReady(() => {
+          this._sendIframeRequest('scrollIntoView', { selector, options }).then(resolve).catch(reject);
+        });
+      });
     },
 
     /**
@@ -98,7 +177,7 @@
     },
 
     /**
-     * Set up listener for iframe responses
+     * Set up listener for iframe responses and adapter-ready signal
      * @private
      */
     _setupMessageListener() {
@@ -111,7 +190,20 @@
           }
 
           const msg = event.data;
-          if (!msg || msg.type !== CSH_MESSAGE_TYPES.IFRAME_SUBMISSION_RESPONSE) {
+          if (!msg || !msg.type) {
+            return;
+          }
+
+          // Handle child adapter ready signal
+          if (msg.type === CSH_MESSAGE_TYPES.IFRAME_SUBMISSION_ADAPTER_READY) {
+            this._childAdapterReady = true;
+            console.log('[CSH] IframeSubmissionAdapter: child adapter ready:', msg.adapterName);
+            this._checkBothReady();
+            return;
+          }
+
+          // Handle submission operation responses
+          if (msg.type !== CSH_MESSAGE_TYPES.IFRAME_SUBMISSION_RESPONSE) {
             return;
           }
 
@@ -152,6 +244,10 @@
       }
       this._pendingRequests.clear();
       this._iframeElement = null;
+      this._ready = false;
+      this._readyCallbacks = [];
+      this._iframeLoaded = false;
+      this._childAdapterReady = false;
     },
   };
 
