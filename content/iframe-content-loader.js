@@ -1,12 +1,14 @@
 /**
  * Iframe Content Loader
  * 
- * Content script that runs inside iframe contexts (canvasdocs.instructure.com, etc.)
- * Detects iframe type based on current URL and injects appropriate submission adapter.
+ * Content script that runs inside iframe contexts (canvadocs.instructure.com, etc.)
+ * Detects iframe type based on current URL and connects to the appropriate submission adapter.
  * Sets up postMessage communication channel for dispatcher requests.
  */
 (() => {
   'use strict';
+
+  let readyNotificationIntervalId = null;
 
   /**
    * Detect iframe type based on current URL
@@ -14,8 +16,12 @@
   function detectIframeType() {
     const url = window.location.href || '';
     
-    // Document renderer (canvasdocs)
-    if (url.includes('canvasdocs.instructure.com')) {
+    // Document renderer (Canvadoc)
+    if (url.includes('canvasdocs.instructure.com') || url.includes('canvadocs.instructure.com')) {
+      return 'document-renderer';
+    }
+
+    if (url.includes('instructure.com') && url.includes('/api/v1/canvadoc_session')) {
       return 'document-renderer';
     }
 
@@ -41,9 +47,22 @@
   }
 
   /**
-   * Load adapter script based on iframe type
+   * Get the already-loaded adapter from this content script's isolated world.
+   */
+  function getAdapter(adapterName) {
+    if (adapterName === 'DocumentRendererAdapter') {
+      return window.CSH_DocumentRendererAdapter;
+    }
+    if (adapterName === 'DiscussionPostsAdapter') {
+      return window.CSH_DiscussionPostsAdapter;
+    }
+    return null;
+  }
+
+  /**
+   * Confirm the adapter script for this iframe type is available.
    * @param {string} iframeType - The detected iframe type
-   * @param {Function} onReady - Callback when adapter script has loaded and listener is set up
+   * @param {Function} onReady - Callback when adapter is available and listener is set up
    */
   function loadAdapter(iframeType, onReady) {
     const adapterName = getAdapterName(iframeType);
@@ -53,41 +72,17 @@
       return;
     }
 
-    // Build the script path based on adapter type
-    let scriptPath;
-    if (iframeType === 'document-renderer') {
-      scriptPath = 'page/submission-adapters/iframe-content/document-renderer-adapter.js';
-    } else if (iframeType === 'discussion-posts') {
-      scriptPath = 'page/submission-adapters/iframe-content/discussion-posts-adapter.js';
-    }
-
-    if (!scriptPath) {
-      console.warn('[CSH] No script path for adapter:', adapterName);
-      if (onReady) onReady(new Error('No script path for adapter'));
+    const adapter = getAdapter(adapterName);
+    if (!adapter) {
+      console.error('[CSH] Adapter script is not loaded in iframe content context:', adapterName);
+      if (onReady) onReady(new Error(`Adapter script not loaded: ${adapterName}`));
       return;
     }
 
-    // Inject script into iframe (this script is running inside the iframe already)
-    // We need to use chrome.runtime.getURL to get the extension URL
-    if (typeof chrome !== 'undefined' && chrome.runtime) {
-      const scriptEl = document.createElement('script');
-      scriptEl.src = chrome.runtime.getURL(scriptPath);
-      scriptEl.type = 'text/javascript';
-      scriptEl.onload = () => {
-        // Adapter script loaded — now safe to set up message listener
-        setupMessageListener(adapterName);
-        console.log('[CSH] Iframe submission adapter ready:', adapterName);
-        if (onReady) onReady(null, adapterName);
-      };
-      scriptEl.onerror = () => {
-        console.error('[CSH] Failed to load adapter script:', scriptPath);
-        if (onReady) onReady(new Error('Failed to load adapter script'));
-      };
-      (document.head || document.documentElement).appendChild(scriptEl);
-    } else {
-      console.warn('[CSH] chrome.runtime not available in iframe');
-      if (onReady) onReady(new Error('chrome.runtime not available'));
-    }
+    console.log('[CSH] Iframe adapter available in content context:', adapterName);
+    setupMessageListener(adapterName);
+    console.log('[CSH] Iframe submission adapter ready:', adapterName);
+    if (onReady) onReady(null, adapterName);
   }
 
   /**
@@ -98,6 +93,7 @@
       return;
     }
 
+    console.log('[CSH] Attaching message listener for adapter:', adapterName);
     window.addEventListener('message', (event) => {
       try {
         // Only process messages from parent window
@@ -106,19 +102,32 @@
         }
 
         const msg = event.data;
-        if (!msg || msg.type !== CSH_MESSAGE_TYPES.IFRAME_SUBMISSION_REQUEST) {
+        if (!msg || !msg.type) {
           return;
         }
 
-        // Get the adapter from global scope
-        let adapter;
-        if (adapterName === 'DocumentRendererAdapter') {
-          adapter = window.CSH_DocumentRendererAdapter;
-        } else if (adapterName === 'DiscussionPostsAdapter') {
-          adapter = window.CSH_DiscussionPostsAdapter;
+        if (msg.type === CSH_MESSAGE_TYPES.IFRAME_SUBMISSION_READY_ACK) {
+          stopReadyNotifications('acknowledged by parent');
+          return;
         }
 
+        if (msg.type === CSH_MESSAGE_TYPES.IFRAME_SUBMISSION_READY_REQUEST) {
+          console.log('[CSH] Received ready request from parent; re-sending ready signal for:', adapterName);
+          notifyParentReady(adapterName, 'requested');
+          return;
+        }
+
+        if (msg.type !== CSH_MESSAGE_TYPES.IFRAME_SUBMISSION_REQUEST) {
+          return;
+        }
+
+        console.log('[CSH] Received request from parent:', msg.action, '(requestId:', msg.requestId, ')');
+
+        // Get the adapter from global scope
+        const adapter = getAdapter(adapterName);
+
         if (!adapter) {
+          console.error('[CSH] Adapter not found on window:', adapterName);
           sendError(msg.requestId, `Adapter not found: ${adapterName}`);
           return;
         }
@@ -137,6 +146,7 @@
   async function handleRequest(adapter, msg) {
     const { requestId, action, params } = msg;
 
+    console.log('[CSH] Processing request:', action, '- delegating to adapter');
     try {
       let result;
 
@@ -153,11 +163,18 @@
 
       // Handle async results
       if (result instanceof Promise) {
+        console.log('[CSH] Awaiting async result for:', action);
         result = await result;
       }
 
+      console.log('[CSH] Request completed:', action, '(requestId:', requestId, ')');
+      if (action === 'getText') {
+        const preview = typeof result === 'string' ? result.slice(0, 200) : String(result);
+        console.log('[CSH] getText result preview:', preview);
+      }
       sendSuccess(requestId, result);
     } catch (e) {
+      console.error('[CSH] Request failed:', action, '-', e.message);
       sendError(requestId, e.message || 'Unknown error');
     }
   }
@@ -167,6 +184,7 @@
    */
   function sendSuccess(requestId, result) {
     if (window.parent) {
+      console.log('[CSH] Sending success response to parent (requestId:', requestId, ')');
       window.parent.postMessage({
         type: CSH_MESSAGE_TYPES.IFRAME_SUBMISSION_RESPONSE,
         requestId,
@@ -181,6 +199,7 @@
    */
   function sendError(requestId, error) {
     if (window.parent) {
+      console.log('[CSH] Sending error response to parent (requestId:', requestId, '):', error);
       window.parent.postMessage({
         type: CSH_MESSAGE_TYPES.IFRAME_SUBMISSION_RESPONSE,
         requestId,
@@ -193,13 +212,42 @@
   /**
    * Notify parent window that the iframe content and adapter are ready
    */
-  function notifyParentReady(adapterName) {
+  function notifyParentReady(adapterName, reason) {
     if (window.parent) {
+      console.log('[CSH] Notifying parent that adapter is ready:', adapterName, reason ? `(${reason})` : '');
       window.parent.postMessage({
         type: CSH_MESSAGE_TYPES.IFRAME_SUBMISSION_ADAPTER_READY,
         adapterName,
       }, '*');
     }
+  }
+
+  function stopReadyNotifications(reason) {
+    if (readyNotificationIntervalId === null) {
+      return;
+    }
+
+    clearInterval(readyNotificationIntervalId);
+    readyNotificationIntervalId = null;
+    console.log('[CSH] Stopped ready notifications:', reason);
+  }
+
+  /**
+   * Repeat the ready notification so the parent does not miss a one-time signal.
+   */
+  function startReadyNotifications(adapterName) {
+    let attempts = 0;
+    const maxAttempts = 20;
+
+    stopReadyNotifications('restarting');
+    notifyParentReady(adapterName, 'initial');
+    readyNotificationIntervalId = setInterval(() => {
+      attempts += 1;
+      notifyParentReady(adapterName, `retry ${attempts}`);
+      if (attempts >= maxAttempts) {
+        stopReadyNotifications('max retries reached');
+      }
+    }, 500);
   }
 
   /**
@@ -209,7 +257,7 @@
     try {
       const iframeType = detectIframeType();
       if (!iframeType) {
-        // Not a recognized submission iframe type, exit silently
+        console.log('[CSH] Iframe content loader: URL is not a recognized submission iframe type:', window.location.href);
         return;
       }
 
@@ -221,14 +269,14 @@
         return;
       }
 
-      // Load adapter script; on success, message listener is set up
+      // Confirm adapter script availability; on success, message listener is set up
       // Notify parent so it knows requests will be handled
       loadAdapter(iframeType, (err, loadedAdapterName) => {
         if (err) {
           console.error('[CSH] Failed to load adapter:', err.message);
           return;
         }
-        notifyParentReady(loadedAdapterName);
+        startReadyNotifications(loadedAdapterName);
       });
     } catch (e) {
       console.error('[CSH] Iframe content loader initialization failed:', e);

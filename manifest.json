@@ -46,12 +46,22 @@
       "js": ["shared/message-types.js", "content/groups-page.js"],
       "run_at": "document_idle"
     },
-     {
-        "matches": ["https://canvasdocs.instructure.com/*", "https://*.instructure.com/courses/*/assignments/*/submissions/*"],
-        "js": ["shared/message-types.js", "content/iframe-content-loader.js"],
-        "run_at": "document_start",
-        "all_frames": true
-      }
+    {
+      "matches": [
+        "https://canvasdocs.instructure.com/*",
+        "https://canvadocs.instructure.com/*",
+        "https://*.instructure.com/api/v1/canvadoc_session*",
+        "https://*.instructure.com/courses/*/assignments/*/submissions/*"
+      ],
+      "js": [
+        "shared/message-types.js",
+        "page/submission-adapters/iframe-content/document-renderer-adapter.js",
+        "page/submission-adapters/iframe-content/discussion-posts-adapter.js",
+        "content/iframe-content-loader.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true
+    }
   ],
   "options_ui": {
     "page": "extension/options.html",

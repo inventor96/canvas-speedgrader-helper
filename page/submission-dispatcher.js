@@ -13,6 +13,7 @@
   'use strict';
 
   const SUBMISSION_CONTAINER_SELECTOR = 'article.speedgrader-preview-frame';
+  const SUBMISSION_WAIT_TIMEOUT_MS = 15000;
 
   /**
    * SubmissionDispatcher - Routes submission operations to adapters
@@ -25,6 +26,7 @@
     _isInitialized: false,
     _initStarted: false,
     _initPromise: null,
+    _builtinAdaptersRegistered: false,
 
     // Readiness state
     _ready: false,
@@ -38,9 +40,11 @@
      */
     whenReady(callback) {
       if (this._ready) {
+        console.log('[CSH] SubmissionDispatcher.whenReady: already ready, calling immediately');
         callback(this._createApi());
         return;
       }
+      console.log('[CSH] SubmissionDispatcher.whenReady: not ready, queuing callback (initStarted:', this._initStarted, ')');
       this._readyCallbacks.push(callback);
       this._startInit();
     },
@@ -51,18 +55,40 @@
      */
     _createApi() {
       const adapter = this._activeAdapter;
+      console.log('[CSH] SubmissionDispatcher._createApi with adapter:', !!adapter);
       return {
         getText: () => {
+          console.log('[CSH] SubmissionDispatcher API: getText called');
           if (!adapter) return Promise.reject(new Error('SubmissionDispatcher: No active adapter'));
-          return adapter.getText();
+          return adapter.getText().then((result) => {
+            console.log('[CSH] SubmissionDispatcher API: getText resolved successfully');
+            return result;
+          }).catch((err) => {
+            console.error('[CSH] SubmissionDispatcher API: getText rejected:', err.message);
+            throw err;
+          });
         },
         applyHighlights: (ranges, cssHighlightName) => {
+          console.log('[CSH] SubmissionDispatcher API: applyHighlights called');
           if (!adapter) return Promise.reject(new Error('SubmissionDispatcher: No active adapter'));
-          return adapter.applyHighlights(ranges, cssHighlightName);
+          return adapter.applyHighlights(ranges, cssHighlightName).then((result) => {
+            console.log('[CSH] SubmissionDispatcher API: applyHighlights resolved successfully');
+            return result;
+          }).catch((err) => {
+            console.error('[CSH] SubmissionDispatcher API: applyHighlights rejected:', err.message);
+            throw err;
+          });
         },
         scrollIntoView: (selector, options = {}) => {
+          console.log('[CSH] SubmissionDispatcher API: scrollIntoView called');
           if (!adapter) return Promise.reject(new Error('SubmissionDispatcher: No active adapter'));
-          return adapter.scrollIntoView(selector, options);
+          return adapter.scrollIntoView(selector, options).then((result) => {
+            console.log('[CSH] SubmissionDispatcher API: scrollIntoView resolved successfully');
+            return result;
+          }).catch((err) => {
+            console.error('[CSH] SubmissionDispatcher API: scrollIntoView rejected:', err.message);
+            throw err;
+          });
         },
       };
     },
@@ -74,7 +100,7 @@
     _markReady() {
       if (this._ready) return;
       this._ready = true;
-      console.log('[CSH] SubmissionDispatcher ready');
+      console.log('[CSH] SubmissionDispatcher ready - draining', this._readyCallbacks.length, 'pending callbacks');
       const cbs = this._readyCallbacks;
       this._readyCallbacks = [];
       const api = this._createApi();
@@ -88,24 +114,30 @@
     _startInit() {
       if (this._initStarted) return;
       this._initStarted = true;
+      console.log('[CSH] SubmissionDispatcher: starting initialization');
 
       this._initPromise = (async () => {
         try {
-          this._submissionElement = document.querySelector(SUBMISSION_CONTAINER_SELECTOR);
+          console.log('[CSH] SubmissionDispatcher: querying for submission element:', SUBMISSION_CONTAINER_SELECTOR);
+          this._submissionElement = await this._waitForSubmissionElement(SUBMISSION_CONTAINER_SELECTOR);
           if (!this._submissionElement) {
             throw new Error('SubmissionDispatcher: Submission element not found');
           }
+          console.log('[CSH] SubmissionDispatcher: found submission element');
 
           // Register built-in adapters
           this._registerBuiltinAdapters();
+          console.log('[CSH] SubmissionDispatcher: registered', this._adapters.length, 'adapters');
 
           // Find matching adapter
           const adapter = this._selectAdapter();
           if (!adapter) {
             throw new Error('SubmissionDispatcher: No adapter found for current submission type');
           }
+          console.log('[CSH] SubmissionDispatcher: selected adapter');
 
           // Initialize adapter
+          console.log('[CSH] SubmissionDispatcher: initializing adapter');
           adapter.init(this._submissionElement);
           this._activeAdapter = adapter;
           this._isInitialized = true;
@@ -114,11 +146,13 @@
 
           // Wait for the adapter's own readiness (iframe content loaded, child adapter ready)
           if (typeof adapter.whenReady === 'function') {
+            console.log('[CSH] SubmissionDispatcher: waiting for adapter readiness...');
             adapter.whenReady(() => {
+              console.log('[CSH] SubmissionDispatcher: adapter reports ready');
               this._markReady();
             });
           } else {
-            // For adapters that don't implement whenReady (e.g., future direct-DOM adapters)
+            console.log('[CSH] SubmissionDispatcher: adapter has no whenReady, marking ready immediately');
             this._markReady();
           }
         } catch (e) {
@@ -128,6 +162,83 @@
       })();
 
       return this._initPromise;
+    },
+
+    /**
+     * Wait for Canvas to render the submission container.
+     * @private
+     */
+    _waitForSubmissionElement(selector) {
+      const findElement = () => document.querySelector(selector);
+      const existing = findElement();
+      if (existing) {
+        return Promise.resolve(existing);
+      }
+
+      console.log('[CSH] SubmissionDispatcher: submission element not present yet; waiting', {
+        readyState: document.readyState,
+        hasBody: !!document.body,
+        previewFrameCount: document.querySelectorAll('.speedgrader-preview-frame').length,
+        iframeCount: document.querySelectorAll('iframe').length,
+      });
+
+      return new Promise((resolve, reject) => {
+        let finished = false;
+        let observer = null;
+        let intervalId = null;
+
+        const finish = (element, error) => {
+          if (finished) return;
+          finished = true;
+          clearTimeout(timeoutId);
+          if (intervalId !== null) clearInterval(intervalId);
+          if (observer) observer.disconnect();
+          if (error) {
+            reject(error);
+          } else {
+            resolve(element);
+          }
+        };
+
+        const check = () => {
+          const element = findElement();
+          if (element) {
+            console.log('[CSH] SubmissionDispatcher: submission element appeared while waiting');
+            finish(element, null);
+          }
+        };
+
+        const timeoutId = setTimeout(() => {
+          const articles = Array.from(document.querySelectorAll('article')).map((article) => ({
+            className: article.className || '',
+            id: article.id || '',
+          })).slice(0, 10);
+          const iframes = Array.from(document.querySelectorAll('iframe')).map((iframe) => ({
+            className: iframe.className || '',
+            id: iframe.id || '',
+            src: iframe.src || '',
+          })).slice(0, 10);
+
+          console.error('[CSH] SubmissionDispatcher: timed out waiting for submission element', {
+            selector,
+            readyState: document.readyState,
+            articles,
+            iframes,
+          });
+          finish(null, new Error('SubmissionDispatcher: Submission element not found'));
+        }, SUBMISSION_WAIT_TIMEOUT_MS);
+
+        if (document.body || document.documentElement) {
+          observer = new MutationObserver(check);
+          observer.observe(document.body || document.documentElement, {
+            childList: true,
+            subtree: true,
+          });
+        }
+
+        intervalId = setInterval(check, 250);
+        check();
+      });
     },
 
     /**
@@ -145,6 +256,10 @@
      * @private
      */
     _registerBuiltinAdapters() {
+      if (this._builtinAdaptersRegistered) {
+        return;
+      }
+
       // Register iframe adapter first (most common case)
       if (typeof CSH_IframeSubmissionAdapter !== 'undefined') {
         this.registerAdapter({
@@ -157,6 +272,7 @@
           destroy: () => CSH_IframeSubmissionAdapter.destroy(),
         });
       }
+      this._builtinAdaptersRegistered = true;
     },
 
     /**
@@ -193,6 +309,7 @@
       this._isInitialized = false;
       this._initStarted = false;
       this._initPromise = null;
+      this._builtinAdaptersRegistered = false;
       this._ready = false;
       this._readyCallbacks = [];
     },

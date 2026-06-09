@@ -1837,7 +1837,24 @@
   // ensuring no calls can happen until the submission content and adapter are fully loaded.
   if (typeof SubmissionCoordinator !== 'undefined') {
     SubmissionCoordinator.whenReady((api) => {
-      // Submission features available via api.getText(), api.applyHighlights(), api.scrollIntoView()
+      console.log('%c[CSH DEMO] SubmissionCoordinator ready — full pipeline is live!', 'font-weight:bold;color:#2ecc71;font-size:14px');
+      console.log('[CSH DEMO] Request path: speedgrader.js → SubmissionDispatcher → IframeSubmissionAdapter → (postMessage) → iframe-content-loader → adapter');
+      console.log('[CSH DEMO] Fetching submission text via api.getText()...');
+
+      api.getText()
+        .then((text) => {
+          const preview = typeof text === 'string' ? text.slice(0, 500) : String(text);
+          console.log('%c[CSH DEMO] ✓ Submission text received successfully!', 'font-weight:bold;color:#2ecc71');
+          console.log('[CSH DEMO] Character count:', typeof text === 'string' ? text.length : 'N/A');
+          console.log('[CSH DEMO] Preview (first 500 chars):');
+          console.log('%c' + preview, 'color:#555;background:#f5f5f5;padding:4px 8px;border-left:3px solid #2ecc71');
+          if (typeof text === 'string' && text.length > 500) {
+            console.log('[CSH DEMO] ... (truncated, full length:', text.length, 'chars)');
+          }
+        })
+        .catch((err) => {
+          console.error('%c[CSH DEMO] ✗ Failed to fetch submission text:', 'font-weight:bold;color:#e74c3c', err.message);
+        });
     });
   }
 
