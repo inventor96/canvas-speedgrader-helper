@@ -33,11 +33,8 @@
     canHandle(submissionElement) {
       try {
         const iframe = submissionElement.querySelector('iframe');
-        const can = !!iframe;
-        console.log('[CSH] IframeSubmissionAdapter.canHandle:', can, '(iframe src:', iframe?.src?.slice(0, 80), ')');
-        return can;
+        return !!iframe;
       } catch (e) {
-        console.warn('[CSH] IframeSubmissionAdapter.canHandle error:', e.message);
         return false;
       }
     },
@@ -49,11 +46,9 @@
      */
     whenReady(callback) {
       if (this._ready) {
-        console.log('[CSH] IframeSubmissionAdapter.whenReady: already ready, calling immediately');
         callback(this);
         return;
       }
-      console.log('[CSH] IframeSubmissionAdapter.whenReady: not ready yet, queuing callback');
       this._readyCallbacks.push(callback);
     },
 
@@ -72,7 +67,6 @@
         clearInterval(this._readyRequestIntervalId);
         this._readyRequestIntervalId = null;
       }
-      console.log('[CSH] IframeSubmissionAdapter ready - draining', this._readyCallbacks.length, 'pending callbacks');
       const cbs = this._readyCallbacks;
       this._readyCallbacks = [];
       cbs.forEach((cb) => cb(this));
@@ -82,7 +76,6 @@
      * Initialize adapter with submission element
      */
     init(submissionElement) {
-      console.log('[CSH] IframeSubmissionAdapter.init called');
       if (this._readyTimeoutId !== null) {
         clearTimeout(this._readyTimeoutId);
         this._readyTimeoutId = null;
@@ -98,7 +91,6 @@
       if (!this._iframeElement) {
         throw new Error('IframeSubmissionAdapter: No iframe found in submission element');
       }
-      console.log('[CSH] IframeSubmissionAdapter: using iframe src:', this._iframeElement.src || '(empty)');
       this._setupMessageListener();
       this._waitForIframeReady();
     },
@@ -112,7 +104,6 @@
       // Condition 1: iframe src has loaded (browser-level content load)
       const checkIframeLoaded = () => {
         if (this._iframeLoaded) return;
-        console.log('[CSH] IframeSubmissionAdapter: iframe load event fired');
         this._iframeLoaded = true;
         this._checkBothReady();
       };
@@ -122,19 +113,16 @@
       try {
         readyState = this._iframeElement.contentDocument?.readyState;
       } catch (e) {
-        console.log('[CSH] IframeSubmissionAdapter: iframe document readyState not readable:', e.message);
+        // cross-origin iframe, wait for load event
       }
       if (readyState === 'complete' || readyState === 'interactive') {
-        console.log('[CSH] IframeSubmissionAdapter: iframe already loaded (readyState:', readyState, ')');
         this._iframeLoaded = true;
       } else {
-        console.log('[CSH] IframeSubmissionAdapter: waiting for iframe load event (readyState:', readyState, ')');
         this._iframeElement.addEventListener('load', checkIframeLoaded, { once: true });
       }
 
       // Condition 2: child adapter script loaded and sent ready message
       // Handled via _setupMessageListener's ADAPTER_READY handling
-      console.log('[CSH] IframeSubmissionAdapter: waiting for child adapter ready signal');
       this._startReadyRequests();
       this._startReadyTimeout();
       this._checkBothReady();
@@ -145,7 +133,6 @@
      * @private
      */
     _checkBothReady() {
-      console.log('[CSH] IframeSubmissionAdapter._checkBothReady: iframeLoaded=' + this._iframeLoaded + ', childAdapterReady=' + this._childAdapterReady);
       if (this._childAdapterReady) {
         this._markReady();
       }
@@ -164,9 +151,8 @@
         this._iframeElement.contentWindow.postMessage({
           type: CSH_MESSAGE_TYPES.IFRAME_SUBMISSION_READY_ACK,
         }, '*');
-        console.log('[CSH] IframeSubmissionAdapter: acknowledged child adapter ready');
       } catch (e) {
-        console.warn('[CSH] IframeSubmissionAdapter: failed to acknowledge child ready signal:', e.message);
+        // Ignore
       }
     },
 
@@ -183,9 +169,8 @@
           this._iframeElement.contentWindow.postMessage({
             type: CSH_MESSAGE_TYPES.IFRAME_SUBMISSION_READY_REQUEST,
           }, '*');
-          console.log('[CSH] IframeSubmissionAdapter: requested child ready signal');
         } catch (e) {
-          console.warn('[CSH] IframeSubmissionAdapter: failed to request child ready signal:', e.message);
+          // Ignore
         }
       };
 
@@ -204,20 +189,6 @@
 
       this._readyTimeoutId = setTimeout(() => {
         if (this._ready) return;
-        let currentIframeHref = '';
-        let currentIframeHrefError = '';
-        try {
-          currentIframeHref = this._iframeElement?.contentWindow?.location?.href || '';
-        } catch (e) {
-          currentIframeHrefError = e.message || String(e);
-        }
-        console.error('[CSH] IframeSubmissionAdapter: timed out waiting for iframe adapter readiness', {
-          iframeLoaded: this._iframeLoaded,
-          childAdapterReady: this._childAdapterReady,
-          iframeSrc: this._iframeElement?.src || '',
-          currentIframeHref,
-          currentIframeHrefError,
-        });
         if (this._readyRequestIntervalId !== null) {
           clearInterval(this._readyRequestIntervalId);
           this._readyRequestIntervalId = null;
@@ -229,10 +200,8 @@
      * Get text from submission via iframe
      */
     async getText() {
-      console.log('[CSH] IframeSubmissionAdapter.getText called');
       return new Promise((resolve, reject) => {
         this.whenReady(() => {
-          console.log('[CSH] IframeSubmissionAdapter.getText: adapter ready, sending request');
           this._sendIframeRequest('getText', {}).then(resolve).catch(reject);
         });
       });
@@ -242,10 +211,8 @@
      * Apply highlights to submission via iframe
      */
     async applyHighlights(ranges, cssHighlightName) {
-      console.log('[CSH] IframeSubmissionAdapter.applyHighlights called');
       return new Promise((resolve, reject) => {
         this.whenReady(() => {
-          console.log('[CSH] IframeSubmissionAdapter.applyHighlights: adapter ready, sending request');
           this._sendIframeRequest('applyHighlights', { ranges, cssHighlightName }).then(resolve).catch(reject);
         });
       });
@@ -255,10 +222,8 @@
      * Scroll element into view via iframe
      */
     async scrollIntoView(selector, options = {}) {
-      console.log('[CSH] IframeSubmissionAdapter.scrollIntoView called');
       return new Promise((resolve, reject) => {
         this.whenReady(() => {
-          console.log('[CSH] IframeSubmissionAdapter.scrollIntoView: adapter ready, sending request');
           this._sendIframeRequest('scrollIntoView', { selector, options }).then(resolve).catch(reject);
         });
       });
@@ -276,10 +241,8 @@
         }
 
         const requestId = `iframe_req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        console.log('[CSH] IframeSubmissionAdapter: sending request:', action, '(requestId:', requestId, ')');
         const timeoutId = setTimeout(() => {
           this._pendingRequests.delete(requestId);
-          console.error('[CSH] IframeSubmissionAdapter: request timeout:', action, '(requestId:', requestId, ')');
           reject(new Error(`IframeSubmissionAdapter: request timeout (${action})`));
         }, REQUEST_TIMEOUT_MS);
 
@@ -292,11 +255,9 @@
             action,
             params,
           }, '*');
-          console.log('[CSH] IframeSubmissionAdapter: posted message to iframe contentWindow');
         } catch (e) {
           this._pendingRequests.delete(requestId);
           clearTimeout(timeoutId);
-          console.error('[CSH] IframeSubmissionAdapter: failed to post message:', e.message);
           reject(new Error(`IframeSubmissionAdapter: failed to send message: ${e.message}`));
         }
       });
@@ -327,7 +288,6 @@
               return;
             }
             this._childAdapterReady = true;
-            console.log('[CSH] IframeSubmissionAdapter: child adapter ready:', msg.adapterName);
             this._checkBothReady();
             return;
           }
@@ -338,10 +298,8 @@
           }
 
           const { requestId, success, result, error } = msg;
-          console.log('[CSH] IframeSubmissionAdapter: received response (requestId:', requestId, ', success:', success, ')');
           const pending = this._pendingRequests.get(requestId);
           if (!pending) {
-            console.log('[CSH] IframeSubmissionAdapter: orphaned response (already timed out or duplicate)');
             return; // Request already timed out or response already received
           }
 
@@ -349,10 +307,8 @@
           clearTimeout(pending.timeoutId);
 
           if (success) {
-            console.log('[CSH] IframeSubmissionAdapter: resolving request:', requestId);
             pending.resolve(result);
           } else {
-            console.log('[CSH] IframeSubmissionAdapter: rejecting request:', requestId, '-', error);
             pending.reject(new Error(error || 'IframeSubmissionAdapter: unknown error'));
           }
         } catch (e) {

@@ -26,12 +26,6 @@
         return Promise.resolve(existing);
       }
 
-      console.log('[CSH] DocumentRendererAdapter: waiting for text layers with spans', {
-        readyState: document.readyState,
-        textLayerCount: existing.length,
-        iframeCount: document.querySelectorAll('iframe').length,
-      });
-
       return new Promise((resolve, reject) => {
         let finished = false;
         let observer = null;
@@ -62,7 +56,6 @@
           if (finished || settled) return;
           settled = true;
           const textLayers = document.querySelectorAll('.textLayer');
-          console.log('[CSH] DocumentRendererAdapter: text layers settled:', textLayers.length);
           finish(textLayers, null);
         };
 
@@ -86,7 +79,6 @@
 
           if (!spansSeen) {
             spansSeen = true;
-            console.log('[CSH] DocumentRendererAdapter: text spans appeared, waiting for settle');
           }
 
           if (settled) return;
@@ -137,7 +129,6 @@
           const textLayers = document.querySelectorAll('.textLayer');
           if (hasTextSpans(textLayers)) {
             spansSeen = true;
-            console.log('[CSH] DocumentRendererAdapter: text spans appeared (poll), waiting for settle');
             kickSettleTimer();
           }
         }, 250);
@@ -179,8 +170,6 @@
         const text = allText.join('').trim();
         console.log('[CSH] DocumentRendererAdapter: extracted text summary', {
           textLayerCount: textLayers.length,
-          roleSpanCount: Array.from(textLayers).reduce((count, layer) => count + layer.querySelectorAll('span[role="presentation"]').length, 0),
-          spanCount: Array.from(textLayers).reduce((count, layer) => count + layer.querySelectorAll('span').length, 0),
           textLength: text.length,
         });
 

@@ -67,21 +67,17 @@
   function loadAdapter(iframeType, onReady) {
     const adapterName = getAdapterName(iframeType);
     if (!adapterName) {
-      console.warn('[CSH] Unknown iframe type:', iframeType);
       if (onReady) onReady(new Error('Unknown iframe type'));
       return;
     }
 
     const adapter = getAdapter(adapterName);
     if (!adapter) {
-      console.error('[CSH] Adapter script is not loaded in iframe content context:', adapterName);
       if (onReady) onReady(new Error(`Adapter script not loaded: ${adapterName}`));
       return;
     }
 
-    console.log('[CSH] Iframe adapter available in content context:', adapterName);
     setupMessageListener(adapterName);
-    console.log('[CSH] Iframe submission adapter ready:', adapterName);
     if (onReady) onReady(null, adapterName);
   }
 
@@ -93,7 +89,6 @@
       return;
     }
 
-    console.log('[CSH] Attaching message listener for adapter:', adapterName);
     window.addEventListener('message', (event) => {
       try {
         // Only process messages from parent window
@@ -107,13 +102,12 @@
         }
 
         if (msg.type === CSH_MESSAGE_TYPES.IFRAME_SUBMISSION_READY_ACK) {
-          stopReadyNotifications('acknowledged by parent');
+          stopReadyNotifications();
           return;
         }
 
         if (msg.type === CSH_MESSAGE_TYPES.IFRAME_SUBMISSION_READY_REQUEST) {
-          console.log('[CSH] Received ready request from parent; re-sending ready signal for:', adapterName);
-          notifyParentReady(adapterName, 'requested');
+          notifyParentReady(adapterName);
           return;
         }
 
@@ -121,13 +115,10 @@
           return;
         }
 
-        console.log('[CSH] Received request from parent:', msg.action, '(requestId:', msg.requestId, ')');
-
         // Get the adapter from global scope
         const adapter = getAdapter(adapterName);
 
         if (!adapter) {
-          console.error('[CSH] Adapter not found on window:', adapterName);
           sendError(msg.requestId, `Adapter not found: ${adapterName}`);
           return;
         }
@@ -135,7 +126,7 @@
         // Handle the request
         handleRequest(adapter, msg);
       } catch (e) {
-        console.error('[CSH] Error in iframe message listener:', e);
+        // Ignore message processing errors
       }
     });
   }
@@ -146,7 +137,6 @@
   async function handleRequest(adapter, msg) {
     const { requestId, action, params } = msg;
 
-    console.log('[CSH] Processing request:', action, '- delegating to adapter');
     try {
       let result;
 
@@ -163,11 +153,9 @@
 
       // Handle async results
       if (result instanceof Promise) {
-        console.log('[CSH] Awaiting async result for:', action);
         result = await result;
       }
 
-      console.log('[CSH] Request completed:', action, '(requestId:', requestId, ')');
       if (action === 'getText') {
         const preview = typeof result === 'string' ? result.slice(0, 200) : String(result);
         console.log('[CSH] getText result preview:', preview);
@@ -184,7 +172,6 @@
    */
   function sendSuccess(requestId, result) {
     if (window.parent) {
-      console.log('[CSH] Sending success response to parent (requestId:', requestId, ')');
       window.parent.postMessage({
         type: CSH_MESSAGE_TYPES.IFRAME_SUBMISSION_RESPONSE,
         requestId,
@@ -199,7 +186,6 @@
    */
   function sendError(requestId, error) {
     if (window.parent) {
-      console.log('[CSH] Sending error response to parent (requestId:', requestId, '):', error);
       window.parent.postMessage({
         type: CSH_MESSAGE_TYPES.IFRAME_SUBMISSION_RESPONSE,
         requestId,
@@ -212,9 +198,8 @@
   /**
    * Notify parent window that the iframe content and adapter are ready
    */
-  function notifyParentReady(adapterName, reason) {
+  function notifyParentReady(adapterName) {
     if (window.parent) {
-      console.log('[CSH] Notifying parent that adapter is ready:', adapterName, reason ? `(${reason})` : '');
       window.parent.postMessage({
         type: CSH_MESSAGE_TYPES.IFRAME_SUBMISSION_ADAPTER_READY,
         adapterName,
@@ -222,14 +207,13 @@
     }
   }
 
-  function stopReadyNotifications(reason) {
+  function stopReadyNotifications() {
     if (readyNotificationIntervalId === null) {
       return;
     }
 
     clearInterval(readyNotificationIntervalId);
     readyNotificationIntervalId = null;
-    console.log('[CSH] Stopped ready notifications:', reason);
   }
 
   /**
@@ -239,13 +223,13 @@
     let attempts = 0;
     const maxAttempts = 20;
 
-    stopReadyNotifications('restarting');
-    notifyParentReady(adapterName, 'initial');
+    stopReadyNotifications();
+    notifyParentReady(adapterName);
     readyNotificationIntervalId = setInterval(() => {
       attempts += 1;
-      notifyParentReady(adapterName, `retry ${attempts}`);
+      notifyParentReady(adapterName);
       if (attempts >= maxAttempts) {
-        stopReadyNotifications('max retries reached');
+        stopReadyNotifications();
       }
     }, 500);
   }
@@ -257,15 +241,11 @@
     try {
       const iframeType = detectIframeType();
       if (!iframeType) {
-        console.log('[CSH] Iframe content loader: URL is not a recognized submission iframe type:', window.location.href);
         return;
       }
 
-      console.log('[CSH] Detected iframe type:', iframeType);
-
       const adapterName = getAdapterName(iframeType);
       if (!adapterName) {
-        console.warn('[CSH] No adapter for iframe type:', iframeType);
         return;
       }
 
@@ -273,13 +253,12 @@
       // Notify parent so it knows requests will be handled
       loadAdapter(iframeType, (err, loadedAdapterName) => {
         if (err) {
-          console.error('[CSH] Failed to load adapter:', err.message);
           return;
         }
         startReadyNotifications(loadedAdapterName);
       });
     } catch (e) {
-      console.error('[CSH] Iframe content loader initialization failed:', e);
+      // Ignore initialization errors
     }
   }
 
