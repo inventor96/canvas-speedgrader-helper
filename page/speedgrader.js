@@ -2124,6 +2124,7 @@
             }
 
             console.log('[CSH DEMO]   Range ' + (i + 1) + ': chars ' + r.start + '–' + r.end + ' → "' + snippet.slice(0, 60) + (snippet.length > 60 ? '…' : '') + '" (' + className + ')');
+            console.log('[CSH DEMO]   Range ' + (i + 1) + ' expected [' + className + ']: "' + text.slice(r.start, r.end) + '"');
 
             api.applyHighlights([r], className)
               .then(() => {

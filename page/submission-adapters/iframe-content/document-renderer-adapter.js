@@ -90,26 +90,6 @@
         };
 
         const timeoutId = setTimeout(() => {
-          const textLayers = document.querySelectorAll('.textLayer');
-          const spanInfo = Array.from(textLayers).map((layer) => ({
-            spanCount: layer.querySelectorAll('span[role="presentation"]').length,
-            totalSpans: layer.querySelectorAll('span').length,
-            textLength: layer.textContent?.length || 0,
-          }));
-          const iframes = Array.from(document.querySelectorAll('iframe')).map((iframe) => ({
-            className: iframe.className || '',
-            id: iframe.id || '',
-            src: iframe.src || '',
-          })).slice(0, 10);
-          console.error('[CSH] DocumentRendererAdapter: timed out waiting for text spans', {
-            url: window.location.href,
-            readyState: document.readyState,
-            bodyClass: document.body?.className || '',
-            textLayerCount: textLayers.length,
-            spanInfo,
-            iframeCount: document.querySelectorAll('iframe').length,
-            iframes,
-          });
           finish(null, new Error('Text spans not found in document layers'));
         }, timeoutMs);
 
@@ -138,36 +118,57 @@
     },
 
     /**
+     * Build a shared text-node map and canonical text from text layers.
+     * Both getText() and applyHighlights() call this so their
+     * character-offset spaces are guaranteed identical.
+     * @private
+     */
+    _buildTextNodes(textLayers) {
+      const textNodes = [];
+      const layerTexts = [];
+      let charOffset = 0;
+
+      textLayers.forEach((layer, index) => {
+        const walker = document.createTreeWalker(
+          layer,
+          NodeFilter.SHOW_TEXT,
+          null,
+          false
+        );
+
+        let node;
+        let layerText = '';
+        while ((node = walker.nextNode())) {
+          const content = node.textContent;
+          if (content.length > 0) {
+            textNodes.push({
+              node,
+              startOffset: charOffset,
+              endOffset: charOffset + content.length,
+            });
+            charOffset += content.length;
+            layerText += content;
+          }
+        }
+        layerTexts.push(layerText);
+
+        if (index < textLayers.length - 1) {
+          charOffset += 2; // '\n\n'
+        }
+      });
+
+      const text = layerTexts.join('\n\n');
+      return { textNodes, text };
+    },
+
+    /**
      * Extract text from all .textLayer elements
      */
     async getText() {
       try {
         const textLayers = await this._waitForTextLayers();
+        const { text } = this._buildTextNodes(textLayers);
 
-        const allText = [];
-        textLayers.forEach((layer) => {
-          let spans = layer.querySelectorAll('span[role="presentation"]');
-          if (spans.length === 0) {
-            spans = layer.querySelectorAll('span');
-          }
-
-          const layerText = [];
-          spans.forEach((span) => {
-            if (span.textContent) {
-              layerText.push(span.textContent);
-            }
-          });
-
-          if (layerText.length === 0 && layer.textContent) {
-            layerText.push(layer.textContent);
-          }
-
-          allText.push(layerText.join(''));
-          // Add page separator
-          allText.push('\n\n');
-        });
-
-        const text = allText.join('').trim();
         console.log('[CSH] DocumentRendererAdapter: extracted text summary', {
           textLayerCount: textLayers.length,
           textLength: text.length,
@@ -226,40 +227,13 @@
 
         this._ensureHighlightStyles();
 
-        // Get all text nodes in .textLayer
+        // Get all text nodes in .textLayer via shared builder
         const textLayers = document.querySelectorAll('.textLayer');
         if (textLayers.length === 0) {
           throw new Error('No text layers found for highlighting');
         }
 
-        // Build list of all text nodes and their character offsets
-        const textNodes = [];
-        let charOffset = 0;
-
-        textLayers.forEach((layer) => {
-          const walker = document.createTreeWalker(
-            layer,
-            NodeFilter.SHOW_TEXT,
-            null,
-            false
-          );
-
-          let node;
-          while ((node = walker.nextNode())) {
-            const length = node.textContent.length;
-            if (length > 0) {
-              textNodes.push({
-                node,
-                startOffset: charOffset,
-                endOffset: charOffset + length,
-              });
-              charOffset += length;
-            }
-          }
-
-          // Account for page separators
-          charOffset += 2; // '\n\n'
-        });
+        const { textNodes } = this._buildTextNodes(textLayers);
 
         // Convert character ranges to DOM ranges
         const domRanges = [];

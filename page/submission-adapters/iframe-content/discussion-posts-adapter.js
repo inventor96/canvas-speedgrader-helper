@@ -15,6 +15,50 @@
    */
   const DiscussionPostsAdapter = {
     /**
+     * Build a shared text-node map and canonical text from discussion posts.
+     * Both getText() and applyHighlights() call this so their
+     * character-offset spaces are guaranteed identical.
+     * @private
+     */
+    _buildTextNodes(messageElements) {
+      const textNodes = [];
+      const postTexts = [];
+      let charOffset = 0;
+
+      messageElements.forEach((message, index) => {
+        const walker = document.createTreeWalker(
+          message,
+          NodeFilter.SHOW_TEXT,
+          null,
+          false
+        );
+
+        let node;
+        let postText = '';
+        while ((node = walker.nextNode())) {
+          const content = node.textContent;
+          if (content.length > 0) {
+            textNodes.push({
+              node,
+              startOffset: charOffset,
+              endOffset: charOffset + content.length,
+            });
+            charOffset += content.length;
+            postText += content;
+          }
+        }
+        postTexts.push(postText);
+
+        if (index < messageElements.length - 1) {
+          charOffset += 6; // '\n\n---\n\n'
+        }
+      });
+
+      const text = postTexts.join('\n\n---\n\n');
+      return { textNodes, text };
+    },
+
+    /**
      * Extract text from all discussion posts
      */
     getText() {
@@ -24,20 +68,8 @@
           throw new Error('No discussion posts found');
         }
 
-        const allText = [];
-        messageElements.forEach((message, index) => {
-          // Extract text content from the message
-          const text = this._extractTextFromElement(message);
-          if (text) {
-            allText.push(text);
-          }
-          // Add post separator (except after last post)
-          if (index < messageElements.length - 1) {
-            allText.push('\n\n---\n\n');
-          }
-        });
-
-        return allText.join('').trim();
+        const { text } = this._buildTextNodes(messageElements);
+        return text;
       } catch (e) {
         throw new Error(`DiscussionPostsAdapter getText failed: ${e.message}`);
       }
@@ -96,36 +128,8 @@
           throw new Error('No discussion posts found for highlighting');
         }
 
-        // Build list of all text nodes and their character offsets
-        const textNodes = [];
-        let charOffset = 0;
-
-        messageElements.forEach((message, messageIndex) => {
-          const walker = document.createTreeWalker(
-            message,
-            NodeFilter.SHOW_TEXT,
-            null,
-            false
-          );
-
-          let node;
-          while ((node = walker.nextNode())) {
-            const length = node.textContent.length;
-            if (length > 0) {
-              textNodes.push({
-                node,
-                startOffset: charOffset,
-                endOffset: charOffset + length,
-              });
-              charOffset += length;
-            }
-          }
-
-          // Account for post separator (except after last post)
-          if (messageIndex < messageElements.length - 1) {
-            charOffset += 6; // '\n\n---\n\n'
-          }
-        });
+        // Build text-node map via shared builder
+        const { textNodes } = this._buildTextNodes(messageElements);
 
         // Convert character ranges to DOM ranges
         const domRanges = [];
@@ -165,32 +169,6 @@
         });
       } catch (e) {
         throw new Error(`DiscussionPostsAdapter scrollIntoView failed: ${e.message}`);
-      }
-    },
-
-    /**
-     * Extract text from element while preserving structure
-     * @private
-     */
-    _extractTextFromElement(element) {
-      try {
-        const clone = element.cloneNode(true);
-        
-        // Remove script and style elements
-        clone.querySelectorAll('script, style').forEach((el) => el.remove());
-
-        // Get text content with some structure preservation
-        let text = clone.textContent || '';
-        
-        // Clean up excessive whitespace while preserving intentional breaks
-        text = text.replace(/\r\n/g, '\n'); // Normalize line endings
-        text = text.replace(/\n\n+/g, '\n'); // Collapse multiple blank lines
-        text = text.trim();
-
-        return text;
-      } catch (e) {
-        console.error('Error extracting text from element:', e);
-        return '';
       }
     },
 
