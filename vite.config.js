@@ -15,7 +15,7 @@ export default defineConfig({
     crx({ manifest }),
     zip({
       outDir: 'release',
-      outFileName: `crx-${name}-${version}.zip`
+      outFileName: `${name}-${version}.zip`
     }),
   ],
   server: {
