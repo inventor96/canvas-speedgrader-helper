@@ -1,8 +1,4 @@
-/**
- * Message types for page ↔ content script communication
- * These strings are used in postMessage calls between the page context and content script context
- */
-const CSH_MESSAGE_TYPES = {
+export const CSH_MESSAGE_TYPES = {
   // Page → Content Script
   SAVE_POINTS: 'CSH_SAVE_POINTS',
   TOUCH_POINTS: 'CSH_TOUCH_POINTS',

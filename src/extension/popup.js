@@ -1,7 +1,9 @@
+import { CSH_MESSAGE_TYPES } from '../shared/message-types.js';
+import { initializeLimits, saveStudentNamesWithPrune, CSHStorageUtils } from '../shared/storage-utils.js';
+
 document.addEventListener('DOMContentLoaded', async () => {
-  // Initialize storage limits based on browser quota
-  if (typeof window.CSHStorageUtils !== 'undefined' && typeof window.CSHStorageUtils.initializeLimits === 'function') {
-    await window.CSHStorageUtils.initializeLimits();
+  if (typeof CSHStorageUtils !== 'undefined' && typeof initializeLimits === 'function') {
+    await initializeLimits();
   }
 
   const studentIdEl = document.getElementById('student-id');
@@ -16,7 +18,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const openSettingsBtn = document.getElementById('open-settings');
   let activeSpeedgraderTabId = null;
 
-  // Helper to show status messages
   function showStatus(msg, timeout = 1500) {
     statusEl.textContent = msg;
     if (timeout) setTimeout(() => (statusEl.textContent = ''), timeout);
@@ -34,7 +35,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // Get the active tab URL and extract student_id
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const tab = tabs && tabs[0];
     if (!tab || !tab.url) {
@@ -68,16 +68,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     jumpGroupsWrapEl.style.display = '';
     activeSpeedgraderTabId = tab.id;
 
-    // Load existing mapping from local storage
     chrome.storage.local.get({ studentNames: {} }, (data) => {
       const mapping = data && data.studentNames ? data.studentNames : {};
       nameInput.value = mapping[sid] || '';
 
-      // Focus the input for convenience
       nameInput.focus();
     });
 
-    // Save function reused by button click and Enter key
     function saveMapping() {
       const val = nameInput.value.trim();
       chrome.storage.local.get({ studentNames: {} }, (data) => {
@@ -85,10 +82,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (val) {
           mapping[sid] = val;
         } else {
-          // Remove mapping if input cleared
           delete mapping[sid];
         }
-        window.CSHStorageUtils.saveStudentNamesWithPrune(mapping, () => {
+        saveStudentNamesWithPrune(mapping, () => {
           showStatus('Saved');
         });
       });
@@ -96,7 +92,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     saveBtn.addEventListener('click', saveMapping);
 
-    // Pressing Enter in the input should save (like clicking Save)
     nameInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.keyCode === 13) {
         e.preventDefault();

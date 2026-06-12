@@ -1,8 +1,4 @@
-/**
- * Settings definitions and defaults for Canvas SpeedGrader Helper extension.
- * These settings are allowed to be synced between devices.
- */
-const SYNCED_SETTINGS = {
+export const SYNCED_SETTINGS = {
   placeholders: ["STUDENT_NAME"],
   openRubricForUngraded: true,
   openCommentLibraryAfterSubmit: true,
@@ -31,11 +27,7 @@ const SYNCED_SETTINGS = {
   savedPointsMeta: { lastUsed: {} },
 };
 
-/**
- * Settings definitions and defaults for Canvas SpeedGrader Helper extension.
- * These settings are stored locally and not synced.
- */
-const LOCAL_SETTINGS = {
+export const LOCAL_SETTINGS = {
   studentNames: {},
   studentNamesMeta: { lastUsed: {} },
   queuedStudentName: null,

@@ -112,50 +112,51 @@ This section is the developer reference for the project. The rest of this README
 
 ### Project shape
 
-- `manifest.json`: Extension entry points, permissions, content-script registration, and web-accessible resources.
-- `extension/`: Popup, options page, and service worker.
-- `content/`: Content scripts that can use Chrome APIs and bridge into page context.
-- `page/`: SpeedGrader page-context code with direct Canvas DOM access.
-- `shared/`: Cross-context settings, message constants, storage helpers, other resources.
+- `manifest.config.js`: CRXJS manifest — content-script registration, permissions, entry points.
+- `src/extension/`: Popup, options page, and service worker.
+- `src/content/`: Content scripts (isolated world) that can use Chrome APIs and bridge into page context.
+- `src/page/`: SpeedGrader MAIN-world code with direct Canvas DOM access.
+- `src/shared/`: Cross-context settings, message constants, storage helpers, other resources.
 
 ### Runtime contexts
 
 The extension is split across three execution contexts because Canvas DOM access and Chrome extension APIs are not available in the same place.
 
-1. **Extension context** (`extension/`)
+1. **Extension context** (`src/extension/`)
 	Owns the popup, options page, and service worker. Use this for UI, storage writes initiated from extension pages, and browser-level extension behavior.
-2. **Content script context** (`content/`)
+2. **Content script (isolated world)** (`src/content/`)
 	Runs on matching Canvas and PowerApps pages. It can use Chrome APIs, read storage, inject page scripts, and relay messages between the extension and the page.
-3. **Page context** (`page/`)
-	Runs inside SpeedGrader itself. Use this for Canvas DOM interaction, TinyMCE access, rubric behavior, placeholder replacement, and other page-native logic.
+3. **Content script (MAIN world)** (`src/page/speedgrader.js`)
+	Runs inside SpeedGrader via `world: "MAIN"` content script registration. Use this for Canvas DOM interaction, TinyMCE access, rubric behavior, placeholder replacement, and other page-native logic.
 
-When deciding where code belongs, start with the narrowest context that can do the job. DOM-heavy SpeedGrader behavior belongs in `page/speedgrader.js`; extension API work belongs in `content/` or `extension/`.
+When deciding where code belongs, start with the narrowest context that can do the job. DOM-heavy SpeedGrader behavior belongs in `src/page/speedgrader.js`; extension API work belongs in `src/content/` or `src/extension/`.
 
 ### Data flow
 
 Most feature changes follow the same path:
 
-1. Add or update a setting in `shared/settings.js` if the behavior is configurable.
-2. Expose that setting in `extension/options.html` and `extension/options.js` if users need to control it.
-3. Read or forward the setting in `content/loader-speedgrader.js`.
-4. Implement the Canvas-facing behavior in `page/speedgrader.js`.
+1. Add or update a setting in `src/shared/settings.js` if the behavior is configurable.
+2. Expose that setting in `src/extension/options.html` and `src/extension/options.js` if users need to control it.
+3. Read or forward the setting in `src/content/loader-speedgrader.js`.
+4. Implement the Canvas-facing behavior in `src/page/speedgrader.js`.
 
-Cross-context communication uses `window.postMessage()` and the constants in `shared/message-types.js`. Keep message names centralized there instead of hardcoding strings in multiple files.
+Cross-context communication uses `window.postMessage()` and the constants in `src/shared/message-types.js`. Keep message names centralized there instead of hardcoding strings in multiple files.
 
 ### Local development
 
-There is no build step. The extension is plain JavaScript loaded directly by the browser.
+```sh
+npm run dev    # dev server with HMR (load dist/ as unpacked extension)
+npm run build  # production build → dist/
+```
 
 1. Edit the relevant files.
-2. Reload the unpacked extension in `chrome://extensions`.
-3. Reload the target Canvas or PowerApps page.
-
-For a fresh install, load the repository root as an unpacked extension.
+2. Run `npm run build` (or `npm run dev` for HMR).
+3. Load or reload `dist/` as an unpacked extension in `chrome://extensions`.
 
 ### Practical guidelines
 
-- Add new settings defaults in `shared/settings.js` first so every context has a consistent schema.
-- Keep page-context code independent from `chrome.*`; use the content script as the bridge.
+- Add new settings defaults in `src/shared/settings.js` first so every context has a consistent schema.
+- Keep MAIN-world page code independent from `chrome.*`; use the content script as the bridge.
 - Keep shared files context-agnostic unless a file is explicitly intended for extension/content use only.
 - Update this README when a new feature changes the overall architecture, settings model, or developer workflow.
 - Prefer extending existing pathways over creating a new script unless the runtime context genuinely changes.

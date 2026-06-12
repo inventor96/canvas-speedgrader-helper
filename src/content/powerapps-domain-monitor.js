@@ -1,16 +1,8 @@
-(() => {
-'use strict';
-// Known domains that are expected in the iframe
 const KNOWN_DOMAINS = [
   'runtime-app.powerapps.com',
   'runtime-app.powerplatform.com'
 ];
 
-/**
- * Extracts the domain from a URL
- * @param {string} url - The full URL
- * @returns {string} - The domain
- */
 function extractDomain(url) {
   try {
     const urlObj = new URL(url);
@@ -20,26 +12,16 @@ function extractDomain(url) {
   }
 }
 
-/**
- * Checks if a domain is in the known domains list
- * @param {string} domain - The domain to check
- * @returns {boolean} - True if the domain is known
- */
 function isKnownDomain(domain) {
   return KNOWN_DOMAINS.some(knownDomain => {
     if (knownDomain.startsWith('*.')) {
-      // Match wildcard domains
-      const pattern = knownDomain.substring(2); // Remove *. prefix
+      const pattern = knownDomain.substring(2);
       return domain.endsWith(pattern) || domain === pattern.substring(2);
     }
     return domain === knownDomain;
   });
 }
 
-/**
- * Shows a notification about an unexpected domain
- * @param {string} domain - The unexpected domain
- */
 function showDomainNotification(domain) {
   const notification = document.createElement('div');
   notification.id = 'powerapps-domain-warning';
@@ -78,7 +60,7 @@ function showDomainNotification(domain) {
   domainDisplay.textContent = domain;
 
   const closeButton = document.createElement('button');
-  closeButton.textContent = '×';
+  closeButton.textContent = '\u00d7';
   closeButton.style.cssText = `
     position: absolute;
     top: 10px;
@@ -104,11 +86,6 @@ function showDomainNotification(domain) {
   document.body.appendChild(notification);
 }
 
-/**
- * Escapes HTML special characters
- * @param {string} text - The text to escape
- * @returns {string} - Escaped text
- */
 function escapeHtml(text) {
   const map = {
     '&': '&amp;',
@@ -120,26 +97,18 @@ function escapeHtml(text) {
   return text.replace(/[&<>"']/g, m => map[m]);
 }
 
-/**
- * Polls for the iframe and checks its domain
- */
 function pollForIframe() {
   const iframe = document.getElementById('fullscreen-app-host');
 
   if (iframe) {
-    // Iframe found, check its URL
     try {
-      // Note: Due to CORS, we may not always be able to access contentWindow
-      // Try to get the src attribute and the actual current URL
       const iframeSrc = iframe.src;
 
       if (iframeSrc) {
         const domain = extractDomain(iframeSrc);
 
         if (domain && !isKnownDomain(domain)) {
-          // Wait 5 seconds before showing notification
           setTimeout(() => {
-            // Double-check that the domain is still unknown (in case it changed)
             const currentDomain = extractDomain(iframe.src);
             if (currentDomain && !isKnownDomain(currentDomain)) {
               showDomainNotification(currentDomain);
@@ -151,19 +120,15 @@ function pollForIframe() {
       console.warn('Error checking iframe domain:', e);
     }
   } else {
-    // Iframe not found yet, retry after 500ms
     console.log('Iframe not found, retrying...');
     setTimeout(pollForIframe, 500);
   }
 }
 
-// Start polling when the page loads
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', pollForIframe);
   console.log('Waiting for DOM to load before starting iframe polling...');
 } else {
-  // If DOM is already loaded, start polling immediately
   pollForIframe();
   console.log('DOM already loaded, starting iframe polling...');
 }
-})();

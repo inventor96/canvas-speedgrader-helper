@@ -1,4 +1,6 @@
-// Create a placeholder item element
+import { SYNCED_SETTINGS } from '../shared/settings.js';
+import { saveStudentNamesWithPrune, CSHStorageUtils } from '../shared/storage-utils.js';
+
 function createItem(value = '') {
   const container = document.createElement('div');
   container.className = 'placeholder-item';
@@ -19,7 +21,6 @@ function createItem(value = '') {
   return container;
 }
 
-// Load placeholders and settings from storage and populate the form
 function loadPlaceholders() {
   chrome.storage.sync.get(SYNCED_SETTINGS, (data) => {
     const list = document.getElementById('placeholders-list');
@@ -27,7 +28,6 @@ function loadPlaceholders() {
     const items = (data && data.placeholders && data.placeholders.length) ? data.placeholders : SYNCED_SETTINGS.placeholders;
     items.forEach(p => list.appendChild(createItem(p)));
 
-    // Load synced settings
     const cb = document.getElementById('open-rubric');
     if (cb) cb.checked = !!data.openRubricForUngraded;
 
@@ -100,7 +100,6 @@ function loadPlaceholders() {
   });
 }
 
-// Create a student item element for the student list
 function createStudentItem(id = '', name = '') {
   const container = document.createElement('div');
   container.className = 'student-item';
@@ -131,7 +130,6 @@ function createStudentItem(id = '', name = '') {
   return container;
 }
 
-// Save student mappings from the DOM to local storage
 function saveStudentsFromDOM(callback) {
   const rows = Array.from(document.querySelectorAll('.student-item'));
   const students = {};
@@ -140,10 +138,9 @@ function saveStudentsFromDOM(callback) {
     const name = (r.querySelector('.student-name').value || '').trim();
     if (id) students[id] = name;
   });
-  window.CSHStorageUtils.saveStudentNamesWithPrune(students, callback);
+  saveStudentNamesWithPrune(students, callback);
 }
 
-// Load student mappings from local storage and populate the student list
 function loadStudents() {
   chrome.storage.local.get({ studentNames: {} }, (data) => {
     const list = document.getElementById('students-list');
@@ -156,7 +153,6 @@ function loadStudents() {
   });
 }
 
-// Helper to get student mappings from local storage
 function getStudentsFromStorage() {
   return new Promise(resolve => {
     chrome.storage.local.get({ studentNames: {} }, (data) => {
@@ -165,7 +161,6 @@ function getStudentsFromStorage() {
   });
 }
 
-// CSV Parsing and Exporting Helpers
 function parseCsv(text) {
   const rows = [];
   let current = [];
@@ -207,12 +202,10 @@ function parseCsv(text) {
   return rows;
 }
 
-// Normalize CSV header values for easier matching
 function normalizeHeader(value) {
   return (value || '').toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9_]/g, '');
 }
 
-// Parse students from CSV text into an array of {id, name} objects
 function parseStudentsFromCsv(text) {
   const rows = parseCsv(text).map(row => row.map(cell => (cell || '').trim()));
   if (!rows.length) return [];
@@ -245,7 +238,6 @@ function parseStudentsFromCsv(text) {
   return students;
 }
 
-// Convert a value to a CSV-safe string
 function toCsvValue(value) {
   const text = value == null ? '' : String(value);
   if (/[",\n\r]/.test(text)) {
@@ -254,7 +246,6 @@ function toCsvValue(value) {
   return text;
 }
 
-// Export student mappings to CSV format
 function exportStudentsToCsv(students) {
   const lines = ['student_id,preferred_name'];
   Object.keys(students).forEach(id => {
@@ -263,7 +254,6 @@ function exportStudentsToCsv(students) {
   return lines.join('\n');
 }
 
-// Trigger download of a CSV file with given filename and content
 function downloadCsv(filename, content) {
   const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -276,7 +266,6 @@ function downloadCsv(filename, content) {
   URL.revokeObjectURL(url);
 }
 
-// Display import results summary and conflicts
 function setImportResults(summary, conflicts) {
   const container = document.getElementById('import-results');
   const summaryEl = document.getElementById('import-summary');
@@ -294,22 +283,18 @@ function setImportResults(summary, conflicts) {
   container.classList.toggle('hidden', !summary);
 }
 
-// Initialize the options page
 document.addEventListener('DOMContentLoaded', async () => {
-  // Initialize storage limits based on browser quota
-  if (typeof window.CSHStorageUtils !== 'undefined' && typeof window.CSHStorageUtils.initializeLimits === 'function') {
-    await window.CSHStorageUtils.initializeLimits();
+  if (typeof CSHStorageUtils !== 'undefined' && typeof CSHStorageUtils.initializeLimits === 'function') {
+    await CSHStorageUtils.initializeLimits();
   }
 
   loadPlaceholders();
   loadStudents();
 
-  // Add new placeholder item
   document.getElementById('add-placeholder').addEventListener('click', () => {
     document.getElementById('placeholders-list').appendChild(createItem(''));
   });
 
-  // Make open-comment-box-after-max-points and clear-comment-box-on-max-points mutually exclusive
   const openCommentBoxMaxCheckbox = document.getElementById('open-comment-box-after-max-points');
   const clearCommentBoxCheckbox = document.getElementById('clear-comment-box-on-max-points');
 
@@ -327,7 +312,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Save settings and student mappings
   document.getElementById('save').addEventListener('click', () => {
     const inputs = Array.from(document.querySelectorAll('.placeholder-input')).map(i => i.value.trim()).filter(Boolean);
     const toSave = inputs.length ? inputs : SYNCED_SETTINGS.placeholders;
@@ -356,7 +340,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const studentNameFormat = document.querySelector('input[name="student-name-format"]:checked')?.value || SYNCED_SETTINGS.studentNameFormat;
 
     saveStudentsFromDOM(() => {
-      // After local save, save synced settings
       chrome.storage.sync.set({
         placeholders: toSave,
         openRubricForUngraded: openRubric,
@@ -383,7 +366,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         autoClickLoadQueueEveryHourWhenLessThanTenItems: autoClickLoadQueueEveryHourWhenLessThanTenItems,
         studentNameFormat: studentNameFormat
       }, () => {
-        // Show saved status
         const status = document.getElementById('status');
         status.textContent = 'Saved';
         setTimeout(() => (status.textContent = ''), 1500);
@@ -391,13 +373,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // Export and Import elements
   const exportBtn = document.getElementById('export-students');
   const importBtn = document.getElementById('import-students');
   const importFile = document.getElementById('import-students-file');
 
   if (exportBtn) {
-    // Export student mappings to CSV
     exportBtn.addEventListener('click', async () => {
       const students = await getStudentsFromStorage();
       const csv = exportStudentsToCsv(students);
@@ -407,60 +387,46 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   if (importBtn && importFile) {
-    // Trigger file input click on import button click
     importBtn.addEventListener('click', () => importFile.click());
 
-    // Handle CSV file selection and import student mappings
     importFile.addEventListener('change', async (event) => {
       const file = event.target.files && event.target.files[0];
       if (!file) return;
 
-      // Get imported and existing students
       const text = await file.text();
       const incoming = parseStudentsFromCsv(text);
       const existing = await getStudentsFromStorage();
 
-      // Import state
       const merged = { ...existing };
       const conflicts = [];
       let addedCount = 0;
       let skippedCount = 0;
       let sameCount = 0;
 
-      // Loop through incoming students
       incoming.forEach(({ id, name }) => {
         const incomingName = (name || '').trim();
 
-        // Check for conflicts
         if (Object.prototype.hasOwnProperty.call(existing, id)) {
           const currentName = (existing[id] || '').trim();
 
           if (currentName === incomingName) {
-            // Same name, count as same
             sameCount += 1;
           } else {
-            // Conflict detected
             conflicts.push(`Student ID ${id}: existing name "${currentName}" differs from imported name "${incomingName}".`);
             skippedCount += 1;
           }
         } else {
-          // New entry, add it
           merged[id] = incomingName;
           addedCount += 1;
         }
       });
 
-      // Save merged results back to storage
-      window.CSHStorageUtils.saveStudentNamesWithPrune(merged, () => {
-        // Reload students after import
+      saveStudentNamesWithPrune(merged, () => {
         loadStudents();
-
-        // Show import results
         const summary = `Import complete. Added ${addedCount} entr${addedCount === 1 ? 'y' : 'ies'}. ${sameCount} matched existing. ${skippedCount} conflict${skippedCount === 1 ? '' : 's'} skipped.`;
         setImportResults(summary, conflicts);
       });
 
-      // Clear the file input value to allow re-importing the same file if needed
       importFile.value = '';
     });
   }

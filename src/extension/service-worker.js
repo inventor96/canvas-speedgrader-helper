@@ -1,13 +1,7 @@
-/* global CSH_MESSAGE_TYPES */
+import { CSH_MESSAGE_TYPES } from '../shared/message-types.js';
 
-try {
-  importScripts('../shared/message-types.js');
-} catch (e) {
-  // Keep running with fallback message constants.
-}
-
-const PENDING_CHECK_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const GROUP_TRIPLET_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+const PENDING_CHECK_TTL_MS = 5 * 60 * 1000;
+const GROUP_TRIPLET_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const GROUP_TRIPLET_CACHE_STORAGE_KEY = 'groupTripletCache';
 const pendingGroupsChecks = new Map();
 const groupTripletCache = new Map();
@@ -300,10 +294,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       checkedAt: Date.now(),
     };
 
-    // Send result to the speedgrader tab
     safeSendToTab(pending.originTabId, resultPayload);
 
-    // Also broadcast to all other tabs (grading queue and others can listen and ignore if not relevant)
     chrome.tabs.query({}, (tabs) => {
       tabs.forEach(tab => {
         if (tab.id !== pending.originTabId) {
@@ -363,7 +355,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return;
   }
 
-  // Always respond to avoid "message port closed" for unknown/unhandled message types.
   sendResponse({ ok: false, error: `Unhandled message type: ${message.type}` });
   return;
 });
