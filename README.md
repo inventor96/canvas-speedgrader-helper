@@ -15,13 +15,14 @@ Small quality-of-life improvements for Canvas SpeedGrader. The extension runs on
 ## Installation
 
 I'm too lazy to publish this in the Chrome Web Store, so you have to load it as an unpacked extension:
-1. [Download the zip](https://github.com/inventor96/canvas-speedgrader-helper/archive/refs/heads/main.zip) of the repository and extract it somewhere you'll remember (e.g. your Documents folder). Or, if you're comfortable with Git, clone the repository instead.
-2. Open `chrome://extensions` in your Chrome browser.
-3. Enable "Developer mode" using the toggle in the top right corner.
-4. Click "Load unpacked" and select the folder where you saved the repository.
+1. Download the `canvas-speedgrader-helper-<version>.zip` for the latest version on the [releases page](https://github.com/inventor96/canvas-speedgrader-helper/releases).
+2. Extract it somewhere you'll remember (e.g. your Documents folder).
+3. Open `chrome://extensions` in your Chrome browser.
+4. Enable "Developer mode" using the toggle in the top right corner.
+5. Click "Load unpacked" and select the folder where you saved the extracted files.
 
 ### Updates
-To update the extension with the latest features and fixes, download the zip again, and replace everything in your existing extension folder with the extraction of the new zip file. If you cloned the repository, you can simply `git pull` the latest changes. Then reload the extension in `chrome://extensions`.
+To update the extension with the latest features and fixes, download the latest zip file from the [releases page](https://github.com/inventor96/canvas-speedgrader-helper/releases), and replace everything in your existing extension folder with the extraction of the new zip file. Then reload the extension in `chrome://extensions`.
 
 ## Options Page Overview
 
