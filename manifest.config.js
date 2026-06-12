@@ -19,7 +19,7 @@ export default defineManifest({
     'activeTab',
   ],
   background: {
-    service_worker: 'src/extension/service-worker.js',
+    service_worker: 'src/extension/entrypoints/service-worker.js',
   },
   host_permissions: [
     'https://*.instructure.com/*',
@@ -30,29 +30,29 @@ export default defineManifest({
   content_scripts: [
     {
       matches: ['https://*.instructure.com/courses/*/gradebook/speed_grader*'],
-      js: ['src/content/loader-speedgrader.js'],
+      js: ['src/content/entrypoints/speedgrader-loader.js'],
       run_at: 'document_start',
     },
     {
       matches: ['https://*.instructure.com/courses/*/gradebook/speed_grader*'],
-      js: ['src/page/speedgrader.js'],
+      js: ['src/page/entrypoints/speedgrader.js'],
       world: 'MAIN',
       run_at: 'document_idle',
     },
     {
       matches: ['https://runtime-app.powerapps.com/*', 'https://runtime-app.powerplatform.com/*'],
-      js: ['src/content/grading-queue.js'],
+      js: ['src/content/entrypoints/powerapps-grading-queue.js'],
       run_at: 'document_end',
       all_frames: true,
     },
     {
       matches: ['https://apps.powerapps.com/*'],
-      js: ['src/content/powerapps-domain-monitor.js'],
+      js: ['src/content/entrypoints/powerapps-domain-monitor.js'],
       run_at: 'document_end',
     },
     {
       matches: ['https://*.instructure.com/courses/*/groups*'],
-      js: ['src/content/groups-page.js'],
+      js: ['src/content/entrypoints/groups-page.js'],
       run_at: 'document_idle',
     },
     {
@@ -62,7 +62,7 @@ export default defineManifest({
         'https://*.instructure.com/api/v1/canvadoc_session*',
         'https://*.instructure.com/courses/*/assignments/*/submissions/*',
       ],
-      js: ['src/content/iframe-content-loader.js'],
+      js: ['src/content/entrypoints/iframe-content-loader.js'],
       run_at: 'document_start',
       all_frames: true,
     },

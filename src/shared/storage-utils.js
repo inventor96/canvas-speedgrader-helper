@@ -179,15 +179,4 @@ export function saveStudentNamesWithPrune(students, callback) {
   });
 }
 
-export const CSHStorageUtils = {
-  DEFAULT_LIMITS: () => DEFAULT_LIMITS,
-  initializeLimits,
-  estimateBytes,
-  ensureMeta,
-  normalizeMetaKeys,
-  touchMeta,
-  pruneLruMap,
-  pruneSavedPoints,
-  pruneStudentNames,
-  saveStudentNamesWithPrune
-};
+

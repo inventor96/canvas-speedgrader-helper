@@ -1,99 +1,26 @@
-import { CSH_MESSAGE_TYPES } from '../shared/message-types.js';
+import { CSH_MESSAGE_TYPES } from '../../../shared/message-types.js';
+import {
+  getQueueRowByStudentName,
+  getStudentNameFromRow,
+  getQueueRowFromActionButton,
+  getQueueRowFromCompleteButton,
+  getFirstAvailableGradeButton,
+  getGradingStatusSelect,
+  getAlreadyGradedOptionValue,
+  getCurrentQueueItemCount,
+  waitForElementRemoval,
+  tryClickFirstGradeButton,
+} from './queue-helpers.js';
+import { QueueCompletePopup, getStudentQueuePopupState, setStudentQueuePopupState, setDefaultAutoOpenNext } from './queue-complete-popup.js';
 
 let _pendingAutoOpenOverride = null;
-let _defaultAutoOpenNextQueueItemAfterComplete = false;
 let _autoClickLoadQueueWhenEmpty = false;
 let _autoClickLoadQueueEveryHourWhenLessThanTenItems = false;
 let _loadQueueHourlyTimerId = null;
 let _queueRepopulationRetryActive = false;
-const _queuePopupStateByStudentName = Object.create(null);
 const LOAD_QUEUE_BUTTON_SELECTOR = 'div[data-control-name="ButtonCanvas1_1"] button';
 const LOAD_QUEUE_HOURLY_INTERVAL_MS = 60 * 60 * 1000;
 const LOAD_QUEUE_MIN_ITEMS_THRESHOLD = 10;
-
-function getQueueRowByStudentName(studentName) {
-  if (!studentName) {
-    console.warn('CSH: No student name provided');
-    return null;
-  }
-
-  const studentNameElements = document.querySelectorAll('[data-control-name="txtStudentName"]');
-
-  const matchingElement = Array.from(studentNameElements).find(el =>
-    el.textContent.trim() === studentName.trim()
-  );
-
-  if (!matchingElement) {
-    console.warn('CSH: Could not find student name element for:', studentName);
-    return null;
-  }
-
-  const row = matchingElement.closest('[data-control-name="ColumnLabels"]')?.parentElement;
-  if (!row) {
-    console.warn('CSH: Could not find row for student name element');
-    return null;
-  }
-
-  return row;
-}
-
-function getStudentNameFromRow(row) {
-  if (!row) return '';
-  const studentNameElement = row.querySelector('[data-control-name="txtStudentName"]');
-  return studentNameElement?.textContent?.trim() || '';
-}
-
-function getQueueRowFromActionButton(button) {
-  if (!button || typeof button.closest !== 'function') return null;
-  return button.closest('[data-control-name="ActionButtons"]')?.parentElement || null;
-}
-
-function getQueueRowFromCompleteButton(completeButton) {
-  if (!completeButton || typeof completeButton.closest !== 'function') return null;
-
-  const actionButtonsParent = completeButton.closest('[data-control-name="ActionButtons"]')?.parentElement;
-  if (actionButtonsParent) return actionButtonsParent;
-
-  const columnLabelsParent = completeButton.closest('[data-control-name="ColumnLabels"]')?.parentElement;
-  if (columnLabelsParent) return columnLabelsParent;
-
-  const completeControl = completeButton.closest('[data-control-name="CompleteButton"]');
-  if (!completeControl) return null;
-
-  return completeControl.closest('[data-control-name="ColumnLabels"]')?.parentElement || completeControl.parentElement || null;
-}
-
-function getStudentKey(studentName) {
-  return String(studentName || '').trim();
-}
-
-function getStudentQueuePopupState(studentName) {
-  const key = getStudentKey(studentName);
-  if (!key) {
-    return {
-      autoOpenNextQueueItemAfterComplete: _defaultAutoOpenNextQueueItemAfterComplete,
-    };
-  }
-
-  if (!_queuePopupStateByStudentName[key]) {
-    _queuePopupStateByStudentName[key] = {
-      autoOpenNextQueueItemAfterComplete: _defaultAutoOpenNextQueueItemAfterComplete,
-    };
-  }
-
-  return _queuePopupStateByStudentName[key];
-}
-
-function setStudentQueuePopupState(studentName, patch) {
-  const key = getStudentKey(studentName);
-  if (!key) return;
-
-  const existing = getStudentQueuePopupState(key);
-  _queuePopupStateByStudentName[key] = {
-    ...existing,
-    ...patch,
-  };
-}
 
 function initializeQueuePopupDefaults(callback) {
   if (!chrome.storage || !chrome.storage.sync || !chrome.storage.sync.get) {
@@ -106,7 +33,7 @@ function initializeQueuePopupDefaults(callback) {
     autoClickLoadQueueWhenEmpty: false,
     autoClickLoadQueueEveryHourWhenLessThanTenItems: false,
   }, (data) => {
-    _defaultAutoOpenNextQueueItemAfterComplete = !!data.autoOpenNextQueueItemAfterComplete;
+    setDefaultAutoOpenNext(data.autoOpenNextQueueItemAfterComplete);
     _autoClickLoadQueueWhenEmpty = !!data.autoClickLoadQueueWhenEmpty;
     _autoClickLoadQueueEveryHourWhenLessThanTenItems = !!data.autoClickLoadQueueEveryHourWhenLessThanTenItems;
     if (_autoClickLoadQueueEveryHourWhenLessThanTenItems) {
@@ -121,14 +48,6 @@ function clearHourlyLoadQueueTimer(reason = 'not specified') {
   clearTimeout(_loadQueueHourlyTimerId);
   _loadQueueHourlyTimerId = null;
   console.log('CSH: Cleared hourly Load Queue timer:', reason);
-}
-
-function getCurrentQueueItemCount() {
-  const studentNameElements = Array.from(document.querySelectorAll('[data-control-name="txtStudentName"]'));
-  return studentNameElements.filter((element) => {
-    if (!element || !element.isConnected) return false;
-    return !!(element.textContent || '').trim();
-  }).length;
 }
 
 function runHourlyLoadQueueCheck() {
@@ -240,37 +159,6 @@ function retryOpenNextAfterQueueLoad(maxChecks = 15, intervalMs = 1000) {
   };
 
   setTimeout(checkForGradeButton, intervalMs);
-}
-
-function getFirstAvailableGradeButton() {
-  const gradeButtons = Array.from(document.querySelectorAll('[data-control-name="GraderButton"] button'));
-  return gradeButtons.find((button) => !button.disabled && button.isConnected) || null;
-}
-
-function getGradingStatusSelect(row) {
-  if (!row) return null;
-  const select = row.querySelector('[data-control-name="GradingStatusCmbx"] select');
-  if (!select) {
-    console.warn('CSH: Could not find grading status select in row');
-    return null;
-  }
-  return select;
-}
-
-function getAlreadyGradedOptionValue(gradingStatusSelect) {
-  if (!gradingStatusSelect) return null;
-
-  const options = Array.from(gradingStatusSelect.options);
-  const alreadyGradedOption = options.find(option =>
-    option.textContent.trim() === 'Already Graded'
-  );
-
-  if (!alreadyGradedOption) {
-    console.warn('CSH: Could not find "Already Graded" option in grading status select');
-    return null;
-  }
-
-  return alreadyGradedOption.value;
 }
 
 function waitForSelectValueByStudentName(
@@ -428,182 +316,6 @@ function attachGroupCheckResultListener() {
     console.error('Error attaching message listener:', e);
   }
 }
-
-function waitForElementRemoval(element, timeoutMs = 15000) {
-  return new Promise((resolve) => {
-    if (!element || !element.isConnected) {
-      resolve(true);
-      return;
-    }
-
-    const timeoutId = setTimeout(() => {
-      observer.disconnect();
-      resolve(false);
-    }, timeoutMs);
-
-    const observer = new MutationObserver(() => {
-      if (!element.isConnected) {
-        clearTimeout(timeoutId);
-        observer.disconnect();
-        resolve(true);
-      }
-    });
-
-    observer.observe(document.documentElement, {
-      childList: true,
-      subtree: true,
-    });
-  });
-}
-
-function tryClickFirstGradeButton() {
-  const firstAvailable = getFirstAvailableGradeButton();
-  if (!firstAvailable) {
-    return false;
-  }
-
-  firstAvailable.click();
-  return true;
-}
-
-const QueueCompletePopup = (() => {
-  let _el = null;
-  let _hideTimer = null;
-  let _activeStudentName = '';
-  const HIDE_DELAY_MS = 1500;
-
-  function _isPopup(node) {
-    if (!_el || !node) return false;
-    return node === _el || (typeof _el.contains === 'function' && _el.contains(node));
-  }
-
-  function _isCompleteButton(node) {
-    return !!(node && typeof node.closest === 'function' && node.closest('[data-control-name="CompleteButton"] button'));
-  }
-
-  function _cancelHideTimer() {
-    if (_hideTimer !== null) {
-      clearTimeout(_hideTimer);
-      _hideTimer = null;
-    }
-  }
-
-  function _startHideTimer() {
-    _cancelHideTimer();
-    _hideTimer = setTimeout(() => {
-      if (_el) _el.style.display = 'none';
-    }, HIDE_DELAY_MS);
-  }
-
-  function _syncCheckboxesForStudent(studentName) {
-    const state = getStudentQueuePopupState(studentName);
-    const cbNext = document.getElementById('csh-queue-open-next-cb');
-    if (cbNext) {
-      cbNext.checked = !!state.autoOpenNextQueueItemAfterComplete;
-    }
-  }
-
-  function _show(completeButtonEl, studentName) {
-    if (!_el) return;
-
-    _activeStudentName = studentName || '';
-    _syncCheckboxesForStudent(_activeStudentName);
-
-    const rect = completeButtonEl.getBoundingClientRect();
-    _el.style.left = rect.left + 'px';
-    _el.style.top = rect.top + 'px';
-    _el.style.display = 'block';
-  }
-
-  function _create() {
-    const el = document.createElement('div');
-    el.id = 'csh-queue-complete-popup';
-    el.style.cssText = [
-      'position:fixed',
-      'z-index:99999',
-      'background:#fff',
-      'border:1px solid #c7cdd1',
-      'border-radius:4px',
-      'box-shadow:0 2px 8px rgba(0,0,0,0.18)',
-      'padding:8px 12px',
-      'display:none',
-      'transform:translate(calc(-100% - 8px), 0)',
-      'min-width:220px',
-      'font-size:13px',
-      'line-height:1.5',
-      'color:#2d3b45',
-      'font-family:Lato,LatoWeb,sans-serif',
-      'user-select:none',
-    ].join(';');
-
-    const label = document.createElement('label');
-    label.style.cssText = 'display:flex;align-items:center;gap:7px;cursor:pointer;padding:2px 0;white-space:nowrap;';
-
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.id = 'csh-queue-open-next-cb';
-    cb.style.cssText = 'margin:0;cursor:pointer;flex-shrink:0;';
-
-    const span = document.createElement('span');
-    span.textContent = 'Start next queue submission';
-
-    label.appendChild(cb);
-    label.appendChild(span);
-    el.appendChild(label);
-
-    el.addEventListener('change', (event) => {
-      const target = event.target;
-      if (!target || target.type !== 'checkbox') return;
-      if (target.id !== 'csh-queue-open-next-cb') return;
-
-      setStudentQueuePopupState(_activeStudentName, {
-        autoOpenNextQueueItemAfterComplete: !!target.checked,
-      });
-    });
-
-    document.body.appendChild(el);
-    return el;
-  }
-
-  function init() {
-    if (_el) return;
-    _el = _create();
-
-    document.addEventListener('mouseover', (event) => {
-      if (_isCompleteButton(event.target)) {
-        const completeButton = event.target.closest('[data-control-name="CompleteButton"] button');
-        const row = getQueueRowFromCompleteButton(completeButton);
-        const studentName = getStudentNameFromRow(row);
-
-        _cancelHideTimer();
-        _show(completeButton, studentName);
-        return;
-      }
-
-      if (_isPopup(event.target)) {
-        _cancelHideTimer();
-      }
-    });
-
-    document.addEventListener('mouseout', (event) => {
-      if (!_el || _el.style.display === 'none') return;
-      const leaving = event.target;
-      const entering = event.relatedTarget;
-
-      if (!_isCompleteButton(leaving) && !_isPopup(leaving)) return;
-      if (_isCompleteButton(entering) || _isPopup(entering)) return;
-
-      _startHideTimer();
-    });
-  }
-
-  function hideAfterDelay() {
-    if (!_el || _el.style.display === 'none') return;
-    _startHideTimer();
-  }
-
-  return { init, hideAfterDelay };
-})();
 
 function maybeOpenNextQueueItemAfterComplete(completeButton, studentName) {
   if (!completeButton) return;

@@ -1,7 +1,7 @@
-import { CSH_MESSAGE_TYPES } from '../shared/message-types.js';
-import { HIGHLIGHT_CONFIG } from '../page/submission-adapters/highlight-config.js';
-import { DocumentRendererAdapter } from '../page/submission-adapters/iframe-content/document-renderer-adapter.js';
-import { DiscussionPostsAdapter } from '../page/submission-adapters/iframe-content/discussion-posts-adapter.js';
+import { CSH_MESSAGE_TYPES } from '../../shared/message-types.js';
+import { HIGHLIGHT_CONFIG } from '../../shared/highlight-config.js';
+import { DocumentRendererAdapter } from '../modules/iframe-adapters/document-renderer-adapter.js';
+import { DiscussionPostsAdapter } from '../modules/iframe-adapters/discussion-posts-adapter.js';
 
 let readyNotificationIntervalId = null;
 

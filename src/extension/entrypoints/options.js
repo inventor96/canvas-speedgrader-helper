@@ -1,5 +1,5 @@
-import { SYNCED_SETTINGS } from '../shared/settings.js';
-import { saveStudentNamesWithPrune, CSHStorageUtils } from '../shared/storage-utils.js';
+import { SYNCED_SETTINGS } from '../../shared/settings.js';
+import { saveStudentNamesWithPrune, initializeLimits } from '../../shared/storage-utils.js';
 
 function createItem(value = '') {
   const container = document.createElement('div');
@@ -284,8 +284,8 @@ function setImportResults(summary, conflicts) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  if (typeof CSHStorageUtils !== 'undefined' && typeof CSHStorageUtils.initializeLimits === 'function') {
-    await CSHStorageUtils.initializeLimits();
+  if (typeof initializeLimits === 'function') {
+    await initializeLimits();
   }
 
   loadPlaceholders();
