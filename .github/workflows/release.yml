@@ -41,10 +41,10 @@ jobs:
       - name: Find release artifact
         id: artifact
         run: |
-          FILE=$(find releases -type f -name "*.zip" | head -n 1)
+          FILE=$(find release -type f -name "*.zip" | head -n 1)
 
           if [ -z "$FILE" ]; then
-            echo "No zip file found in releases/"
+            echo "No zip file found in release/"
             exit 1
           fi
 
