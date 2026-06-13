@@ -1,1 +1,1 @@
-import '../modules/message-router.js';
+import '@/extension/modules/message-router.js';

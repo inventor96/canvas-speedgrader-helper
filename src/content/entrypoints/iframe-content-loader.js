@@ -1,7 +1,7 @@
-import { CSH_MESSAGE_TYPES } from '../../shared/message-types.js';
-import { HIGHLIGHT_CONFIG } from '../../shared/highlight-config.js';
-import { DocumentRendererAdapter } from '../modules/iframe-adapters/document-renderer-adapter.js';
-import { DiscussionPostsAdapter } from '../modules/iframe-adapters/discussion-posts-adapter.js';
+import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
+import { HIGHLIGHT_CONFIG } from '@/shared/highlight-config.js';
+import { DocumentRendererAdapter } from '@/content/modules/iframe-adapters/document-renderer-adapter.js';
+import { DiscussionPostsAdapter } from '@/content/modules/iframe-adapters/discussion-posts-adapter.js';
 
 const ADAPTER_MAP = {
   'document-renderer': DocumentRendererAdapter,

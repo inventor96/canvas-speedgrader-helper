@@ -1,4 +1,4 @@
-import { observeUntil } from '../../shared/observe-until.js';
+import { observeUntil } from '@/shared/observe-until.js';
 import { get } from './settings-store.js';
 import { attachCommentLibraryHandler } from './comment-library-controller.js';
 import { attachAutoFillListeners, attachCommentLibraryChangeListeners } from './points-memory.js';

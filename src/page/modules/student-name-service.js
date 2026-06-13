@@ -1,4 +1,4 @@
-import { CSH_MESSAGE_TYPES } from '../../shared/message-types.js';
+import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
 import { get, auxState } from './settings-store.js';
 
 export function getCurrentStudentNameFromPage(forceFullName = false) {

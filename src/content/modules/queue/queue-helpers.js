@@ -1,4 +1,4 @@
-import { observeUntil } from '../../../shared/observe-until.js';
+import { observeUntil } from '@/shared/observe-until.js';
 
 export function getQueueRowByStudentName(studentName) {
   if (!studentName) {

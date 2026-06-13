@@ -1,4 +1,4 @@
-import { CSH_MESSAGE_TYPES } from '../../../shared/message-types.js';
+import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
 
 const REQUEST_TIMEOUT_MS = 20000;
 

@@ -1,13 +1,13 @@
-import { get } from '../modules/settings-store.js';
-import { whenReady } from '../modules/submission-dispatcher.js';
-import { init, attachSettingsUpdateListener, waitForStoredSettings } from '../modules/settings-bridge.js';
-import { waitForTinyMCE } from '../modules/placeholder-engine.js';
-import { attachCommentModeObserver } from '../modules/comment-mode-controller.js';
-import { handleRubricFunctionality } from '../modules/rubric-controller.js';
-import { attachGroupsResultListener, checkQueuedStudentName } from '../modules/notification-ui.js';
-import { check } from '../modules/name-sanity-check.js';
-import { getNext } from '../modules/highlight-class-selector.js';
-import { waitForElement } from '../modules/helpers/dom-utils.js';
+import { get } from '@/page/modules/settings-store.js';
+import { whenReady } from '@/page/modules/submission-dispatcher.js';
+import { init, attachSettingsUpdateListener, waitForStoredSettings } from '@/page/modules/settings-bridge.js';
+import { waitForTinyMCE } from '@/page/modules/placeholder-engine.js';
+import { attachCommentModeObserver } from '@/page/modules/comment-mode-controller.js';
+import { handleRubricFunctionality } from '@/page/modules/rubric-controller.js';
+import { attachGroupsResultListener, checkQueuedStudentName } from '@/page/modules/notification-ui.js';
+import { check } from '@/page/modules/name-sanity-check.js';
+import { getNext } from '@/page/modules/highlight-class-selector.js';
+import { waitForElement } from '@/page/modules/helpers/dom-utils.js';
 
 function initializeAllFeatures() {
   whenReady((api) => {

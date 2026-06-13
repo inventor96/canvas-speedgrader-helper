@@ -1,4 +1,4 @@
-import { CSH_MESSAGE_TYPES } from '../../shared/message-types.js';
+import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
 import { getGroupTripletCacheKey, pruneGroupTripletCache, withGroupTripletCache, groupTripletCache, persistGroupTripletCache } from './group-triplet-cache.js';
 import { PENDING_CHECK_TTL_MS, pendingGroupsChecks, normalizeCourseGroupsUrl, safeSendToTab, closeTabIfPresent } from './groups-check-state.js';
 

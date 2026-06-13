@@ -1,5 +1,5 @@
-import { SYNCED_SETTINGS } from '../../shared/settings.js';
-import { saveStudentNamesWithPrune, initializeLimits } from '../../shared/storage-utils.js';
+import { SYNCED_SETTINGS } from '@/shared/settings.js';
+import { saveStudentNamesWithPrune, initializeLimits } from '@/shared/storage-utils.js';
 
 function createItem(value = '') {
   const container = document.createElement('div');

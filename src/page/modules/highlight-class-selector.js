@@ -1,4 +1,4 @@
-import { HIGHLIGHT_CONFIG } from '../../shared/highlight-config.js';
+import { HIGHLIGHT_CONFIG } from '@/shared/highlight-config.js';
 
 const _config = HIGHLIGHT_CONFIG;
 let _used = [];

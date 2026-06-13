@@ -1,4 +1,4 @@
-import { observeUntil } from '../../shared/observe-until.js';
+import { observeUntil } from '@/shared/observe-until.js';
 import { IframeSubmissionAdapter } from './submission-adapters/iframe-submission-adapter.js';
 
 const SUBMISSION_CONTAINER_SELECTOR = 'article.speedgrader-preview-frame';

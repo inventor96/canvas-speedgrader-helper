@@ -1,4 +1,4 @@
-import { CSH_MESSAGE_TYPES } from '../../shared/message-types.js';
+import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
 import { get, BLANK_DROPDOWN_VALUES } from './settings-store.js';
 import { attachEventListenerIdempotent } from './helpers/dom-utils.js';
 import { applySettingsToTextareas } from './placeholder-engine.js';

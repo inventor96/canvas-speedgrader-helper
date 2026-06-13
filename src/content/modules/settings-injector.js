@@ -1,6 +1,6 @@
-import { CSH_MESSAGE_TYPES } from '../../shared/message-types.js';
-import { SYNCED_SETTINGS, LOCAL_SETTINGS } from '../../shared/settings.js';
-import { initializeLimits, touchMeta, pruneSavedPoints, normalizeMetaKeys, saveStudentNamesWithPrune } from '../../shared/storage-utils.js';
+import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
+import { SYNCED_SETTINGS, LOCAL_SETTINGS } from '@/shared/settings.js';
+import { initializeLimits, touchMeta, pruneSavedPoints, normalizeMetaKeys, saveStudentNamesWithPrune } from '@/shared/storage-utils.js';
 
 if (typeof initializeLimits === 'function') {
   initializeLimits().catch((e) => {});

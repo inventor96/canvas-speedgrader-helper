@@ -1,4 +1,4 @@
-import { CSH_MESSAGE_TYPES } from '../../shared/message-types.js';
+import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
 import { applyAll, get } from './settings-store.js';
 import { handleRubricFunctionality } from './rubric-controller.js';
 import { applySettingsToEditors, applySettingsToTextareas, attachCommentLibraryTextareaListeners } from './placeholder-engine.js';

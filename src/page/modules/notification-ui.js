@@ -1,5 +1,5 @@
-import { CSH_MESSAGE_TYPES } from '../../shared/message-types.js';
-import { observeUntil } from '../../shared/observe-until.js';
+import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
+import { observeUntil } from '@/shared/observe-until.js';
 import { get } from './settings-store.js';
 import { escapeHtml, normalizeName, waitForElement } from './helpers/dom-utils.js';
 import { getCurrentStudentNameFromPage } from './student-name-service.js';

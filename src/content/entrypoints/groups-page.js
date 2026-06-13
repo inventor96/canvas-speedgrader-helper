@@ -1,5 +1,5 @@
-import { CSH_MESSAGE_TYPES } from '../../shared/message-types.js';
-import { observeUntil } from '../../shared/observe-until.js';
+import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
+import { observeUntil } from '@/shared/observe-until.js';
 
 const SEARCH_INPUT_SELECTOR = '[data-testid="group-search-input"]';
 const GROUPS_CONTAINER_SELECTOR = 'div.student-groups';

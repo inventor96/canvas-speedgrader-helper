@@ -1,4 +1,4 @@
-import { observeUntil } from '../../../shared/observe-until.js';
+import { observeUntil } from '@/shared/observe-until.js';
 
 export function attachEventListenerIdempotent(element, eventType, handler, flagProperty) {
   if (!element) return false;

@@ -1,5 +1,5 @@
-import { CSH_MESSAGE_TYPES } from '../../shared/message-types.js';
-import { initializeLimits, saveStudentNamesWithPrune } from '../../shared/storage-utils.js';
+import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
+import { initializeLimits, saveStudentNamesWithPrune } from '@/shared/storage-utils.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
   if (typeof initializeLimits === 'function') {

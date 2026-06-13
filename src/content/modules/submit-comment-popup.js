@@ -1,5 +1,5 @@
-import { CSH_MESSAGE_TYPES } from '../../shared/message-types.js';
-import { observeUntil } from '../../shared/observe-until.js';
+import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
+import { observeUntil } from '@/shared/observe-until.js';
 import { getCurrentCanvasStudentFullName } from './settings-injector.js';
 
 let closeSpeedgraderTabAfterSubmitCommentEnabled = false;

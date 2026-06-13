@@ -1,1 +1,1 @@
-import '../modules/queue/grading-queue.js';
+import '@/content/modules/queue/grading-queue.js';

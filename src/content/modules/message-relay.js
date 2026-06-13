@@ -1,5 +1,5 @@
-import { CSH_MESSAGE_TYPES } from '../../shared/message-types.js';
-import { touchMeta, pruneSavedPoints, normalizeMetaKeys } from '../../shared/storage-utils.js';
+import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
+import { touchMeta, pruneSavedPoints, normalizeMetaKeys } from '@/shared/storage-utils.js';
 import { getCurrentCanvasStudentFullName, handleSameGroupGradingStatus } from './settings-injector.js';
 
 function logStorageWarning(message, detail) {

@@ -1,4 +1,4 @@
-import { HIGHLIGHT_CONFIG } from '../../../shared/highlight-config.js';
+import { HIGHLIGHT_CONFIG } from '@/shared/highlight-config.js';
 
 export function hexToRgba(hex, alpha) {
   const h = hex.replace('#', '');
