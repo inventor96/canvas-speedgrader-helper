@@ -1,4 +1,5 @@
 import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
+import { SYNCED_SETTINGS } from '@/shared/settings.js';
 import {
   getQueueRowByStudentName,
   getStudentNameFromRow,
@@ -14,8 +15,8 @@ import {
 import { QueueCompletePopup, getStudentQueuePopupState, setStudentQueuePopupState, setDefaultAutoOpenNext } from './queue-complete-popup.js';
 
 let _pendingAutoOpenOverride = null;
-let _autoClickLoadQueueWhenEmpty = false;
-let _autoClickLoadQueueEveryHourWhenLessThanTenItems = false;
+let _autoClickLoadQueueWhenEmpty = SYNCED_SETTINGS.autoClickLoadQueueWhenEmpty;
+let _autoClickLoadQueueEveryHourWhenLessThanTenItems = SYNCED_SETTINGS.autoClickLoadQueueEveryHourWhenLessThanTenItems;
 let _loadQueueHourlyTimerId = null;
 let _queueRepopulationRetryActive = false;
 const LOAD_QUEUE_BUTTON_SELECTOR = 'div[data-control-name="ButtonCanvas1_1"] button';
@@ -28,11 +29,7 @@ function initializeQueuePopupDefaults(callback) {
     return;
   }
 
-  chrome.storage.sync.get({
-    autoOpenNextQueueItemAfterComplete: false,
-    autoClickLoadQueueWhenEmpty: false,
-    autoClickLoadQueueEveryHourWhenLessThanTenItems: false,
-  }, (data) => {
+  chrome.storage.sync.get(SYNCED_SETTINGS, (data) => {
     setDefaultAutoOpenNext(data.autoOpenNextQueueItemAfterComplete);
     _autoClickLoadQueueWhenEmpty = !!data.autoClickLoadQueueWhenEmpty;
     _autoClickLoadQueueEveryHourWhenLessThanTenItems = !!data.autoClickLoadQueueEveryHourWhenLessThanTenItems;
@@ -264,10 +261,7 @@ function attachGroupCheckResultListener() {
         if (message && message.type === CSH_MESSAGE_TYPES.GROUPS_CHECK_GRADING_STATUS && message.sameGroup) {
           console.log('CSH: Received group match grading status for student:', message.queuedName, '| isGraded:', message.isGraded);
 
-          chrome.storage.sync.get({
-            autoSelectAlreadyGradedWhenGroupMatched: false,
-            autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded: false,
-          }, async (data) => {
+          chrome.storage.sync.get(SYNCED_SETTINGS, async (data) => {
             const shouldAutoSelectAlreadyGraded = !!data.autoSelectAlreadyGradedWhenGroupMatched && !!message.isGraded;
             const shouldAutoCompleteAfterGroupMatch = !!data.autoCloseSpeedgraderTabWhenGroupMatchedAndUngraded && !!message.isGraded;
 

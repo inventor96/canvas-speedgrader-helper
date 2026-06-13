@@ -1,10 +1,11 @@
 import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
 import { observeUntil } from '@/shared/observe-until.js';
+import { SYNCED_SETTINGS } from '@/shared/settings.js';
 import { getCurrentCanvasStudentFullName } from './settings-injector.js';
 
-let closeSpeedgraderTabAfterSubmitCommentEnabled = false;
-let autoCompleteQueueItemAfterCommentSubmitEnabled = false;
-let autoOpenNextQueueItemAfterCompleteEnabled = false;
+let closeSpeedgraderTabAfterSubmitCommentEnabled = SYNCED_SETTINGS.closeSpeedgraderTabAfterSubmitComment;
+let autoCompleteQueueItemAfterCommentSubmitEnabled = SYNCED_SETTINGS.autoCompleteQueueItemAfterCommentSubmit;
+let autoOpenNextQueueItemAfterCompleteEnabled = SYNCED_SETTINGS.autoOpenNextQueueItemAfterComplete;
 let closeOnSubmitCommentListenerAttached = false;
 let closeOnSubmitCommentPending = false;
 
@@ -208,11 +209,7 @@ function initializeCloseOnSubmitCommentSetting() {
     return;
   }
 
-  chrome.storage.sync.get({
-    closeSpeedgraderTabAfterSubmitComment: false,
-    autoCompleteQueueItemAfterCommentSubmit: false,
-    autoOpenNextQueueItemAfterComplete: false,
-  }, (data) => {
+  chrome.storage.sync.get(SYNCED_SETTINGS, (data) => {
     closeSpeedgraderTabAfterSubmitCommentEnabled = !!data.closeSpeedgraderTabAfterSubmitComment;
     autoCompleteQueueItemAfterCommentSubmitEnabled = !!data.autoCompleteQueueItemAfterCommentSubmit;
     autoOpenNextQueueItemAfterCompleteEnabled = !!data.autoOpenNextQueueItemAfterComplete;

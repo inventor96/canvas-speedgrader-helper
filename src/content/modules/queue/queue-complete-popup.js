@@ -1,7 +1,8 @@
 import { getStudentNameFromRow, getQueueRowFromCompleteButton, getStudentKey } from './queue-helpers.js';
+import { SYNCED_SETTINGS } from '@/shared/settings.js';
 
 const _queuePopupStateByStudentName = Object.create(null);
-let _defaultAutoOpenNextQueueItemAfterComplete = false;
+let _defaultAutoOpenNextQueueItemAfterComplete = SYNCED_SETTINGS.autoOpenNextQueueItemAfterComplete;
 
 function getStudentQueuePopupState(studentName) {
   const key = getStudentKey(studentName);
