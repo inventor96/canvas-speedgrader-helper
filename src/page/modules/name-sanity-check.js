@@ -1,3 +1,4 @@
+import { logger } from '@/shared/logger.js';
 import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
 import { get } from './settings-store.js';
 import { getCurrentStudentNameFromPage } from './student-name-service.js';
@@ -146,7 +147,7 @@ function savePreferredName(name) {
       preferredName: name,
     }, '*');
   } catch (e) {
-    console.error('Error saving preferred name:', e);
+    logger.error('Error saving preferred name:', e);
   }
 }
 
@@ -166,6 +167,6 @@ export function check() {
     const issue = letters === letters.toUpperCase() ? 'uppercase' : 'lowercase';
     showWarning(name, issue);
   } catch (e) {
-    console.error('Error in name sanity check:', e);
+    logger.error('Error in name sanity check:', e);
   }
 }

@@ -1,3 +1,4 @@
+import { logger } from '@/shared/logger.js';
 import { get } from './settings-store.js';
 import { getStudentName } from './student-name-service.js';
 
@@ -36,7 +37,7 @@ export function activateRadioInput(radioInput) {
 
     return !!radioInput.checked;
   } catch (e) {
-    console.error('Error activating radio input:', e);
+    logger.error('Error activating radio input:', e);
     return false;
   }
 }
@@ -58,7 +59,7 @@ export function selectGroupCommentModeIfEnabled() {
       _processedSubmitButtons.add(submitButton);
     });
   } catch (e) {
-    console.error('Error applying group comment mode:', e);
+    logger.error('Error applying group comment mode:', e);
   }
 }
 

@@ -1,3 +1,4 @@
+import { logger } from '@/shared/logger.js';
 import { get } from './settings-store.js';
 import { attachEventListenerIdempotent } from './helpers/dom-utils.js';
 import { getReplacementName } from './comment-mode-controller.js';
@@ -38,7 +39,7 @@ export function replacePlaceholdersInEditor(editor) {
       editor.setContent(updated);
     }
   } catch (e) {
-    console.error('Error replacing placeholders in editor:', e);
+    logger.error('Error replacing placeholders in editor:', e);
   }
 }
 
@@ -69,7 +70,7 @@ export function replacePlaceholdersInTextarea(textarea) {
       textarea.dispatchEvent(new Event('input', { bubbles: true }));
     }
   } catch (e) {
-    console.error('Error replacing placeholders in textarea:', e);
+    logger.error('Error replacing placeholders in textarea:', e);
   }
 }
 

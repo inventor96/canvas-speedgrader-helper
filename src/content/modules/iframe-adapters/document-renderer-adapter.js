@@ -1,5 +1,6 @@
 import { ensureHighlightStyles } from './highlight-utils.js';
 import { buildTextNodes, getRangeBetweenOffsets, scrollIntoView } from './text-range-utils.js';
+import { logger } from '@/shared/logger.js';
 
 const ELEMENT_SELECTOR = '.textLayer';
 const SEPARATOR = '\n\n';
@@ -86,7 +87,7 @@ export async function getText() {
     const textLayers = await waitForTextLayers();
     const { text } = buildTextNodes(textLayers, SEPARATOR);
 
-    console.log('[CSH] DocumentRendererAdapter: extracted text summary', {
+    logger.log('DocumentRendererAdapter: extracted text summary', {
       textLayerCount: textLayers.length,
       textLength: text.length,
     });

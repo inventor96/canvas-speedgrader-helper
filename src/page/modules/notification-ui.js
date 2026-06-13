@@ -1,3 +1,4 @@
+import { logger } from '@/shared/logger.js';
 import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
 import { observeUntil } from '@/shared/observe-until.js';
 import { get } from './settings-store.js';
@@ -50,7 +51,7 @@ function upsertCurrentTripletCache() {
       studentId: context.studentId,
     }, '*');
   } catch (e) {
-    console.warn('CSH: Failed to upsert group triplet cache entry.', e);
+    logger.warn('Failed to upsert group triplet cache entry.', e);
   }
 }
 
@@ -84,7 +85,7 @@ async function checkMatchedStudentNameForCachedGroupContext(queuedName) {
     }, '*');
   } catch (e) {
     _pendingTripletLookup = null;
-    console.warn('CSH: Failed to request group triplet cache lookup.', e);
+    logger.warn('Failed to request group triplet cache lookup.', e);
   }
 }
 
@@ -345,7 +346,7 @@ function maybeApplyTripletCacheLookupResult(msg) {
       isGraded: true,
     }, '*');
   } catch (e) {
-    console.warn('CSH: Failed to trigger cached same-group graded flow.', e);
+    logger.warn('Failed to trigger cached same-group graded flow.', e);
   }
 }
 
@@ -368,7 +369,7 @@ export function attachGroupsResultListener() {
         maybeApplyTripletCacheLookupResult(msg);
       }
     } catch (e) {
-      console.error('Error handling groups check result message:', e);
+      logger.error('Error handling groups check result message:', e);
     }
   });
 }
@@ -390,12 +391,12 @@ async function showStudentNameMismatchWarning(queuedName, speedgraderName) {
       startGroupsCheck(queuedName, speedgraderName);
     }
 
-    console.warn('CSH: Student name mismatch detected!', {
+    logger.warn('Student name mismatch detected!', {
       queued: queuedName,
       speedgrader: speedgraderName
     });
   } catch (e) {
-    console.error('Error displaying student name mismatch warning:', e);
+    logger.error('Error displaying student name mismatch warning:', e);
   }
 }
 
@@ -403,7 +404,7 @@ export function checkQueuedStudentName() {
   const queued = get('queuedStudentName');
 
   if (!queued || !queued.name) {
-    console.log('CSH: No queued student name to check');
+    logger.log('No queued student name to check');
     return;
   }
 
@@ -425,7 +426,7 @@ function finishStudentNameCheck(queuedName, currentName) {
   try {
     window.postMessage({ type: CSH_MESSAGE_TYPES.CLEAR_QUEUED_STUDENT }, '*');
   } catch (e) {
-    console.warn('CSH: Failed to send clear queued student message', e);
+    logger.warn('Failed to send clear queued student message', e);
   }
 
   if (currentName.trim().toLowerCase() !== queuedName.trim().toLowerCase()) {
@@ -433,7 +434,7 @@ function finishStudentNameCheck(queuedName, currentName) {
       showStudentNameMismatchWarning(queuedName, currentName);
     }
   } else {
-    console.log('CSH: Student names match! \u2713');
+    logger.log('Student names match! \u2713');
     checkMatchedStudentNameForCachedGroupContext(queuedName);
   }
 }

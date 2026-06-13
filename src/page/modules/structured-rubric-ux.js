@@ -1,3 +1,4 @@
+import { logger } from '@/shared/logger.js';
 import { get } from './settings-store.js';
 import { attachEventListenerIdempotent } from './helpers/dom-utils.js';
 
@@ -96,7 +97,7 @@ export function attachClearCommentOnMaxPointsListeners() {
           clearCommentButton.click();
         }
       } catch (e) {
-        console.error('Error handling clear comment on max points click:', e);
+        logger.error('Error handling clear comment on max points click:', e);
       }
     }, '__clearCommentOnMaxPointsListenerAttached');
   });
@@ -145,7 +146,7 @@ export function attachStructuredRubricListeners() {
 
         setTimeout(focusCommentTextArea, 500);
       } catch (e) {
-        console.error('Error handling structured rubric rating button click:', e);
+        logger.error('Error handling structured rubric rating button click:', e);
       }
     }, '__structuredRubricListenerAttached');
   });

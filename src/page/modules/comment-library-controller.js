@@ -1,3 +1,4 @@
+import { logger } from '@/shared/logger.js';
 import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
 import { get, BLANK_DROPDOWN_VALUES } from './settings-store.js';
 import { attachEventListenerIdempotent } from './helpers/dom-utils.js';
@@ -76,7 +77,7 @@ function handlePointsSaving() {
           pointsToSave[key] = pointsValue;
         }
       } catch (e) {
-        console.error('Error processing criterion for points saving:', e);
+        logger.error('Error processing criterion for points saving:', e);
       }
     });
 
@@ -87,6 +88,6 @@ function handlePointsSaving() {
       }, '*');
     }
   } catch (e) {
-    console.error('Error saving points for comments:', e);
+    logger.error('Error saving points for comments:', e);
   }
 }

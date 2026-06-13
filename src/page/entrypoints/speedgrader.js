@@ -1,3 +1,4 @@
+import { logger } from '@/shared/logger.js';
 import { get } from '@/page/modules/settings-store.js';
 import { whenReady } from '@/page/modules/submission-dispatcher.js';
 import { init, attachSettingsUpdateListener, waitForStoredSettings } from '@/page/modules/settings-bridge.js';
@@ -11,23 +12,22 @@ import { waitForElement } from '@/page/modules/helpers/dom-utils.js';
 
 function initializeAllFeatures() {
   whenReady((api) => {
-      console.log('%c[CSH DEMO] SubmissionCoordinator ready \u2014 full pipeline is live!', 'font-weight:bold;color:#2ecc71;font-size:14px');
-      console.log('[CSH DEMO] Request path: speedgrader.js \u2192 SubmissionDispatcher \u2192 IframeSubmissionAdapter \u2192 (postMessage) \u2192 iframe-content-loader \u2192 adapter');
-      console.log('[CSH DEMO] Fetching submission text via api.getText()...');
+      logger.log('SubmissionCoordinator ready');
+      logger.log('Fetching submission text via api.getText()...');
 
       api.getText()
         .then((text) => {
           const preview = typeof text === 'string' ? text.slice(0, 500) : String(text);
-          console.log('%c[CSH DEMO] \u2713 Submission text received successfully!', 'font-weight:bold;color:#2ecc71');
-          console.log('[CSH DEMO] Character count:', typeof text === 'string' ? text.length : 'N/A');
-          console.log('[CSH DEMO] Preview (first 500 chars):');
-          console.log('%c' + preview, 'color:#555;background:#f5f5f5;padding:4px 8px;border-left:3px solid #2ecc71');
+          logger.log('Submission text received successfully!');
+          logger.log('Character count:', typeof text === 'string' ? text.length : 'N/A');
+          logger.log('Preview (first 500 chars):');
+          logger.log(preview);
           if (typeof text === 'string' && text.length > 500) {
-            console.log('[CSH DEMO] ... (truncated, full length:', text.length, 'chars)');
+            logger.log('... (truncated, full length:', text.length, 'chars)');
           }
 
           if (typeof text !== 'string' || text.length < 20) {
-            console.log('%c[CSH DEMO] \u26a0 Text too short for highlight demo, skipping', 'color:#f39c12');
+            logger.log('Text too short for highlight demo, skipping');
             return;
           }
 
@@ -57,34 +57,34 @@ function initializeAllFeatures() {
 
           if (ranges.length === 0) return;
 
-          console.log('%c[CSH DEMO] \ud83c\udfa8 Applying ' + ranges.length + ' random highlight(s) individually...', 'font-weight:bold;color:#8e44ad');
+          logger.log('Applying ' + ranges.length + ' random highlight(s) individually...');
 
           let completed = 0;
           ranges.forEach((r, i) => {
             const snippet = text.slice(r.start, r.end).replace(/\s+/g, ' ').trim();
             const className = getNext();
             if (!className) {
-              console.log('[CSH DEMO]   Range ' + (i + 1) + ': skipped (no class available)');
+              logger.log('  Range ' + (i + 1) + ': skipped (no class available)');
               return;
             }
 
-            console.log('[CSH DEMO]   Range ' + (i + 1) + ': chars ' + r.start + '\u2013' + r.end + ' \u2192 "' + snippet.slice(0, 60) + (snippet.length > 60 ? '\u2026' : '') + '" (' + className + ')');
-            console.log('[CSH DEMO]   Range ' + (i + 1) + ' expected [' + className + ']: "' + text.slice(r.start, r.end) + '"');
+            logger.log('  Range ' + (i + 1) + ': chars ' + r.start + '\u2013' + r.end + ' \u2192 "' + snippet.slice(0, 60) + (snippet.length > 60 ? '\u2026' : '') + '" (' + className + ')');
+            logger.log('  Range ' + (i + 1) + ' expected [' + className + ']: "' + text.slice(r.start, r.end) + '"');
 
             api.applyHighlights([r], className)
               .then(() => {
                 completed++;
                 if (completed === ranges.length) {
-                  console.log('%c[CSH DEMO] \u2713 All ' + ranges.length + ' highlights applied successfully!', 'font-weight:bold;color:#2ecc71');
+                  logger.log('All ' + ranges.length + ' highlights applied successfully!');
                 }
               })
               .catch((err) => {
-                console.error('%c[CSH DEMO] \u2717 Failed to apply range ' + (i + 1) + ' (' + className + '):', 'font-weight:bold;color:#e74c3c', err.message);
+                logger.error('Failed to apply range ' + (i + 1) + ' (' + className + '):', err.message);
               });
           });
         })
         .catch((err) => {
-          console.error('%c[CSH DEMO] \u2717 Failed to fetch submission text:', 'font-weight:bold;color:#e74c3c', err.message);
+          logger.error('Failed to fetch submission text:', err.message);
         });
     });
 
@@ -99,7 +99,7 @@ function initializeAllFeatures() {
 
     setTimeout(() => checkQueuedStudentName(), 500);
   } catch (e) {
-    console.error('Error initializing queue student name check:', e);
+    logger.error('Error initializing queue student name check:', e);
   }
 
   if (get('enableNameSanityCheck')) {
@@ -112,7 +112,7 @@ function initializeAllFeatures() {
         });
       }, 1000);
     } catch (e) {
-      console.error('Error initializing name sanity check:', e);
+      logger.error('Error initializing name sanity check:', e);
     }
   }
 }

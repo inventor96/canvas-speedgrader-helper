@@ -1,13 +1,14 @@
 import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
 import { touchMeta, pruneSavedPoints, normalizeMetaKeys } from '@/shared/storage-utils.js';
 import { getCurrentCanvasStudentFullName, handleSameGroupGradingStatus } from './settings-injector.js';
+import { logger } from '@/shared/logger.js';
 
 function logStorageWarning(message, detail) {
   try {
     if (detail) {
-      console.warn(message, detail);
+      logger.warn(message, detail);
     } else {
-      console.warn(message);
+      logger.warn(message);
     }
   } catch (e) {}
 }
@@ -38,10 +39,10 @@ window.addEventListener('message', (event) => {
             savedPointsMeta: pruned.meta
           }, () => {
             if (chrome.runtime && chrome.runtime.lastError) {
-              logStorageWarning('CSH storage warning: failed saving savedPoints.', chrome.runtime.lastError.message);
+              logStorageWarning('failed saving savedPoints.', chrome.runtime.lastError.message);
             }
             if (pruned.prunedKeys && pruned.prunedKeys.length) {
-              logStorageWarning('CSH storage warning: pruned savedPoints entries.', pruned.prunedKeys.length);
+              logStorageWarning('pruned savedPoints entries.', pruned.prunedKeys.length);
             }
           });
         });
@@ -61,7 +62,7 @@ window.addEventListener('message', (event) => {
         const normalized = normalizeMetaKeys(currentPoints, touched);
         chrome.storage.sync.set({ savedPointsMeta: normalized }, () => {
           if (chrome.runtime && chrome.runtime.lastError) {
-            logStorageWarning('CSH storage warning: failed touching savedPoints.', chrome.runtime.lastError.message);
+            logStorageWarning('failed touching savedPoints.', chrome.runtime.lastError.message);
           }
         });
       });
@@ -80,7 +81,7 @@ window.addEventListener('message', (event) => {
         const normalized = normalizeMetaKeys(currentNames, touched);
         chrome.storage.local.set({ studentNamesMeta: normalized }, () => {
           if (chrome.runtime && chrome.runtime.lastError) {
-            logStorageWarning('CSH storage warning: failed touching studentNames.', chrome.runtime.lastError.message);
+            logStorageWarning('failed touching studentNames.', chrome.runtime.lastError.message);
           }
         });
       });
@@ -91,7 +92,7 @@ window.addEventListener('message', (event) => {
       if (!chrome.storage || !chrome.storage.local) return;
       chrome.storage.local.remove('queuedStudentName', () => {
         if (chrome.runtime && chrome.runtime.lastError) {
-          logStorageWarning('CSH storage warning: failed clearing queuedStudentName.', chrome.runtime.lastError.message);
+          logStorageWarning('failed clearing queuedStudentName.', chrome.runtime.lastError.message);
         }
       });
       return;
@@ -111,7 +112,7 @@ window.addEventListener('message', (event) => {
 
         chrome.storage.local.set({ studentNames, studentNamesMeta: touched }, () => {
           if (chrome.runtime && chrome.runtime.lastError) {
-            logStorageWarning('CSH storage warning: failed saving student name.', chrome.runtime.lastError.message);
+            logStorageWarning('failed saving student name.', chrome.runtime.lastError.message);
           }
         });
       });
@@ -130,7 +131,7 @@ window.addEventListener('message', (event) => {
         noAutoClose,
       }, (response) => {
         if (chrome.runtime && chrome.runtime.lastError) {
-          logStorageWarning('CSH groups check warning: failed starting groups check.', chrome.runtime.lastError.message);
+          logStorageWarning('failed starting groups check.', chrome.runtime.lastError.message);
           try {
             window.postMessage({
               type: CSH_MESSAGE_TYPES.GROUPS_CHECK_RESULT,

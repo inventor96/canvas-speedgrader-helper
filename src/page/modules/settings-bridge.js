@@ -1,3 +1,4 @@
+import { logger } from '@/shared/logger.js';
 import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
 import { applyAll, get } from './settings-store.js';
 import { handleRubricFunctionality } from './rubric-controller.js';
@@ -11,12 +12,12 @@ export function init() {
   try {
     const raw = document.head.getAttribute('data-csh-settings');
     if (!raw) {
-      console.error('No settings found in data-csh-settings attribute. Exiting...');
+      logger.error('No settings found in data-csh-settings attribute. Exiting...');
       return false;
     }
     return applySettings(JSON.parse(raw));
   } catch (e) {
-    console.error('Error initializing settings from data-csh-settings attribute:', e);
+    logger.error('Error initializing settings from data-csh-settings attribute:', e);
     return false;
   }
 }
@@ -55,7 +56,7 @@ export function attachSettingsUpdateListener() {
       attachCommentLibraryTextareaListeners();
       selectGroupCommentModeIfEnabled();
     } catch (e) {
-      console.error('Error handling CSH_UPDATE_SETTINGS message:', e);
+      logger.error('Error handling CSH_UPDATE_SETTINGS message:', e);
     }
   });
 }
@@ -81,12 +82,12 @@ function handleStudentNameChange(changes) {
           const updated = content.replaceAll(oldName, newName);
           if (updated !== content) editor.setContent(updated);
         } catch (e) {
-          console.error('Error updating editor content for student name change:', e);
+          logger.error('Error updating editor content for student name change:', e);
         }
       });
     }
   } catch (e) {
-    console.error('Error handling student name change:', e);
+    logger.error('Error handling student name change:', e);
   }
 }
 

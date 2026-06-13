@@ -1,3 +1,4 @@
+import { logger } from '@/shared/logger.js';
 import { observeUntil } from '@/shared/observe-until.js';
 import { IframeSubmissionAdapter } from './submission-adapters/iframe-submission-adapter.js';
 
@@ -31,7 +32,7 @@ function createApi() {
       return adapter.getText().then((result) => {
         return result;
       }).catch((err) => {
-        console.error('[CSH] SubmissionDispatcher API: getText rejected:', err.message);
+        logger.error('SubmissionDispatcher API: getText rejected:', err.message);
         throw err;
       });
     },
@@ -40,7 +41,7 @@ function createApi() {
       return adapter.applyHighlights(ranges, cssHighlightName).then((result) => {
         return result;
       }).catch((err) => {
-        console.error('[CSH] SubmissionDispatcher API: applyHighlights rejected:', err.message);
+        logger.error('SubmissionDispatcher API: applyHighlights rejected:', err.message);
         throw err;
       });
     },
@@ -49,7 +50,7 @@ function createApi() {
       return adapter.scrollIntoView(selector, options).then((result) => {
         return result;
       }).catch((err) => {
-        console.error('[CSH] SubmissionDispatcher API: scrollIntoView rejected:', err.message);
+        logger.error('SubmissionDispatcher API: scrollIntoView rejected:', err.message);
         throw err;
       });
     },
@@ -95,7 +96,7 @@ function startInit() {
         markReady();
       }
     } catch (e) {
-      console.error('[CSH] SubmissionDispatcher initialization failed:', e.message);
+      logger.error('SubmissionDispatcher initialization failed:', e.message);
       _initStarted = false;
     }
   })();

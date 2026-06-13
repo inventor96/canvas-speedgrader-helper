@@ -1,5 +1,7 @@
 'use strict';
 
+import { logger } from './logger.js';
+
 const FALLBACK_LIMITS = {
   savedPoints: {
     maxEntries: 5000,
@@ -65,7 +67,7 @@ export async function getDefaultLimits() {
       return limits;
     }
   } catch (e) {
-    console.warn('CSH storage warning: failed to get extension storage quota.', e.message);
+    logger.warn('failed to get extension storage quota.', e.message);
   }
 
   return cloneLimits();
@@ -169,10 +171,10 @@ export function saveStudentNamesWithPrune(students, callback) {
 
     chrome.storage.local.set({ studentNames: pruned.map, studentNamesMeta: pruned.meta }, () => {
       if (chrome.runtime && chrome.runtime.lastError) {
-        console.warn('CSH storage warning: failed saving studentNames.', chrome.runtime.lastError.message);
+        logger.warn('failed saving studentNames.', chrome.runtime.lastError.message);
       }
       if (pruned.prunedKeys && pruned.prunedKeys.length) {
-        console.warn('CSH storage warning: pruned studentNames entries.', pruned.prunedKeys.length);
+        logger.warn('pruned studentNames entries.', pruned.prunedKeys.length);
       }
       if (typeof callback === 'function') callback();
     });

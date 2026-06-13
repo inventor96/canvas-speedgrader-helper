@@ -1,3 +1,4 @@
+import { logger } from '@/shared/logger.js';
 import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
 import { get, auxState } from './settings-store.js';
 
@@ -20,7 +21,7 @@ export function getCurrentStudentNameFromPage(forceFullName = false) {
         }
       }
     } catch (e) {
-      console.error('Error retrieving full student name from truncated version:', e);
+      logger.error('Error retrieving full student name from truncated version:', e);
     }
   }
 
@@ -46,7 +47,7 @@ export function getStudentName() {
       return studentNames[sid];
     }
   } catch (e) {
-    console.error('Error parsing URL for student_id:', e);
+    logger.error('Error parsing URL for student_id:', e);
   }
 
   return getCurrentStudentNameFromPage();

@@ -1,3 +1,4 @@
+import { logger } from '@/shared/logger.js';
 import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
 import { get, auxState, BLANK_DROPDOWN_VALUES } from './settings-store.js';
 import { attachEventListenerIdempotent } from './helpers/dom-utils.js';
@@ -43,7 +44,7 @@ export function attachAutoFillListeners() {
 
         input.select();
       } catch (e) {
-        console.error('Error auto-filling points for criterion:', e);
+        logger.error('Error auto-filling points for criterion:', e);
       }
     }, '__autoFillFullPointsListenerAttached');
   });
@@ -60,7 +61,7 @@ export function attachCommentLibraryChangeListeners() {
     assignmentId = params.get('assignment_id');
     if (!assignmentId) return;
   } catch (e) {
-    console.error('Error parsing URL for assignment_id:', e);
+    logger.error('Error parsing URL for assignment_id:', e);
     return;
   }
 
@@ -121,7 +122,7 @@ export function attachCommentLibraryChangeListeners() {
           }
         }
       } catch (e) {
-        console.error('Error prepopulating points from comment library:', e);
+        logger.error('Error prepopulating points from comment library:', e);
       }
     };
 

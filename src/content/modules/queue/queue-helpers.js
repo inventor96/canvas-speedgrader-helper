@@ -1,8 +1,9 @@
 import { observeUntil } from '@/shared/observe-until.js';
+import { logger } from '@/shared/logger.js';
 
 export function getQueueRowByStudentName(studentName) {
   if (!studentName) {
-    console.warn('CSH: No student name provided');
+    logger.warn('No student name provided');
     return null;
   }
 
@@ -13,13 +14,13 @@ export function getQueueRowByStudentName(studentName) {
   );
 
   if (!matchingElement) {
-    console.warn('CSH: Could not find student name element for:', studentName);
+    logger.warn('Could not find student name element for:', studentName);
     return null;
   }
 
   const row = matchingElement.closest('[data-control-name="ColumnLabels"]')?.parentElement;
   if (!row) {
-    console.warn('CSH: Could not find row for student name element');
+    logger.warn('Could not find row for student name element');
     return null;
   }
 
@@ -65,7 +66,7 @@ export function getGradingStatusSelect(row) {
   if (!row) return null;
   const select = row.querySelector('[data-control-name="GradingStatusCmbx"] select');
   if (!select) {
-    console.warn('CSH: Could not find grading status select in row');
+    logger.warn('Could not find grading status select in row');
     return null;
   }
   return select;
@@ -80,7 +81,7 @@ export function getAlreadyGradedOptionValue(gradingStatusSelect) {
   );
 
   if (!alreadyGradedOption) {
-    console.warn('CSH: Could not find "Already Graded" option in grading status select');
+    logger.warn('Could not find "Already Graded" option in grading status select');
     return null;
   }
 

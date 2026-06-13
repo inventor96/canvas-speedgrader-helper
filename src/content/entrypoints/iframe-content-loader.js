@@ -2,6 +2,7 @@ import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
 import { HIGHLIGHT_CONFIG } from '@/shared/highlight-config.js';
 import { DocumentRendererAdapter } from '@/content/modules/iframe-adapters/document-renderer-adapter.js';
 import { DiscussionPostsAdapter } from '@/content/modules/iframe-adapters/discussion-posts-adapter.js';
+import { logger } from '@/shared/logger.js';
 
 const ADAPTER_MAP = {
   'document-renderer': DocumentRendererAdapter,
@@ -117,11 +118,11 @@ async function handleRequest(adapter, msg) {
 
     if (action === 'getText') {
       const preview = typeof result === 'string' ? result.slice(0, 200) : String(result);
-      console.log('[CSH] getText result preview:', preview);
+      logger.log('getText result preview:', preview);
     }
     sendSuccess(requestId, result);
   } catch (e) {
-    console.error('[CSH] Request failed:', action, '-', e.message);
+    logger.error('Request failed:', action, '-', e.message);
     sendError(requestId, e.message || 'Unknown error');
   }
 }

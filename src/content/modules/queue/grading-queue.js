@@ -13,6 +13,7 @@ import {
   tryClickFirstGradeButton,
 } from './queue-helpers.js';
 import { QueueCompletePopup, getStudentQueuePopupState, setStudentQueuePopupState, setDefaultAutoOpenNext } from './queue-complete-popup.js';
+import { logger } from '@/shared/logger.js';
 
 let _pendingAutoOpenOverride = null;
 let _autoClickLoadQueueWhenEmpty = SYNCED_SETTINGS.autoClickLoadQueueWhenEmpty;
@@ -44,7 +45,7 @@ function clearHourlyLoadQueueTimer(reason = 'not specified') {
   if (_loadQueueHourlyTimerId === null) return;
   clearTimeout(_loadQueueHourlyTimerId);
   _loadQueueHourlyTimerId = null;
-  console.log('CSH: Cleared hourly Load Queue timer:', reason);
+  logger.log('Cleared hourly Load Queue timer:', reason);
 }
 
 function runHourlyLoadQueueCheck() {
@@ -56,7 +57,7 @@ function runHourlyLoadQueueCheck() {
 
   const queueItemCount = getCurrentQueueItemCount();
   if (queueItemCount < LOAD_QUEUE_MIN_ITEMS_THRESHOLD) {
-    console.log('CSH: Hourly queue check found fewer than 10 items; clicking Load Queue');
+    logger.log('Hourly queue check found fewer than 10 items; clicking Load Queue');
     const didClickLoadQueue = clickLoadQueueButton('hourly queue check');
 
     if (!didClickLoadQueue) {
@@ -65,7 +66,7 @@ function runHourlyLoadQueueCheck() {
     return;
   }
 
-  console.log('CSH: Hourly queue check found', queueItemCount, 'items; no Load Queue click needed');
+  logger.log('Hourly queue check found', queueItemCount, 'items; no Load Queue click needed');
   resetHourlyLoadQueueTimer('hourly queue check complete');
 }
 
@@ -77,7 +78,7 @@ function resetHourlyLoadQueueTimer(reason = 'not specified') {
   }
 
   _loadQueueHourlyTimerId = setTimeout(runHourlyLoadQueueCheck, LOAD_QUEUE_HOURLY_INTERVAL_MS);
-  console.log('CSH: Started hourly Load Queue timer:', reason);
+  logger.log('Started hourly Load Queue timer:', reason);
 }
 
 function onLoadQueueButtonClicked(source) {
@@ -91,12 +92,12 @@ function onLoadQueueButtonClicked(source) {
 function clickLoadQueueButton(reason = 'automation') {
   const loadQueueButton = document.querySelector(LOAD_QUEUE_BUTTON_SELECTOR);
   if (!loadQueueButton || loadQueueButton.disabled) {
-    console.warn('CSH: Could not find enabled Load Queue button');
+    logger.warn('Could not find enabled Load Queue button');
     return false;
   }
 
   loadQueueButton.click();
-  console.log('CSH: Clicked Load Queue:', reason);
+  logger.log('Clicked Load Queue:', reason);
   return true;
 }
 
@@ -131,7 +132,7 @@ function attachSyncedSettingsChangeListener() {
 
 function retryOpenNextAfterQueueLoad(timeoutMs = 15000) {
   if (_queueRepopulationRetryActive) {
-    console.log('CSH: Queue repopulation retry already active; skipping duplicate retry');
+    logger.log('Queue repopulation retry already active; skipping duplicate retry');
     return;
   }
 
@@ -139,7 +140,7 @@ function retryOpenNextAfterQueueLoad(timeoutMs = 15000) {
 
   if (tryClickFirstGradeButton()) {
     _queueRepopulationRetryActive = false;
-    console.log('CSH: Opened next queue item after queue repopulation');
+    logger.log('Opened next queue item after queue repopulation');
     return;
   }
 
@@ -148,7 +149,7 @@ function retryOpenNextAfterQueueLoad(timeoutMs = 15000) {
       observer.disconnect();
       clearTimeout(timeoutId);
       _queueRepopulationRetryActive = false;
-      console.log('CSH: Opened next queue item after queue repopulation');
+      logger.log('Opened next queue item after queue repopulation');
     }
   });
   observer.observe(document.body, { childList: true, subtree: true });
@@ -156,7 +157,7 @@ function retryOpenNextAfterQueueLoad(timeoutMs = 15000) {
   const timeoutId = setTimeout(() => {
     observer.disconnect();
     _queueRepopulationRetryActive = false;
-    console.warn('CSH: Queue repopulation retry timed out');
+    logger.warn('Queue repopulation retry timed out');
   }, timeoutMs);
 }
 
@@ -198,7 +199,7 @@ function waitForSelectValueByStudentName(
             checksSinceRetry = 0;
             select.value = String(expectedValue);
             select.dispatchEvent(new Event('change', { bubbles: true }));
-            console.log('CSH: Re-applied grading status while waiting for value to settle:', studentName);
+            logger.log('Re-applied grading status while waiting for value to settle:', studentName);
           }
         }
       }
@@ -235,7 +236,7 @@ function selectAlreadyGradedByStudentName(studentName) {
 
   gradingStatusSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-  console.log('CSH: Selected "Already Graded" for student:', studentName);
+  logger.log('Selected "Already Graded" for student:', studentName);
   return { selected: true, select: gradingStatusSelect, expectedValue: alreadyGradedValue };
 }
 
@@ -245,12 +246,12 @@ function clickCompleteByStudentName(studentName) {
 
   const completeButton = row.querySelector('[data-control-name="CompleteButton"] button');
   if (!completeButton || completeButton.disabled) {
-    console.warn('CSH: Could not find enabled Complete button for student:', studentName);
+    logger.warn('Could not find enabled Complete button for student:', studentName);
     return false;
   }
 
   completeButton.click();
-  console.log('CSH: Clicked Complete for student:', studentName);
+  logger.log('Clicked Complete for student:', studentName);
   return true;
 }
 
@@ -259,7 +260,7 @@ function attachGroupCheckResultListener() {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       try {
         if (message && message.type === CSH_MESSAGE_TYPES.GROUPS_CHECK_GRADING_STATUS && message.sameGroup) {
-          console.log('CSH: Received group match grading status for student:', message.queuedName, '| isGraded:', message.isGraded);
+          logger.log('Received group match grading status for student:', message.queuedName, '| isGraded:', message.isGraded);
 
           chrome.storage.sync.get(SYNCED_SETTINGS, async (data) => {
             const shouldAutoSelectAlreadyGraded = !!data.autoSelectAlreadyGradedWhenGroupMatched && !!message.isGraded;
@@ -283,7 +284,7 @@ function attachGroupCheckResultListener() {
                   750
                 );
                 if (!settled) {
-                  console.warn('CSH: Timed out waiting for grading status select to persist before completion');
+                  logger.warn('Timed out waiting for grading status select to persist before completion');
                   return;
                 }
               }
@@ -297,7 +298,7 @@ function attachGroupCheckResultListener() {
         }
 
         if (message && message.type === CSH_MESSAGE_TYPES.CLICK_QUEUE_COMPLETE_AFTER_COMMENT) {
-          console.log('CSH: Received request to complete queue item for student:', message.queuedName);
+          logger.log('Received request to complete queue item for student:', message.queuedName);
           if (typeof message.autoOpenNextQueueItemAfterComplete === 'boolean') {
             _pendingAutoOpenOverride = message.autoOpenNextQueueItemAfterComplete;
           }
@@ -305,11 +306,11 @@ function attachGroupCheckResultListener() {
           return;
         }
       } catch (e) {
-        console.error('Error handling message:', e);
+        logger.error('Error handling message:', e);
       }
     });
   } catch (e) {
-    console.error('Error attaching message listener:', e);
+    logger.error('Error attaching message listener:', e);
   }
 }
 
@@ -325,12 +326,12 @@ function maybeOpenNextQueueItemAfterComplete(completeButton, studentName) {
 
   waitForElementRemoval(completeButton).then((wasRemoved) => {
     if (!wasRemoved) {
-      console.warn('CSH: Timed out waiting for completion control removal');
+      logger.warn('Timed out waiting for completion control removal');
       return;
     }
 
     if (shouldAutoOpenNextQueueItem && tryClickFirstGradeButton()) {
-      console.log('CSH: Opened next queue item after completion');
+      logger.log('Opened next queue item after completion');
       return;
     }
 
@@ -371,7 +372,7 @@ function initializeGradingQueueListener() {
     const row = getQueueRowFromActionButton(button);
     const studentName = getStudentNameFromRow(row);
     if (!studentName) {
-      console.warn('CSH: Could not find student name element in Grading Queue');
+      logger.warn('Could not find student name element in Grading Queue');
       return;
     }
 
@@ -385,14 +386,14 @@ function initializeGradingQueueListener() {
         { queuedStudentName: queuedStudent },
         () => {
           if (chrome.runtime && chrome.runtime.lastError) {
-            console.warn('CSH: Failed to save queued student name', chrome.runtime.lastError);
+            logger.warn('Failed to save queued student name', chrome.runtime.lastError);
           } else {
-            console.log('CSH: Saved queued student name:', studentName);
+            logger.log('Saved queued student name:', studentName);
           }
         }
       );
     } else {
-      console.warn('CSH: chrome.storage.local not available');
+      logger.warn('chrome.storage.local not available');
     }
   }, true);
 }
@@ -403,7 +404,7 @@ try {
 } catch (e) {
   inIframe = true;
 }
-console.log('CSH: Grading Queue script loaded', {
+logger.log('Grading Queue script loaded', {
   href: window.location.href,
   inIframe
 });
@@ -426,4 +427,4 @@ if (document.readyState === 'loading') {
   });
 }
 
-console.log('CSH: Grading Queue listener initialized');
+logger.log('Grading Queue listener initialized');

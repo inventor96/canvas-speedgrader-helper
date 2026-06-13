@@ -1,3 +1,4 @@
+import { logger } from '@/shared/logger.js';
 import { observeUntil } from '@/shared/observe-until.js';
 import { get } from './settings-store.js';
 import { attachCommentLibraryHandler } from './comment-library-controller.js';
@@ -115,7 +116,7 @@ export function handleRubricFunctionality() {
 
   const rubricTable = document.querySelector('div.rubric_summary,[data-testid="rubric-assessment-traditional-view"]');
   if (rubricTable) {
-    console.log('Rubric table already present');
+    logger.log('Rubric table already present');
     setTimeout(async () => {
       attachAllRubricHandlers();
       await scrollToFirstCriterionIfEnabled();
@@ -129,14 +130,14 @@ export function handleRubricFunctionality() {
   if (!rubricButton) {
     const saveButton = document.querySelector('button[data-testid="save-rubric-assessment-button"]');
     if (saveButton) {
-      console.log('Rubric button not found, but rubric is already open');
+      logger.log('Rubric button not found, but rubric is already open');
       attachAllRubricHandlers();
       scrollToFirstCriterionIfEnabled();
       _rubricAutoOpenAttempted = true;
       return;
     }
 
-    console.log('Rubric button not found yet. Retrying after 2 seconds...');
+    logger.log('Rubric button not found yet. Retrying after 2 seconds...');
     setTimeout(() => handleRubricFunctionality(), 2000);
     return;
   }
@@ -147,10 +148,10 @@ export function handleRubricFunctionality() {
   setTimeout(async () => {
     const currentRubricTable = document.querySelector('div.rubric_summary,[data-testid="rubric-assessment-traditional-view"]');
     if (!currentRubricTable) {
-      console.log('No rubric table found, clicking view-rubric-button to open it');
+      logger.log('No rubric table found, clicking view-rubric-button to open it');
       rubricButton.click();
     } else {
-      console.log('Rubric table already present, not opening rubric');
+      logger.log('Rubric table already present, not opening rubric');
       await scrollToFirstCriterionIfEnabled();
     }
   }, 2000);

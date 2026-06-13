@@ -1,3 +1,5 @@
+import { logger } from '@/shared/logger.js';
+
 const KNOWN_DOMAINS = [
   'runtime-app.powerapps.com',
   'runtime-app.powerplatform.com'
@@ -115,7 +117,7 @@ function checkIframeDomain() {
       }
     }, 5000);
   } catch (e) {
-    console.warn('Error checking iframe domain:', e);
+    logger.warn('Error checking iframe domain:', e);
   }
 }
 
