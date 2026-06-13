@@ -8,6 +8,5 @@ export const HIGHLIGHT_CONFIG = Object.freeze([
   { className: 'csh-highlight-orange',   color: '#fed7aa' },
   { className: 'csh-highlight-amber',    color: '#fde68a' },
   { className: 'csh-highlight-emerald',  color: '#a7f3d0' },
-  { className: 'csh-highlight-indigo',   color: '#c7d2fe' },
   { className: 'csh-highlight-pink',     color: '#fbcfe8' },
 ]);
