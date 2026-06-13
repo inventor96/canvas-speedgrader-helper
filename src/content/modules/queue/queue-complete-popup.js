@@ -1,9 +1,11 @@
 import { getStudentNameFromRow, getQueueRowFromCompleteButton, getStudentKey } from './queue-helpers.js';
 import { SYNCED_SETTINGS } from '@/shared/settings.js';
 
+/** Per-student overrides for queue completion behaviour, keyed by normalised name. */
 const _queuePopupStateByStudentName = Object.create(null);
 let _defaultAutoOpenNextQueueItemAfterComplete = SYNCED_SETTINGS.autoOpenNextQueueItemAfterComplete;
 
+/** Gets (or creates) the popup state entry for a student name. */
 function getStudentQueuePopupState(studentName) {
   const key = getStudentKey(studentName);
   if (!key) {
@@ -21,6 +23,7 @@ function getStudentQueuePopupState(studentName) {
   return _queuePopupStateByStudentName[key];
 }
 
+/** Merges a partial state patch into a student's queue popup state. */
 function setStudentQueuePopupState(studentName, patch) {
   const key = getStudentKey(studentName);
   if (!key) return;
@@ -32,6 +35,7 @@ function setStudentQueuePopupState(studentName, patch) {
   };
 }
 
+/** Hover popup that appears over the "Complete" button to toggle auto-open-next behaviour. */
 const QueueCompletePopup = (() => {
   let _el = null;
   let _hideTimer = null;
@@ -61,6 +65,7 @@ const QueueCompletePopup = (() => {
     }, HIDE_DELAY_MS);
   }
 
+  /** Syncs the popup checkbox state for the current student. */
   function _syncCheckboxesForStudent(studentName) {
     const state = getStudentQueuePopupState(studentName);
     const cbNext = document.getElementById('csh-queue-open-next-cb');
@@ -69,6 +74,7 @@ const QueueCompletePopup = (() => {
     }
   }
 
+  /** Positions and shows the popup near the Complete button. */
   function _show(completeButtonEl, studentName) {
     if (!_el) return;
 
@@ -81,6 +87,7 @@ const QueueCompletePopup = (() => {
     _el.style.display = 'block';
   }
 
+  /** Creates the popup DOM element with the "Start next queue submission" checkbox. */
   function _create() {
     const el = document.createElement('div');
     el.id = 'csh-queue-complete-popup';
@@ -117,6 +124,7 @@ const QueueCompletePopup = (() => {
     label.appendChild(span);
     el.appendChild(label);
 
+    // Persist checkbox changes to per-student state
     el.addEventListener('change', (event) => {
       const target = event.target;
       if (!target || target.type !== 'checkbox') return;
@@ -135,6 +143,7 @@ const QueueCompletePopup = (() => {
     if (_el) return;
     _el = _create();
 
+    // Show popup on hover over Complete buttons
     document.addEventListener('mouseover', (event) => {
       if (_isCompleteButton(event.target)) {
         const completeButton = event.target.closest('[data-control-name="CompleteButton"] button');
@@ -151,6 +160,7 @@ const QueueCompletePopup = (() => {
       }
     });
 
+    // Hide after a delay when leaving
     document.addEventListener('mouseout', (event) => {
       if (!_el || _el.style.display === 'none') return;
       const leaving = event.target;
@@ -163,6 +173,7 @@ const QueueCompletePopup = (() => {
     });
   }
 
+  /** Triggers the hide timer externally (e.g. after clicking Complete). */
   function hideAfterDelay() {
     if (!_el || _el.style.display === 'none') return;
     _startHideTimer();

@@ -1,10 +1,12 @@
 import { logger } from '@/shared/logger.js';
 
+/** Known PowerApps/PowerPlatform domains that the extension supports. */
 const KNOWN_DOMAINS = [
   'runtime-app.powerapps.com',
   'runtime-app.powerplatform.com'
 ];
 
+/** Extracts the hostname from a URL string. */
 function extractDomain(url) {
   try {
     const urlObj = new URL(url);
@@ -14,6 +16,7 @@ function extractDomain(url) {
   }
 }
 
+/** Checks whether a domain matches any of the known supported domains. */
 function isKnownDomain(domain) {
   return KNOWN_DOMAINS.some(knownDomain => {
     if (knownDomain.startsWith('*.')) {
@@ -24,6 +27,7 @@ function isKnownDomain(domain) {
   });
 }
 
+/** Displays a fixed-position warning notification about an unexpected iframe domain. */
 function showDomainNotification(domain) {
   const notification = document.createElement('div');
   notification.id = 'powerapps-domain-warning';
@@ -88,6 +92,7 @@ function showDomainNotification(domain) {
   document.body.appendChild(notification);
 }
 
+/** Escapes HTML special characters to prevent XSS. */
 function escapeHtml(text) {
   const map = {
     '&': '&amp;',
@@ -99,6 +104,7 @@ function escapeHtml(text) {
   return text.replace(/[&<>"']/g, m => map[m]);
 }
 
+/** Checks the iframe's src domain and shows a warning if it is unexpectd. */
 function checkIframeDomain() {
   const iframe = document.getElementById('fullscreen-app-host');
   if (!iframe) return;
@@ -110,6 +116,7 @@ function checkIframeDomain() {
     const domain = extractDomain(iframeSrc);
     if (!domain || isKnownDomain(domain)) return;
 
+    // Re-check after a short delay to avoid transient states
     setTimeout(() => {
       const currentDomain = extractDomain(iframe.src);
       if (currentDomain && !isKnownDomain(currentDomain)) {
@@ -121,6 +128,7 @@ function checkIframeDomain() {
   }
 }
 
+/** Waits for the #fullscreen-app-host iframe to appear, then checks its domain. */
 function watchForIframe() {
   if (document.getElementById('fullscreen-app-host')) {
     checkIframeDomain();

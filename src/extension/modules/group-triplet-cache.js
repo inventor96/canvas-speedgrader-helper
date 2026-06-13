@@ -1,10 +1,15 @@
+/** Cache TTL for group triplet lookups (6 hours). */
 const GROUP_TRIPLET_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+/** chrome.storage.local key for persisting the triplet cache. */
 const GROUP_TRIPLET_CACHE_STORAGE_KEY = 'groupTripletCache';
+/** In-memory map: courseId|assignmentId|studentId → { createdAt }. */
 const groupTripletCache = new Map();
 let hasLoadedGroupTripletCache = false;
 let isLoadingGroupTripletCache = false;
+/** Queue of callbacks that arrived while initial load was in flight. */
 const groupTripletCacheLoadQueue = [];
 
+/** Builds a deterministic cache key from course/assignment/student IDs. */
 function getGroupTripletCacheKey(courseId, assignmentId, studentId) {
   const normalizedCourseId = String(courseId || '').trim();
   const normalizedAssignmentId = String(assignmentId || '').trim();
@@ -17,6 +22,7 @@ function getGroupTripletCacheKey(courseId, assignmentId, studentId) {
   return `${normalizedCourseId}|${normalizedAssignmentId}|${normalizedStudentId}`;
 }
 
+/** Removes entries older than TTL. Returns true if any entries were pruned. */
 function pruneGroupTripletCache(now = Date.now()) {
   let removedAny = false;
 
@@ -30,6 +36,7 @@ function pruneGroupTripletCache(now = Date.now()) {
   return removedAny;
 }
 
+/** Loads the cache from chrome.storage.local on first call; queues concurrent requests. */
 function loadGroupTripletCache(callback) {
   if (hasLoadedGroupTripletCache) {
     callback();
@@ -55,6 +62,7 @@ function loadGroupTripletCache(callback) {
     return;
   }
 
+  // Load from storage and populate in-memory map
   chrome.storage.local.get({ [GROUP_TRIPLET_CACHE_STORAGE_KEY]: {} }, (data) => {
     const storedEntries = data && data[GROUP_TRIPLET_CACHE_STORAGE_KEY];
 
@@ -70,6 +78,7 @@ function loadGroupTripletCache(callback) {
     hasLoadedGroupTripletCache = true;
     isLoadingGroupTripletCache = false;
 
+    // Drain queued callbacks
     while (groupTripletCacheLoadQueue.length) {
       const queuedCallback = groupTripletCacheLoadQueue.shift();
       try {
@@ -79,6 +88,7 @@ function loadGroupTripletCache(callback) {
   });
 }
 
+/** Persists the in-memory cache to chrome.storage.local. */
 function persistGroupTripletCache(callback) {
   if (!chrome.storage || !chrome.storage.local || !chrome.storage.local.set) {
     if (typeof callback === 'function') callback();
@@ -95,6 +105,7 @@ function persistGroupTripletCache(callback) {
   });
 }
 
+/** Ensures cache is loaded, prunes stale entries, and if any were removed persists the change. */
 function withGroupTripletCache(callback) {
   loadGroupTripletCache(() => {
     const removedAny = pruneGroupTripletCache();

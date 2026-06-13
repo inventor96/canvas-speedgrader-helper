@@ -1,6 +1,9 @@
+/** TTL for pending groups checks (5 minutes). */
 export const PENDING_CHECK_TTL_MS = 5 * 60 * 1000;
+/** Map of groups tab IDs to pending check context (origin tab, names, timestamps). */
 export const pendingGroupsChecks = new Map();
 
+/** Derives the Canvas Groups page URL from a SpeedGrader course URL. */
 export function normalizeCourseGroupsUrl(tabUrl) {
   if (!tabUrl) return null;
 
@@ -14,6 +17,7 @@ export function normalizeCourseGroupsUrl(tabUrl) {
   }
 }
 
+/** Sends a message to a tab, swallowing runtime errors (tab may be closed). */
 export function safeSendToTab(tabId, payload) {
   if (!tabId || !payload) return;
 
@@ -26,6 +30,7 @@ export function safeSendToTab(tabId, payload) {
   }
 }
 
+/** Closes a tab if the tab ID is valid, swallowing errors. */
 export function closeTabIfPresent(tabId) {
   if (!tabId) return;
 

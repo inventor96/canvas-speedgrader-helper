@@ -1,5 +1,6 @@
 import { HIGHLIGHT_CONFIG } from '@/shared/highlight-config.js';
 
+/** Converts a hex colour to rgba with a given alpha. */
 export function hexToRgba(hex, alpha) {
   const h = hex.replace('#', '');
   const r = parseInt(h.substring(0, 2), 16);
@@ -8,6 +9,7 @@ export function hexToRgba(hex, alpha) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+/** Injects CSS ::highlight pseudo-element rules for all configured highlight colours. */
 export function ensureHighlightStyles() {
   if (document.querySelector('style[data-csh-highlight-styles]')) {
     return;

@@ -4,8 +4,7 @@ import { DocumentRendererAdapter } from '@/content/modules/iframe-adapters/docum
 import { DiscussionPostsAdapter } from '@/content/modules/iframe-adapters/discussion-posts-adapter.js';
 import { logger } from '@/shared/logger.js';
 
-// Keys match getAdapterName() output so loadAdapter / setupMessageListener can
-// look up the correct adapter object via the human-readable name.
+/** Maps adapter name strings to adapter objects for dynamic lookup. */
 const ADAPTER_MAP = {
   'DocumentRendererAdapter': DocumentRendererAdapter,
   'DiscussionPostsAdapter': DiscussionPostsAdapter,
@@ -13,6 +12,7 @@ const ADAPTER_MAP = {
 
 let _readyNotificationIntervalId = null;
 
+/** Inspects the iframe URL to determine which adapter to load. */
 function detectIframeType() {
   const url = window.location.href || '';
 
@@ -33,6 +33,7 @@ function detectIframeType() {
   return null;
 }
 
+/** Maps an iframe type string to its adapter class name. */
 function getAdapterName(iframeType) {
   const mapping = {
     'document-renderer': 'DocumentRendererAdapter',
@@ -41,10 +42,12 @@ function getAdapterName(iframeType) {
   return mapping[iframeType] || null;
 }
 
+/** Looks up an adapter by name from ADAPTER_MAP. */
 function getAdapter(adapterName) {
   return ADAPTER_MAP[adapterName] || null;
 }
 
+/** Loads the correct adapter for the given iframe type and sets up messaging. */
 function loadAdapter(iframeType, onReady) {
   const adapterName = getAdapterName(iframeType);
   if (!adapterName) {
@@ -62,6 +65,7 @@ function loadAdapter(iframeType, onReady) {
   if (onReady) onReady(null, adapterName);
 }
 
+/** Listens for postMessage requests from the parent frame and routes them to the adapter. */
 function setupMessageListener(adapterName) {
   if (typeof window === 'undefined') {
     return;
@@ -78,6 +82,7 @@ function setupMessageListener(adapterName) {
         return;
       }
 
+      // Parent is polling for readiness; respond immediately
       if (msg.type === CSH_MESSAGE_TYPES.IFRAME_SUBMISSION_READY_REQUEST) {
         notifyParentReady(adapterName);
         return;
@@ -99,6 +104,7 @@ function setupMessageListener(adapterName) {
   });
 }
 
+/** Dispatches a submission request (getText, applyHighlights, scrollIntoView) to the adapter. */
 async function handleRequest(adapter, msg) {
   const { requestId, action, params } = msg;
 
@@ -131,6 +137,7 @@ async function handleRequest(adapter, msg) {
   }
 }
 
+/** Posts a success response back to the parent frame. */
 function sendSuccess(requestId, result) {
   if (window.parent) {
     window.parent.postMessage({
@@ -142,6 +149,7 @@ function sendSuccess(requestId, result) {
   }
 }
 
+/** Posts an error response back to the parent frame. */
 function sendError(requestId, error) {
   if (window.parent) {
     window.parent.postMessage({
@@ -153,6 +161,7 @@ function sendError(requestId, error) {
   }
 }
 
+/** Notifies the parent frame that the adapter is ready to handle requests. */
 function notifyParentReady(adapterName) {
   if (window.parent) {
     window.parent.postMessage({
@@ -162,10 +171,10 @@ function notifyParentReady(adapterName) {
   }
 }
 
-// Retry ready notifications so the parent does not miss the one-time signal
-// in rare timing edge cases (e.g. if the parent's message listener is not yet
-// attached when the first notification fires). The parent deduplicates via
-// its own _childAdapterReady guard, so extra sends are harmless.
+/**
+ * Retries ready notifications periodically so the parent does not miss the
+ * signal if its listener is attached after the first notification fires.
+ */
 function startReadyNotifications(adapterName) {
   let attempts = 0;
   const MAX_ATTEMPTS = 5;
@@ -182,6 +191,7 @@ function startReadyNotifications(adapterName) {
   }, 500);
 }
 
+/** Stops the periodic ready notification interval. */
 function stopReadyNotifications() {
   if (_readyNotificationIntervalId !== null) {
     clearInterval(_readyNotificationIntervalId);
@@ -189,6 +199,7 @@ function stopReadyNotifications() {
   }
 }
 
+/** Detects the iframe type, loads the matching adapter, and starts notifications. */
 function initialize() {
   try {
     const iframeType = detectIframeType();

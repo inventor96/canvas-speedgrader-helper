@@ -1,3 +1,7 @@
+/**
+ * All postMessage types used for cross-context communication.
+ * Naming convention encodes direction: CSH_<source>_<destination>_<action>.
+ */
 export const CSH_MESSAGE_TYPES = {
   // Page → Content Script
   SAVE_POINTS: 'CSH_SAVE_POINTS',

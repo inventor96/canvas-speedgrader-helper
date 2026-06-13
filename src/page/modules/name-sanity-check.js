@@ -3,12 +3,14 @@ import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
 import { get } from './settings-store.js';
 import { getCurrentStudentNameFromPage } from './student-name-service.js';
 
+/** Checks if a name is all-uppercase or all-lowercase (excluding non-letters). */
 export function isNameUnnatural(name) {
   const letters = String(name || '').replace(/[^a-zA-Z]/g, '');
   if (!letters || letters.length < 2) return false;
   return letters === letters.toUpperCase() || letters === letters.toLowerCase();
 }
 
+/** Converts a name to Title Case, using non-letter characters as word boundaries. */
 export function formatNameNatural(name) {
   let result = '';
   let nextUpper = true;
@@ -25,6 +27,7 @@ export function formatNameNatural(name) {
   return result;
 }
 
+/** Gets or creates the warning banner element for name sanity warnings. */
 function getOrCreateContainer() {
   let div = document.getElementById('csh-name-sanity-warning');
   if (div) return div;
@@ -53,11 +56,13 @@ function getOrCreateContainer() {
   return div;
 }
 
+/** Removes the warning banner. */
 function removeContainer() {
   const div = document.getElementById('csh-name-sanity-warning');
   if (div) div.remove();
 }
 
+/** Renders the warning banner with options to use suggested formatting, use as-is, or ignore. */
 function showWarning(name, issue) {
   const container = getOrCreateContainer();
   container.innerHTML = '';
@@ -80,6 +85,7 @@ function showWarning(name, issue) {
   const linkWrap = document.createElement('div');
   linkWrap.style.cssText = 'margin: 0 0 4px 0;';
 
+  // "Use [suggested format]" link
   const useSuggestedLink = document.createElement('a');
   useSuggestedLink.href = '#';
   useSuggestedLink.textContent = `Use ${suggested}`;
@@ -90,6 +96,7 @@ function showWarning(name, issue) {
   };
   linkWrap.appendChild(useSuggestedLink);
 
+  // "Use as-is" link
   const useAsIsLink = document.createElement('a');
   useAsIsLink.href = '#';
   useAsIsLink.textContent = 'Use as-is';
@@ -102,6 +109,7 @@ function showWarning(name, issue) {
 
   container.appendChild(linkWrap);
 
+  // "Ignore" link
   const ignoreLink = document.createElement('div');
   ignoreLink.style.cssText = 'margin: 6px 0 0 0;';
   const ignoreA = document.createElement('a');
@@ -135,6 +143,7 @@ function showWarning(name, issue) {
   container.appendChild(closeButton);
 }
 
+/** Saves a preferred name for the current student to local storage. */
 function savePreferredName(name) {
   removeContainer();
   try {
@@ -151,11 +160,13 @@ function savePreferredName(name) {
   }
 }
 
+/** Checks the current student's name and shows a warning if it's unnaturally formatted. */
 export function check() {
   try {
     const params = new URLSearchParams(location.search || window.location.search);
     const sid = params.get('student_id');
     const studentNames = get('studentNames');
+    // Skip if a preferred name already exists
     if (!sid || (studentNames && studentNames[sid])) return;
 
     const name = getCurrentStudentNameFromPage();

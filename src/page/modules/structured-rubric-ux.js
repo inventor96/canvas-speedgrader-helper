@@ -2,11 +2,13 @@ import { logger } from '@/shared/logger.js';
 import { get } from './settings-store.js';
 import { attachEventListenerIdempotent } from './helpers/dom-utils.js';
 
+/** Returns the rubric assessment tbody (or its container) for traditional rubrics. */
 export function getTraditionalRubricRoot() {
   return document.querySelector('[data-testid="rubric-assessment-traditional-view"] tbody')
     || document.querySelector('[data-testid="rubric-assessment-traditional-view"]');
 }
 
+/** Walks up from a rating button to find its parent criterion row. */
 export function getCriterionRowFromButton(button, rubricRoot) {
   if (!button || !rubricRoot) return null;
 
@@ -19,6 +21,7 @@ export function getCriterionRowFromButton(button, rubricRoot) {
   return null;
 }
 
+/** Scrolls a target row into the center of the grading panel viewport. */
 export function scrollRowIntoGradingPanelCenter(targetRow) {
   if (!targetRow) return;
 
@@ -39,6 +42,7 @@ export function scrollRowIntoGradingPanelCenter(targetRow) {
   gradingPanel.scrollTo({ top: clampedTop, behavior: 'smooth' });
 }
 
+/** Scrolls the Save Rubric Assessment button into view. */
 export function scrollSubmitAssessmentButtonIntoView() {
   const submitButton = document.querySelector('button[data-testid="save-rubric-assessment-button"]');
   if (!submitButton) return;
@@ -46,6 +50,7 @@ export function scrollSubmitAssessmentButtonIntoView() {
   scrollRowIntoGradingPanelCenter(submitButton);
 }
 
+/** Scrolls to the next criterion row after the one containing the given button. */
 export function scrollToNextCriterionRow(button) {
   const rubricRoot = getTraditionalRubricRoot();
   if (!rubricRoot) return;
@@ -66,6 +71,7 @@ export function scrollToNextCriterionRow(button) {
   scrollRowIntoGradingPanelCenter(nextRow);
 }
 
+/** Scrolls to the first criterion row. */
 export function scrollToFirstCriterionRow() {
   const rubricRoot = getTraditionalRubricRoot();
   if (!rubricRoot) return;
@@ -76,6 +82,7 @@ export function scrollToFirstCriterionRow() {
   scrollRowIntoGradingPanelCenter(firstRow);
 }
 
+/** When the max-points rating is clicked, clears the criterion's comment box. */
 export function attachClearCommentOnMaxPointsListeners() {
   const maxPointsButtons = document.querySelectorAll('button[data-testid^="traditional-criterion-"][data-testid$="-ratings-0"]');
 
@@ -103,6 +110,7 @@ export function attachClearCommentOnMaxPointsListeners() {
   });
 }
 
+/** Attaches click listeners on all rating buttons for auto-scroll and comment box toggling. */
 export function attachStructuredRubricListeners() {
   const ratingButtons = document.querySelectorAll('button[data-testid^="traditional-criterion-"]');
 
@@ -122,12 +130,14 @@ export function attachStructuredRubricListeners() {
           ? !!get('openCommentBoxAfterMaxPoints')
           : !!get('openCommentBoxAfterLessThanMaxPoints');
 
+        // Auto-scroll to the next criterion when configured (and not opening comment on max)
         if (get('rubricAutoScrollToNextCriterion') && (!shouldOpenCommentBox || rubricPointId !== 0)) {
           scrollToNextCriterionRow(button);
         }
 
         if (!shouldOpenCommentBox) return;
 
+        // Open and focus the comment text area for this criterion
         const toggleCommentButton = document.querySelector(`button[data-testid="toggle-comment-${criterionId}"]`);
 
         const focusCommentTextArea = () => {

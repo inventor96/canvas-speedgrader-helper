@@ -10,6 +10,7 @@ import { check } from '@/page/modules/name-sanity-check.js';
 import { getNext } from '@/page/modules/highlight-class-selector.js';
 import { waitForElement } from '@/page/modules/helpers/dom-utils.js';
 
+/** Initialises all SpeedGrader feature modules once settings are available. */
 function initializeAllFeatures() {
   whenReady((api) => {
       logger.log('SubmissionCoordinator ready');
@@ -31,6 +32,7 @@ function initializeAllFeatures() {
             return;
           }
 
+          // Generate random highlight ranges for demonstration
           const ranges = [];
           const count = 2 + Math.floor(Math.random() * 3);
           const minChunk = 10;
@@ -94,6 +96,7 @@ function initializeAllFeatures() {
 
   handleRubricFunctionality();
 
+  // Check for queued student name mismatch on load
   try {
     attachGroupsResultListener();
 
@@ -102,6 +105,7 @@ function initializeAllFeatures() {
     logger.error('Error initializing queue student name check:', e);
   }
 
+  // Name sanity check: detect all-uppercase/lowercase names
   if (get('enableNameSanityCheck')) {
     try {
       setTimeout(() => {
@@ -117,6 +121,7 @@ function initializeAllFeatures() {
   }
 }
 
+/** Bootstraps the settings bridge and waits for stored settings before initialising features. */
 function tryInit() {
   if (!init()) return false;
   attachSettingsUpdateListener();
@@ -124,6 +129,7 @@ function tryInit() {
   return true;
 }
 
+// Retry init if the data-csh-settings attribute doesn't exist yet
 if (!tryInit()) {
   const observer = new MutationObserver(() => {
     if (tryInit()) {

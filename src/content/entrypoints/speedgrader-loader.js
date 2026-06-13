@@ -1,3 +1,4 @@
+/** SpeedGrader content script entry point. Imports all isolated-world modules for the SpeedGrader page. */
 import '@/content/modules/settings-injector.js';
 import '@/content/modules/submit-comment-popup.js';
 import '@/content/modules/message-relay.js';

@@ -1,3 +1,4 @@
+/** Palette of available highlight colors and their CSS class names. */
 export const HIGHLIGHT_CONFIG = Object.freeze([
   { className: 'csh-highlight-yellow',   color: '#fef08a' },
   { className: 'csh-highlight-green',    color: '#bbf7d0' },

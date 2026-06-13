@@ -4,6 +4,7 @@ import { attachEventListenerIdempotent } from './helpers/dom-utils.js';
 import { getReplacementName } from './comment-mode-controller.js';
 import { scrollRowIntoGradingPanelCenter } from './structured-rubric-ux.js';
 
+/** Scrolls the Submit Comment button into the center of the grading panel. */
 export function scrollToSubmitCommentButton() {
   const submitButton = document.querySelector(
     'button[data-testid="submit-comment-button"]'
@@ -18,6 +19,7 @@ export function scrollToSubmitCommentButton() {
   submitButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
+/** Replaces configured placeholders in a TinyMCE editor with the student/team name. */
 export function replacePlaceholdersInEditor(editor) {
   try {
     const content = editor.getContent();
@@ -43,11 +45,13 @@ export function replacePlaceholdersInEditor(editor) {
   }
 }
 
+/** Applies placeholder replacement to all TinyMCE editors. */
 export function applySettingsToEditors() {
   if (!window.tinymce) return;
   window.tinymce.editors.forEach(editor => replacePlaceholdersInEditor(editor));
 }
 
+/** Replaces configured placeholders in a textarea with the student/team name. */
 export function replacePlaceholdersInTextarea(textarea) {
   try {
     const content = textarea.value;
@@ -74,11 +78,13 @@ export function replacePlaceholdersInTextarea(textarea) {
   }
 }
 
+/** Applies placeholder replacement to all rubric comment textareas. */
 export function applySettingsToTextareas() {
   const textareas = document.querySelectorAll('textarea[data-testid^="free-form-comment-area-"]');
   textareas.forEach(textarea => replacePlaceholdersInTextarea(textarea));
 }
 
+/** Attaches listeners on comment library inputs to replace placeholders in linked textareas. */
 export function attachCommentLibraryTextareaListeners() {
   const commentLibraryInputs = document.querySelectorAll('input[data-testid^="comment-library-"]');
 
@@ -97,6 +103,7 @@ export function attachCommentLibraryTextareaListeners() {
   });
 }
 
+/** Hooks a TinyMCE editor to replace placeholders on content set and optionally scroll. */
 function attachEditorHook(editor) {
   if (!editor || editor.__studentNameHookAttached) return;
   editor.__studentNameHookAttached = true;
@@ -110,21 +117,23 @@ function attachEditorHook(editor) {
   });
 }
 
+/** Attaches hooks to all currently registered TinyMCE editors. */
 function attachToExistingEditors() {
   if (!window.tinymce) return;
   window.tinymce.editors.forEach(editor => attachEditorHook(editor));
 }
 
+/** Waits for TinyMCE to be available, then sets up editor hooks for placeholder replacement. */
 export function waitForTinyMCE() {
   if (window.tinymce) {
     attachToExistingEditors();
 
+    // Hook newly added editors
     window.tinymce.on('AddEditor', (e) => {
       attachEditorHook(e.editor);
     });
 
-    // Safety net: re-scan for TinyMCE editors registered before our
-    // `AddEditor` listener was attached, or in edge cases TinyMCE misses
+    // Periodic re-scan as safety net for edge cases
     setInterval(() => attachToExistingEditors(), 5000);
     return;
   }

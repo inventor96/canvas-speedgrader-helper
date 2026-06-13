@@ -3,6 +3,7 @@ import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
 import { get, auxState, BLANK_DROPDOWN_VALUES } from './settings-store.js';
 import { attachEventListenerIdempotent } from './helpers/dom-utils.js';
 
+/** On focus, fills an empty score input with the maximum possible points. */
 export function attachAutoFillListeners() {
   if (!get('autoFillFullPoints')) return;
 
@@ -12,6 +13,7 @@ export function attachAutoFillListeners() {
     attachEventListenerIdempotent(input, 'focus', () => {
       try {
         if (!input.value || input.value.trim() === '') {
+          // Navigate the DOM to find the max points label sibling
           const parentSpan1 = input.parentElement;
           if (!parentSpan1 || parentSpan1.tagName !== 'SPAN') return;
 
@@ -50,6 +52,7 @@ export function attachAutoFillListeners() {
   });
 }
 
+/** When the comment library dropdown changes, prepopulates remembered points for the criterion. */
 export function attachCommentLibraryChangeListeners() {
   if (!get('rememberPointsForComments')) return;
   const savedPoints = get('savedPoints');
@@ -65,6 +68,7 @@ export function attachCommentLibraryChangeListeners() {
     return;
   }
 
+  // Cache blank (placeholder) values for each dropdown
   const dropdowns = document.querySelectorAll('input[data-testid^="comment-library-"]');
 
   dropdowns.forEach((dropdown) => {
@@ -75,6 +79,7 @@ export function attachCommentLibraryChangeListeners() {
     }
   });
 
+  // Attach prepopulation logic for each dropdown
   dropdowns.forEach((dropdown) => {
     const testId = dropdown.getAttribute('data-testid');
     const criterionId = testId ? testId.split('-').pop() : null;
@@ -99,6 +104,7 @@ export function attachCommentLibraryChangeListeners() {
 
         if (!currentDropdownValue || currentDropdownValue === blankValue) return;
 
+        // Look up saved points by assignment::criterion::dropdownValue
         const key = `${assignmentId}::${criterionId}::${currentDropdownValue}`;
 
         if (savedPoints[key]) {
@@ -126,12 +132,12 @@ export function attachCommentLibraryChangeListeners() {
       }
     };
 
+    // Poll while the dropdown has focus because change/input events
+    // don't fire reliably on this Canvas custom element
     attachEventListenerIdempotent(dropdown, 'focus', () => {
       previousDropdownValue = dropdown.value;
 
       if (!pollingInterval) {
-        // Polling because change/input events don't fire reliably on this
-        // dropdown (Canvas UI framework / custom element implementation quirk)
         pollingInterval = setInterval(checkAndPrepopulatePoints, 500);
       }
     }, '__pointsPrePopulateFocusListenerAttached');

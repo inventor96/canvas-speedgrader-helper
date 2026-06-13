@@ -4,6 +4,7 @@ import { get, BLANK_DROPDOWN_VALUES } from './settings-store.js';
 import { attachEventListenerIdempotent } from './helpers/dom-utils.js';
 import { applySettingsToTextareas } from './placeholder-engine.js';
 
+/** Attaches click handlers on rubric submit buttons to auto-open the comment library. */
 export function attachCommentLibraryHandler() {
   const submitButtons = document.querySelectorAll(
     'button[data-testid="save-rubric-assessment-button"], button[data-testid^="submit-same-score-"]'
@@ -18,6 +19,7 @@ export function attachCommentLibraryHandler() {
         handlePointsSaving();
       }
 
+      // Open the comment library after submission
       setTimeout(() => {
         if (!get('openCommentLibraryAfterSubmit')) return;
 
@@ -30,6 +32,7 @@ export function attachCommentLibraryHandler() {
   });
 }
 
+/** Saves points for criterion comments that have the "save" checkbox checked. */
 function handlePointsSaving() {
   try {
     const params = new URLSearchParams(location.search || window.location.search);
@@ -63,6 +66,7 @@ function handlePointsSaving() {
         const pointsValue = input.value;
         let keyValue = null;
 
+        // Build a storage key: either from the textarea content or the dropdown selection
         if (isSaveChecked && pointsValue && textareaValue) {
           const truncatedValue = textareaValue.length > 100
             ? textareaValue.substring(0, 99) + '\u2026'

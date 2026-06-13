@@ -1,17 +1,21 @@
+/** Popup root container. */
 .options-root {
   min-width: 200px;
   padding: 8px 0;
 }
 
+/** Popup heading. */
 .options-root h2 {
   text-align: center;
   margin: 8px 0 16px;
 }
 
+/** Popup sections. */
 .options-root > div {
   padding: 0 20px;
 }
 
+/** Popup input fields. */
 .options-root input {
   padding: 6px 8px;
   border: 1px solid #ddd;
@@ -20,10 +24,12 @@
   box-sizing: border-box;
 }
 
+/** Popup buttons. */
 .options-root button {
   margin-right: 8px;
 }
 
+/** Popup status text. */
 #status {
   color: var(--muted);
   font-size: 0.9rem;

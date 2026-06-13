@@ -9,6 +9,7 @@ let _groupsResultListenerAttached = false;
 let _pendingTripletLookup = null;
 const GROUP_INDICATOR_WAIT_MS = 3500;
 
+/** Extracts course/assignment/student IDs from the current URL. */
 export function getCurrentTripletContext() {
   try {
     const parsedUrl = new URL(window.location.href);
@@ -27,6 +28,7 @@ export function getCurrentTripletContext() {
   }
 }
 
+/** Builds a deterministic key from a triplet context. */
 export function getTripletContextKey(context) {
   if (!context || !context.courseId || !context.assignmentId || !context.studentId) {
     return '';
@@ -35,10 +37,12 @@ export function getTripletContextKey(context) {
   return `${context.courseId}|${context.assignmentId}|${context.studentId}`;
 }
 
+/** Checks if the current submission has already been graded (graded icon exists). */
 function isCurrentSubmissionAlreadyGraded() {
   return !!document.querySelector('[data-testid="graded-icon"]');
 }
 
+/** Upserts the current triplet into the group cache via the service worker. */
 function upsertCurrentTripletCache() {
   const context = getCurrentTripletContext();
   if (!context) return;
@@ -55,6 +59,10 @@ function upsertCurrentTripletCache() {
   }
 }
 
+/**
+ * After a matched student name, checks the triplet cache for a previously
+ * cached same-group result, and triggers the auto-graded flow if found.
+ */
 async function checkMatchedStudentNameForCachedGroupContext(queuedName) {
   const startingContext = getCurrentTripletContext();
   if (!startingContext) return;
@@ -89,6 +97,7 @@ async function checkMatchedStudentNameForCachedGroupContext(queuedName) {
   }
 }
 
+/** Detects if the current submission is a group assignment. */
 function isGroupAssignmentDetected() {
   const groupModeRadio = document.querySelector('input[name="commentMode"][value="group"]');
   const wholeGroupNotice = Array.from(document.querySelectorAll('span')).some(
@@ -98,10 +107,12 @@ function isGroupAssignmentDetected() {
   return !!groupModeRadio || wholeGroupNotice;
 }
 
+/** Waits for group indicators to appear within a timeout. */
 function waitForGroupIndicators(timeoutMs = GROUP_INDICATOR_WAIT_MS) {
   return observeUntil(isGroupAssignmentDetected, { timeout: timeoutMs });
 }
 
+/** Gets or creates the fixed-position warning banner element. */
 function getOrCreateWarningContainer() {
   let warningDiv = document.getElementById('csh-student-mismatch-warning');
   if (warningDiv) return warningDiv;
@@ -129,18 +140,21 @@ function getOrCreateWarningContainer() {
   return warningDiv;
 }
 
+/** Warning (amber) styling for unresolved mismatches. */
 function applyWarningStyle(warningDiv) {
   warningDiv.style.backgroundColor = '#fff3cd';
   warningDiv.style.border = '2px solid #ff9800';
   warningDiv.style.color = '#333';
 }
 
+/** Info (blue) styling for resolved same-group mismatches. */
 function applyInfoStyle(warningDiv) {
   warningDiv.style.backgroundColor = '#e8f4ff';
   warningDiv.style.border = '2px solid #2f7ed8';
   warningDiv.style.color = '#123b66';
 }
 
+/** Renders the full banner UI with heading, message, links, and close button. */
 function renderBanner({ queuedName, speedgraderName, sameGroup, matchedGroupHeader, statusText, showGroupsLink }) {
   const warningDiv = getOrCreateWarningContainer();
   warningDiv.dataset.queuedName = queuedName;
@@ -177,6 +191,7 @@ function renderBanner({ queuedName, speedgraderName, sameGroup, matchedGroupHead
   warningDiv.appendChild(heading);
   warningDiv.appendChild(messageDiv);
 
+  // Show action links for unresolved mismatches
   if (!sameGroup && showGroupsLink) {
     const autoCheckWrap = document.createElement('div');
     autoCheckWrap.style.cssText = 'margin: 0 0 8px 0;';
@@ -247,6 +262,7 @@ function renderBanner({ queuedName, speedgraderName, sameGroup, matchedGroupHead
   warningDiv.appendChild(closeButton);
 }
 
+/** Initiates a groups check by posting a message to the content script. */
 function startGroupsCheck(queuedName, speedgraderName, noAutoClose = false) {
   const warningDiv = document.getElementById('csh-student-mismatch-warning');
   if (!warningDiv) return;
@@ -280,6 +296,7 @@ function startGroupsCheck(queuedName, speedgraderName, noAutoClose = false) {
   }
 }
 
+/** Updates the banner with a groups check result if it matches the current context. */
 function maybeApplyGroupsResult(msg) {
   const warningDiv = document.getElementById('csh-student-mismatch-warning');
   if (!warningDiv) return;
@@ -319,6 +336,7 @@ function maybeApplyGroupsResult(msg) {
   });
 }
 
+/** Handles a cached triplet lookup result to trigger the auto-graded flow. */
 function maybeApplyTripletCacheLookupResult(msg) {
   const pendingLookup = _pendingTripletLookup;
   if (!pendingLookup) return;
@@ -350,6 +368,7 @@ function maybeApplyTripletCacheLookupResult(msg) {
   }
 }
 
+/** Attaches the message listener for groups check results and triplet cache lookups. */
 export function attachGroupsResultListener() {
   if (_groupsResultListenerAttached) return;
   _groupsResultListenerAttached = true;
@@ -374,6 +393,7 @@ export function attachGroupsResultListener() {
   });
 }
 
+/** Shows the name mismatch warning banner with optional auto-check. */
 async function showStudentNameMismatchWarning(queuedName, speedgraderName) {
   try {
     const showGroupsLink = await waitForGroupIndicators();
@@ -387,6 +407,7 @@ async function showStudentNameMismatchWarning(queuedName, speedgraderName) {
       showGroupsLink,
     });
 
+    // Auto-start groups check if the setting is enabled
     if (showGroupsLink && get('autoGroupCheckOnNameMismatch')) {
       startGroupsCheck(queuedName, speedgraderName);
     }
@@ -400,6 +421,7 @@ async function showStudentNameMismatchWarning(queuedName, speedgraderName) {
   }
 }
 
+/** Checks if the queued student name matches the current SpeedGrader student name. */
 export function checkQueuedStudentName() {
   const queued = get('queuedStudentName');
 
@@ -411,6 +433,7 @@ export function checkQueuedStudentName() {
   const currentName = getCurrentStudentNameFromPage(true);
 
   if (!currentName) {
+    // Wait for the student selector to appear and retry
     const STUDENT_SELECTOR = 'button[data-testid="student-select-trigger"] [data-testid="selected-student"]';
     waitForElement(STUDENT_SELECTOR, 20000).then(() => {
       const name = getCurrentStudentNameFromPage(true);
@@ -422,6 +445,7 @@ export function checkQueuedStudentName() {
   finishStudentNameCheck(queued.name, currentName);
 }
 
+/** Completes the name check: clear queued name, optionally warn on mismatch. */
 function finishStudentNameCheck(queuedName, currentName) {
   try {
     window.postMessage({ type: CSH_MESSAGE_TYPES.CLEAR_QUEUED_STUDENT }, '*');

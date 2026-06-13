@@ -2,12 +2,14 @@ import { logger } from '@/shared/logger.js';
 import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
 import { get, auxState } from './settings-store.js';
 
+/** Reads the current student's name from the SpeedGrader page element. */
 export function getCurrentStudentNameFromPage(forceFullName = false) {
   const el = document.querySelector(
     'button[data-testid="student-select-trigger"] [data-testid="selected-student"]'
   );
   let fullName = el?.textContent?.trim() || null;
 
+  // Handle truncated names with ellipsis
   if (fullName && fullName.endsWith('\u2026')) {
     try {
       const truncatedName = fullName.slice(0, -1).trim();
@@ -32,12 +34,14 @@ export function getCurrentStudentNameFromPage(forceFullName = false) {
   return fullName.split(/\s+/)[0];
 }
 
+/** Resolves the student's display name: preferred name if available, else page name. */
 export function getStudentName() {
   try {
     const params = new URLSearchParams(location.search || window.location.search);
     const sid = params.get('student_id');
     const studentNames = get('studentNames');
     if (sid && studentNames && studentNames[sid]) {
+      // Touch the last-used timestamp on first access per navigation
       if (auxState.lastTouchedStudentId !== sid) {
         auxState.lastTouchedStudentId = sid;
         try {

@@ -3,6 +3,7 @@ import { touchMeta, pruneSavedPoints, normalizeMetaKeys } from '@/shared/storage
 import { getCurrentCanvasStudentFullName, handleSameGroupGradingStatus } from './settings-injector.js';
 import { logger } from '@/shared/logger.js';
 
+/** Logs a storage-related warning with optional detail. */
 function logStorageWarning(message, detail) {
   try {
     if (detail) {
@@ -13,6 +14,7 @@ function logStorageWarning(message, detail) {
   } catch (e) {}
 }
 
+/** Relays postMessage events from the MAIN world to chrome.storage or the service worker. */
 window.addEventListener('message', (event) => {
   try {
     if (!event || event.source !== window) return;
@@ -20,6 +22,7 @@ window.addEventListener('message', (event) => {
     const msg = event.data;
     if (!msg || !msg.type) return;
 
+    // === Save points from comment library to synced storage ===
     if (msg.type === CSH_MESSAGE_TYPES.SAVE_POINTS) {
       const pointsToSave = msg.pointsToSave || {};
       if (Object.keys(pointsToSave).length === 0) return;
@@ -50,6 +53,7 @@ window.addEventListener('message', (event) => {
       return;
     }
 
+    // === Touch last-used timestamps for a set of point keys ===
     if (msg.type === CSH_MESSAGE_TYPES.TOUCH_POINTS) {
       if (!chrome.storage || !chrome.storage.sync) return;
       const keys = Array.isArray(msg.keys) ? msg.keys : [];
@@ -69,6 +73,7 @@ window.addEventListener('message', (event) => {
       return;
     }
 
+    // === Touch last-used timestamp for a student name ===
     if (msg.type === CSH_MESSAGE_TYPES.TOUCH_STUDENT_NAME) {
       if (!chrome.storage || !chrome.storage.local) return;
       const key = msg.key;
@@ -88,6 +93,7 @@ window.addEventListener('message', (event) => {
       return;
     }
 
+    // === Clear the queued student name from local storage ===
     if (msg.type === CSH_MESSAGE_TYPES.CLEAR_QUEUED_STUDENT) {
       if (!chrome.storage || !chrome.storage.local) return;
       chrome.storage.local.remove('queuedStudentName', () => {
@@ -98,6 +104,7 @@ window.addEventListener('message', (event) => {
       return;
     }
 
+    // === Save a preferred name for a student ===
     if (msg.type === CSH_MESSAGE_TYPES.SAVE_STUDENT_NAME) {
       const studentId = typeof msg.studentId === 'string' ? msg.studentId : '';
       const preferredName = typeof msg.preferredName === 'string' ? msg.preferredName : '';
@@ -119,6 +126,7 @@ window.addEventListener('message', (event) => {
       return;
     }
 
+    // === Start a groups check via the service worker ===
     if (msg.type === CSH_MESSAGE_TYPES.START_GROUPS_CHECK) {
       if (!chrome.runtime || !chrome.runtime.sendMessage) return;
       const queuedName = typeof msg.queuedName === 'string' ? msg.queuedName : '';
@@ -161,6 +169,7 @@ window.addEventListener('message', (event) => {
       return;
     }
 
+    // === Upsert a triplet cache entry via the service worker ===
     if (msg.type === CSH_MESSAGE_TYPES.GROUP_TRIPLET_CACHE_UPSERT) {
       if (!chrome.runtime || !chrome.runtime.sendMessage) return;
 
@@ -175,6 +184,7 @@ window.addEventListener('message', (event) => {
       return;
     }
 
+    // === Lookup a triplet cache entry via the service worker ===
     if (msg.type === CSH_MESSAGE_TYPES.GROUP_TRIPLET_CACHE_LOOKUP) {
       if (!chrome.runtime || !chrome.runtime.sendMessage) return;
 
@@ -203,11 +213,13 @@ window.addEventListener('message', (event) => {
       return;
     }
 
+    // === Trigger grading status handling for a group match ===
     if (msg.type === CSH_MESSAGE_TYPES.TRIGGER_GROUP_MATCH_GRADING_STATUS) {
       handleSameGroupGradingStatus(msg.queuedName || '', !!msg.isGraded);
       return;
     }
 
+    // === Close the SpeedGrader tab via the service worker ===
     if (msg.type === CSH_MESSAGE_TYPES.CLOSE_SPEEDGRADER_TAB) {
       if (!chrome.runtime || !chrome.runtime.sendMessage) return;
 
@@ -218,9 +230,11 @@ window.addEventListener('message', (event) => {
   } catch (e) {}
 });
 
+/** Handles incoming chrome.runtime messages and relays them to the MAIN world. */
 if (chrome.runtime && chrome.runtime.onMessage) {
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     try {
+      // Handle popup-initiated "jump to groups"
       if (msg && msg.type === CSH_MESSAGE_TYPES.POPUP_JUMP_TO_STUDENT_GROUPS) {
         const canvasFullName = getCurrentCanvasStudentFullName();
         if (!canvasFullName) {
@@ -260,6 +274,7 @@ if (chrome.runtime && chrome.runtime.onMessage) {
 
       if (!msg || msg.type !== CSH_MESSAGE_TYPES.GROUPS_CHECK_RESULT) return;
 
+      // Relay groups check result to the MAIN world
       const sameGroup = !!msg.sameGroup;
       const isGraded = !!document.querySelector('[data-testid="graded-icon"]');
 

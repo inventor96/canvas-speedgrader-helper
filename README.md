@@ -145,14 +145,24 @@ Cross-context communication uses `window.postMessage()` and the constants in `sr
 
 ### Local development
 
+**Prerequisites:** [Node.js](https://nodejs.org/) 18+ and npm.
+
 ```sh
-npm run dev    # dev server with HMR (load dist/ as unpacked extension)
-npm run build  # production build → dist/
+# Clone the repository
+git clone https://github.com/inventor96/canvas-speedgrader-helper.git
+cd canvas-speedgrader-helper
+
+# Install dependencies
+npm install
+
+# Start dev server with HMR-ish functionality
+npm run dev
 ```
 
-1. Edit the relevant files.
-2. Run `npm run build` (or `npm run dev` for HMR).
-3. Load or reload `dist/` as an unpacked extension in `chrome://extensions`.
+**Loading in Chrome:**
+1. Open `chrome://extensions` and enable **Developer mode**.
+2. Click **Load unpacked** and select the `dist/` folder in the project directory.
+3. CRXJS is supposed to handle extension auto-reloads on file changes when using `npm run dev`. You may need to manually click the reload button on the extension card in `chrome://extensions` if changes don't appear immediately.
 
 ### Practical guidelines
 

@@ -24,6 +24,7 @@ const LOAD_QUEUE_BUTTON_SELECTOR = 'div[data-control-name="ButtonCanvas1_1"] but
 const LOAD_QUEUE_HOURLY_INTERVAL_MS = 60 * 60 * 1000;
 const LOAD_QUEUE_MIN_ITEMS_THRESHOLD = 10;
 
+/** Loads queue-related settings from storage and initialises feature flags. */
 function initializeQueuePopupDefaults(callback) {
   if (!chrome.storage || !chrome.storage.sync || !chrome.storage.sync.get) {
     callback();
@@ -41,6 +42,7 @@ function initializeQueuePopupDefaults(callback) {
   });
 }
 
+/** Cancels the hourly Load Queue timer. */
 function clearHourlyLoadQueueTimer(reason = 'not specified') {
   if (_loadQueueHourlyTimerId === null) return;
   clearTimeout(_loadQueueHourlyTimerId);
@@ -48,6 +50,7 @@ function clearHourlyLoadQueueTimer(reason = 'not specified') {
   logger.log('Cleared hourly Load Queue timer:', reason);
 }
 
+/** Checks queue size and clicks "Load Queue" if items are below the threshold. */
 function runHourlyLoadQueueCheck() {
   _loadQueueHourlyTimerId = null;
 
@@ -70,6 +73,7 @@ function runHourlyLoadQueueCheck() {
   resetHourlyLoadQueueTimer('hourly queue check complete');
 }
 
+/** Starts (or restarts) the hourly Load Queue timer. */
 function resetHourlyLoadQueueTimer(reason = 'not specified') {
   clearHourlyLoadQueueTimer('timer reset requested');
 
@@ -81,6 +85,7 @@ function resetHourlyLoadQueueTimer(reason = 'not specified') {
   logger.log('Started hourly Load Queue timer:', reason);
 }
 
+/** Called whenever the Load Queue button is clicked, to reset the hourly timer. */
 function onLoadQueueButtonClicked(source) {
   if (!_autoClickLoadQueueEveryHourWhenLessThanTenItems) {
     return;
@@ -89,6 +94,7 @@ function onLoadQueueButtonClicked(source) {
   resetHourlyLoadQueueTimer(`Load Queue clicked (${source})`);
 }
 
+/** Finds and clicks the "Load Queue" button. Returns true if clicked. */
 function clickLoadQueueButton(reason = 'automation') {
   const loadQueueButton = document.querySelector(LOAD_QUEUE_BUTTON_SELECTOR);
   if (!loadQueueButton || loadQueueButton.disabled) {
@@ -101,6 +107,7 @@ function clickLoadQueueButton(reason = 'automation') {
   return true;
 }
 
+/** Listens for synced setting changes and updates local flags. */
 function attachSyncedSettingsChangeListener() {
   if (!chrome.storage || !chrome.storage.onChanged) {
     return;
@@ -130,6 +137,7 @@ function attachSyncedSettingsChangeListener() {
   });
 }
 
+/** Watches for the queue to repopulate after clicking Load Queue, then opens the first item. */
 function retryOpenNextAfterQueueLoad(timeoutMs = 15000) {
   if (_queueRepopulationRetryActive) {
     logger.log('Queue repopulation retry already active; skipping duplicate retry');
@@ -161,6 +169,7 @@ function retryOpenNextAfterQueueLoad(timeoutMs = 15000) {
   }, timeoutMs);
 }
 
+/** Polls until a student's grading status select has a stable expected value. */
 function waitForSelectValueByStudentName(
   studentName,
   expectedValue,
@@ -216,6 +225,7 @@ function waitForSelectValueByStudentName(
   });
 }
 
+/** Sets the grading status to "Already Graded" for a given student in the queue. */
 function selectAlreadyGradedByStudentName(studentName) {
   const row = getQueueRowByStudentName(studentName);
   if (!row) {
@@ -240,6 +250,7 @@ function selectAlreadyGradedByStudentName(studentName) {
   return { selected: true, select: gradingStatusSelect, expectedValue: alreadyGradedValue };
 }
 
+/** Clicks the "Complete" button for a given student in the queue. */
 function clickCompleteByStudentName(studentName) {
   const row = getQueueRowByStudentName(studentName);
   if (!row) return false;
@@ -255,6 +266,7 @@ function clickCompleteByStudentName(studentName) {
   return true;
 }
 
+/** Listens for runtime messages about groups check results and queue completion. */
 function attachGroupCheckResultListener() {
   try {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -314,6 +326,7 @@ function attachGroupCheckResultListener() {
   }
 }
 
+/** After a complete button click, optionally opens the next queue item or clicks Load Queue. */
 function maybeOpenNextQueueItemAfterComplete(completeButton, studentName) {
   if (!completeButton) return;
 
@@ -324,6 +337,7 @@ function maybeOpenNextQueueItemAfterComplete(completeButton, studentName) {
     ? override
     : !!studentState.autoOpenNextQueueItemAfterComplete;
 
+  // Wait for the completion control to be removed from the DOM
   waitForElementRemoval(completeButton).then((wasRemoved) => {
     if (!wasRemoved) {
       logger.warn('Timed out waiting for completion control removal');
@@ -351,6 +365,7 @@ function maybeOpenNextQueueItemAfterComplete(completeButton, studentName) {
   });
 }
 
+/** Wires up the click listener for the entire grading queue (Grade, Complete, Load Queue buttons). */
 function initializeGradingQueueListener() {
   document.addEventListener('click', (event) => {
     const loadQueueButton = event.target.closest(LOAD_QUEUE_BUTTON_SELECTOR);
@@ -358,6 +373,7 @@ function initializeGradingQueueListener() {
       onLoadQueueButtonClicked(event.isTrusted ? 'manual' : 'automatic');
     }
 
+    // After clicking Complete, handle auto-open-next logic
     const completeButton = event.target.closest('[data-control-name="CompleteButton"] button');
     if (completeButton) {
       const completeRow = getQueueRowFromCompleteButton(completeButton);
@@ -366,6 +382,7 @@ function initializeGradingQueueListener() {
       maybeOpenNextQueueItemAfterComplete(completeButton, completeStudentName);
     }
 
+    // After clicking a Grade button, save the student name to local storage
     const button = event.target.closest('[data-control-name="GraderButton"] button');
     if (!button) return;
 

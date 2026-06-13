@@ -2,9 +2,14 @@ import { ensureHighlightStyles } from './highlight-utils.js';
 import { buildTextNodes, getRangeBetweenOffsets, scrollIntoView } from './text-range-utils.js';
 import { logger } from '@/shared/logger.js';
 
+/** Selector for PDF text layer elements. */
 const ELEMENT_SELECTOR = '.textLayer';
 const SEPARATOR = '\n\n';
 
+/**
+ * Waits for PDF/DOCX/etc. text layers to appear and settle (containing span children).
+ * Resolves when text is stable for `settleMs` or `timeoutMs` elapses.
+ */
 function waitForTextLayers(timeoutMs = 15000, settleMs = 800) {
   const hasTextSpans = (textLayers) =>
     textLayers.length > 0 &&
@@ -12,6 +17,7 @@ function waitForTextLayers(timeoutMs = 15000, settleMs = 800) {
       layer.querySelector('span[role="presentation"]')
     );
 
+  // Short-circuit if text layers are already present
   const existing = document.querySelectorAll(ELEMENT_SELECTOR);
   if (hasTextSpans(existing)) {
     return Promise.resolve(existing);
@@ -60,6 +66,7 @@ function waitForTextLayers(timeoutMs = 15000, settleMs = 800) {
 
       if (settled) return;
 
+      // Reset settle timer on each mutation to wait for rendering to finish
       if (settleTimerId !== null) {
         clearTimeout(settleTimerId);
       }
@@ -82,6 +89,7 @@ function waitForTextLayers(timeoutMs = 15000, settleMs = 800) {
   });
 }
 
+/** Extracts all text from PDF text layers. */
 export async function getText() {
   try {
     const textLayers = await waitForTextLayers();
@@ -98,6 +106,7 @@ export async function getText() {
   }
 }
 
+/** Applies CSS custom highlights to matching character ranges in the document. */
 export function applyHighlights(ranges, cssHighlightName) {
   try {
     if (!ranges || ranges.length === 0) {

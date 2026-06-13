@@ -2,6 +2,7 @@ import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
 import { getGroupTripletCacheKey, pruneGroupTripletCache, withGroupTripletCache, groupTripletCache, persistGroupTripletCache } from './group-triplet-cache.js';
 import { PENDING_CHECK_TTL_MS, pendingGroupsChecks, normalizeCourseGroupsUrl, safeSendToTab, closeTabIfPresent } from './groups-check-state.js';
 
+/** Removes expired pending checks and prunes stale triplet cache entries. */
 function cleanupStaleChecks() {
   const now = Date.now();
   for (const [groupsTabId, entry] of pendingGroupsChecks.entries()) {
@@ -13,6 +14,7 @@ function cleanupStaleChecks() {
   pruneGroupTripletCache(now);
 }
 
+/** Routes runtime messages between content scripts, popup, and the groups page. */
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   cleanupStaleChecks();
 
@@ -21,6 +23,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return;
   }
 
+  // === Groups Check: open a groups page tab for cross-referencing names ===
   if (message.type === CSH_MESSAGE_TYPES.START_GROUPS_CHECK) {
     const originTabId = sender?.tab?.id;
     const originTabUrl = sender?.tab?.url;
@@ -64,6 +67,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  // === Group Triplet Cache: upsert an entry ===
   if (message.type === CSH_MESSAGE_TYPES.GROUP_TRIPLET_CACHE_UPSERT) {
     const key = getGroupTripletCacheKey(message.courseId, message.assignmentId, message.studentId);
     if (!key) {
@@ -81,6 +85,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  // === Group Triplet Cache: lookup an entry ===
   if (message.type === CSH_MESSAGE_TYPES.GROUP_TRIPLET_CACHE_LOOKUP) {
     const key = getGroupTripletCacheKey(message.courseId, message.assignmentId, message.studentId);
     if (!key) {
@@ -101,6 +106,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  // === Groups Check: return pending context to the groups page ===
   if (message.type === CSH_MESSAGE_TYPES.GROUPS_GET_PENDING_CONTEXT) {
     const groupsTabId = sender?.tab?.id;
     if (!groupsTabId || !pendingGroupsChecks.has(groupsTabId)) {
@@ -119,6 +125,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return;
   }
 
+  // === Groups Check: relay result back to origin tab (and all other tabs) ===
   if (message.type === CSH_MESSAGE_TYPES.GROUPS_CHECK_COMPLETE) {
     const groupsTabId = sender?.tab?.id;
     if (!groupsTabId) {
@@ -144,8 +151,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       checkedAt: Date.now(),
     };
 
+    // Send to origin tab
     safeSendToTab(pending.originTabId, resultPayload);
 
+    // Broadcast to all tabs
     chrome.tabs.query({}, (tabs) => {
       tabs.forEach(tab => {
         if (tab.id !== pending.originTabId) {
@@ -162,6 +171,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return;
   }
 
+  // === Groups Check: relay grading status to all tabs ===
   if (message.type === CSH_MESSAGE_TYPES.GROUPS_CHECK_GRADING_STATUS) {
     const senderTabId = sender?.tab?.id;
     const payload = {
@@ -181,12 +191,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return;
   }
 
+  // === SpeedGrader tab: close by tab ID ===
   if (message.type === CSH_MESSAGE_TYPES.CLOSE_SPEEDGRADER_TAB) {
     closeTabIfPresent(sender?.tab?.id);
     sendResponse({ ok: true });
     return;
   }
 
+  // === Queue: click "Complete" after comment submitted ===
   if (message.type === CSH_MESSAGE_TYPES.CLICK_QUEUE_COMPLETE_AFTER_COMMENT) {
     const senderTabId = sender?.tab?.id;
     const payload = {

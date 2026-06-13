@@ -13,6 +13,7 @@ let _submissionHistoryFocusedValue = null;
 let _submissionHistoryBlurTimer = null;
 let _rubricAutoOpenAttempted = false;
 
+/** Applies all rubric-related feature handlers. */
 function attachAllRubricHandlers() {
   attachCommentLibraryHandler();
   attachAutoFillListeners();
@@ -23,9 +24,11 @@ function attachAllRubricHandlers() {
   applySettingsToTextareas();
 }
 
+/** Re-applies all handlers after the submission history dropdown changes. */
 function reapplyAfterSubmissionHistoryChange() {
   _rubricAutoOpenAttempted = false;
 
+  // Retry at increasing delays to catch re-rendered DOM
   [200, 700, 1400].forEach((delay) => {
     setTimeout(() => {
       attachAllRubricHandlers();
@@ -34,6 +37,7 @@ function reapplyAfterSubmissionHistoryChange() {
   });
 }
 
+/** Delegates click on "View Rubric" button: attaches handlers and scrolls to first criterion. */
 function setupViewRubricDelegation() {
   if (_delegationSetUp) return;
   _delegationSetUp = true;
@@ -49,6 +53,7 @@ function setupViewRubricDelegation() {
   });
 }
 
+/** Scrolls to the first rubric criterion row if the setting is enabled. */
 async function scrollToFirstCriterionIfEnabled() {
   if (!get('rubricAutoScrollToFirstCriterionAfterOpening')) return;
 
@@ -58,6 +63,7 @@ async function scrollToFirstCriterionIfEnabled() {
   scrollToFirstCriterionRow();
 }
 
+/** Waits for the rubric assessment table to appear in the DOM. */
 function waitForRubricTableDisplayed(timeoutMs = 6000) {
   const rubricSelector = 'div.rubric_summary,[data-testid="rubric-assessment-traditional-view"]';
   return observeUntil(() => document.querySelector(rubricSelector), {
@@ -66,6 +72,7 @@ function waitForRubricTableDisplayed(timeoutMs = 6000) {
   });
 }
 
+/** Detects submission history changes via focus/blur on the history select input. */
 function setupSubmissionHistoryChangeDelegation() {
   if (_submissionHistoryDelegationSetUp) return;
   _submissionHistoryDelegationSetUp = true;
@@ -74,6 +81,7 @@ function setupSubmissionHistoryChangeDelegation() {
     const submissionHistoryInput = event.target.closest('input[data-testid="submission-history-select"]');
     if (!submissionHistoryInput) return;
 
+    // Snapshot the current input state
     _submissionHistoryFocusedInput = submissionHistoryInput;
     _submissionHistoryFocusedValue = submissionHistoryInput.value;
   }, true);
@@ -86,6 +94,7 @@ function setupSubmissionHistoryChangeDelegation() {
       clearTimeout(_submissionHistoryBlurTimer);
     }
 
+    // Check after a short delay if the input or its value changed
     _submissionHistoryBlurTimer = setTimeout(() => {
       _submissionHistoryBlurTimer = null;
 
@@ -108,12 +117,14 @@ function setupSubmissionHistoryChangeDelegation() {
   }, true);
 }
 
+/** Main rubric functionality entry point: sets up delegation and auto-opens the rubric. */
 export function handleRubricFunctionality() {
   setupViewRubricDelegation();
   setupSubmissionHistoryChangeDelegation();
 
   if (_rubricAutoOpenAttempted) return;
 
+  // Check if rubric table is already visible
   const rubricTable = document.querySelector('div.rubric_summary,[data-testid="rubric-assessment-traditional-view"]');
   if (rubricTable) {
     logger.log('Rubric table already present');
@@ -128,6 +139,7 @@ export function handleRubricFunctionality() {
   const rubricButton = document.querySelector('button[data-testid="view-rubric-button"]');
 
   if (!rubricButton) {
+    // Maybe the save button exists, meaning rubric is already open
     const saveButton = document.querySelector('button[data-testid="save-rubric-assessment-button"]');
     if (saveButton) {
       logger.log('Rubric button not found, but rubric is already open');
@@ -145,6 +157,7 @@ export function handleRubricFunctionality() {
   _rubricAutoOpenAttempted = true;
 
   if (!get('openRubricForUngraded')) return;
+  // Click the view rubric button to auto-open it for ungraded submissions
   setTimeout(async () => {
     const currentRubricTable = document.querySelector('div.rubric_summary,[data-testid="rubric-assessment-traditional-view"]');
     if (!currentRubricTable) {

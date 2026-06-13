@@ -8,6 +8,7 @@ import { getCurrentStudentNameFromPage, getStudentName } from './student-name-se
 
 let _featuresInitialized = false;
 
+/** Reads the data-csh-settings attribute from <head> and applies it to the settings store. */
 export function init() {
   try {
     const raw = document.head.getAttribute('data-csh-settings');
@@ -28,6 +29,7 @@ function applySettings(settingsData) {
   return true;
 }
 
+/** Listens for runtime settings updates from the content script via postMessage. */
 export function attachSettingsUpdateListener() {
   window.addEventListener('message', (event) => {
     try {
@@ -43,6 +45,7 @@ export function attachSettingsUpdateListener() {
 
       if (!_featuresInitialized) return;
 
+      // Re-apply rubric handlers if the related setting changed
       if (get('openRubricForUngraded')) {
         try {
           handleRubricFunctionality();
@@ -51,6 +54,7 @@ export function attachSettingsUpdateListener() {
 
       handleStudentNameChange(changes);
 
+      // Re-apply placeholder replacements and comment mode
       applySettingsToEditors();
       applySettingsToTextareas();
       attachCommentLibraryTextareaListeners();
@@ -61,6 +65,7 @@ export function attachSettingsUpdateListener() {
   });
 }
 
+/** When a student's preferred name changes, updates TinyMCE editors in-place. */
 function handleStudentNameChange(changes) {
   try {
     const params = new URLSearchParams(location.search || window.location.search);
@@ -74,6 +79,7 @@ function handleStudentNameChange(changes) {
     const newName = changes[sid].new || getStudentName();
     if (!oldName || !newName) return;
 
+    // Replace old name with new name in all TinyMCE editors
     if (window.tinymce) {
       window.tinymce.editors.forEach((editor) => {
         try {
@@ -91,6 +97,10 @@ function handleStudentNameChange(changes) {
   }
 }
 
+/**
+ * Waits for the first UPDATE_SETTINGS message (from the content script), then
+ * calls the callback. Falls back after 2 seconds if the message never arrives.
+ */
 export function waitForStoredSettings(callback) {
   let settled = false;
 

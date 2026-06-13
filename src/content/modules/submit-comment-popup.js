@@ -3,12 +3,14 @@ import { observeUntil } from '@/shared/observe-until.js';
 import { SYNCED_SETTINGS } from '@/shared/settings.js';
 import { getCurrentCanvasStudentFullName } from './settings-injector.js';
 
+/** Live copies of the settings that can be overridden per-action via the popup. */
 let closeSpeedgraderTabAfterSubmitCommentEnabled = SYNCED_SETTINGS.closeSpeedgraderTabAfterSubmitComment;
 let autoCompleteQueueItemAfterCommentSubmitEnabled = SYNCED_SETTINGS.autoCompleteQueueItemAfterCommentSubmit;
 let autoOpenNextQueueItemAfterCompleteEnabled = SYNCED_SETTINGS.autoOpenNextQueueItemAfterComplete;
 let closeOnSubmitCommentListenerAttached = false;
 let closeOnSubmitCommentPending = false;
 
+/** Counts the persisted comment elements on the page. */
 function getPersistedCommentCount() {
   const commentElements = document.querySelectorAll('div[data-testid^="comment-"]');
   return Array.from(commentElements).filter((el) => {
@@ -17,12 +19,14 @@ function getPersistedCommentCount() {
   }).length;
 }
 
+/** Waits for the comment count to increase (confirms the comment was persisted). */
 function waitForPersistedCommentCountIncrease(previousCount, timeoutMs = 15000) {
   return observeUntil(() => getPersistedCommentCount() > previousCount, {
     timeout: timeoutMs,
   });
 }
 
+/** Attaches a click handler on the submit comment button that auto-closes and/or completes the queue. */
 function attachCloseOnSubmitCommentListener() {
   if (closeOnSubmitCommentListenerAttached) return;
   closeOnSubmitCommentListenerAttached = true;
@@ -36,6 +40,7 @@ function attachCloseOnSubmitCommentListener() {
     closeOnSubmitCommentPending = true;
     const previousCount = getPersistedCommentCount();
 
+    // Wait for the comment to actually appear before taking action
     const commentAppeared = await waitForPersistedCommentCountIncrease(previousCount);
     closeOnSubmitCommentPending = false;
 
@@ -64,6 +69,7 @@ function attachCloseOnSubmitCommentListener() {
   }, true);
 }
 
+/** Hover popup that appears over the "Submit Comment" button to toggle automation settings. */
 const SubmitCommentPopup = (() => {
   let _el = null;
   let _hideTimer = null;
@@ -92,6 +98,7 @@ const SubmitCommentPopup = (() => {
     }, HIDE_DELAY_MS);
   }
 
+  /** Positions and shows the popup near the submit button. */
   function _show(buttonEl) {
     if (!_el) return;
     const rect = buttonEl.getBoundingClientRect();
@@ -107,6 +114,7 @@ const SubmitCommentPopup = (() => {
     if (cbNext) cbNext.checked = autoOpenNextQueueItemAfterCompleteEnabled;
   }
 
+  /** Creates the popup DOM element with three checkboxes. */
   function _create() {
     const el = document.createElement('div');
     el.id = 'csh-submit-popup';
@@ -146,6 +154,7 @@ const SubmitCommentPopup = (() => {
     el.appendChild(makeRow('csh-complete-queue-cb', 'Click "Complete" in the queue'));
     el.appendChild(makeRow('csh-open-next-cb', 'Start next queue submission'));
 
+    // Sync checkbox changes into the live settings
     el.addEventListener('change', (event) => {
       const cb = event.target;
       if (!cb || cb.type !== 'checkbox') return;
@@ -176,6 +185,7 @@ const SubmitCommentPopup = (() => {
     }
     _el = _create();
 
+    // Show popup on hover over the submit button
     document.addEventListener('mouseover', (event) => {
       if (_isSubmitButton(event.target)) {
         _cancelHideTimer();
@@ -190,6 +200,7 @@ const SubmitCommentPopup = (() => {
       }
     });
 
+    // Hide popup after a delay when leaving the button or popup
     document.addEventListener('mouseout', (event) => {
       if (!_el || _el.style.display === 'none') return;
       const leaving = event.target;
@@ -203,6 +214,7 @@ const SubmitCommentPopup = (() => {
   return { init };
 })();
 
+/** Loads settings from storage, attaches submit listener, and initialises the popup. */
 function initializeCloseOnSubmitCommentSetting() {
   if (!chrome.storage || !chrome.storage.sync || !chrome.storage.sync.get) {
     attachCloseOnSubmitCommentListener();
@@ -220,6 +232,7 @@ function initializeCloseOnSubmitCommentSetting() {
 
 initializeCloseOnSubmitCommentSetting();
 
+// Keep live settings in sync with storage changes
 if (chrome.storage && chrome.storage.onChanged) {
   chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName !== 'sync') return;

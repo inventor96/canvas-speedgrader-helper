@@ -1,10 +1,13 @@
+// Dispatches submission rendering to the correct adapter (iframe, document, discussion)
 import { logger } from '@/shared/logger.js';
 import { observeUntil } from '@/shared/observe-until.js';
 import { IframeSubmissionAdapter } from './submission-adapters/iframe-submission-adapter.js';
 
+// DOM selector and timeout for the submission preview container
 const SUBMISSION_CONTAINER_SELECTOR = 'article.speedgrader-preview-frame';
 const SUBMISSION_WAIT_TIMEOUT_MS = 15000;
 
+// Internal state — registered adapters, active instance, init flags
 const _adapters = [];
 let _activeAdapter = null;
 let _submissionElement = null;
@@ -15,6 +18,7 @@ let _builtinAdaptersRegistered = false;
 let _ready = false;
 const _readyCallbacks = [];
 
+/** Register a callback to run once the dispatcher is ready with an active adapter */
 export function whenReady(callback) {
   if (_ready) {
     callback(createApi());
@@ -24,9 +28,11 @@ export function whenReady(callback) {
   startInit();
 }
 
+/** Build the public API object wrapping the currently active adapter */
 function createApi() {
   const adapter = _activeAdapter;
   return {
+    /** Get full text content from the current submission */
     getText: () => {
       if (!adapter) return Promise.reject(new Error('SubmissionDispatcher: No active adapter'));
       return adapter.getText().then((result) => {
@@ -36,6 +42,7 @@ function createApi() {
         throw err;
       });
     },
+    /** Apply highlight ranges to the submission using the given CSS class */
     applyHighlights: (ranges, cssHighlightName) => {
       if (!adapter) return Promise.reject(new Error('SubmissionDispatcher: No active adapter'));
       return adapter.applyHighlights(ranges, cssHighlightName).then((result) => {
@@ -45,6 +52,7 @@ function createApi() {
         throw err;
       });
     },
+    /** Scroll to an element matching selector within the submission */
     scrollIntoView: (selector, options = {}) => {
       if (!adapter) return Promise.reject(new Error('SubmissionDispatcher: No active adapter'));
       return adapter.scrollIntoView(selector, options).then((result) => {
@@ -57,6 +65,7 @@ function createApi() {
   };
 }
 
+/** Mark dispatcher as ready and trigger all pending callbacks */
 function markReady() {
   if (_ready) return;
   _ready = true;
@@ -66,24 +75,29 @@ function markReady() {
   cbs.forEach((cb) => cb(api));
 }
 
+/** Kick off the one-time initialization sequence */
 function startInit() {
   if (_initStarted) return;
   _initStarted = true;
 
   _initPromise = (async () => {
     try {
+      // Wait for the submission preview container to appear in the DOM
       _submissionElement = await waitForSubmissionElement(SUBMISSION_CONTAINER_SELECTOR);
       if (!_submissionElement) {
         throw new Error('SubmissionDispatcher: Submission element not found');
       }
 
+      // Register built-in adapters (iframe, document, discussion)
       registerBuiltinAdapters();
 
+      // Pick the first adapter that can handle this submission type
       const adapter = selectAdapter();
       if (!adapter) {
         throw new Error('SubmissionDispatcher: No adapter found for current submission type');
       }
 
+      // Initialize the chosen adapter and mark ready when its sub-initialization completes
       adapter.init(_submissionElement);
       _activeAdapter = adapter;
       _isInitialized = true;
@@ -97,6 +111,7 @@ function startInit() {
       }
     } catch (e) {
       logger.error('SubmissionDispatcher initialization failed:', e.message);
+      // Allow retry on next whenReady call
       _initStarted = false;
     }
   })();
@@ -104,6 +119,7 @@ function startInit() {
   return _initPromise;
 }
 
+/** Wait for the submission container element to appear in the DOM */
 function waitForSubmissionElement(selector) {
   return observeUntil(() => document.querySelector(selector), {
     timeout: SUBMISSION_WAIT_TIMEOUT_MS,
@@ -112,6 +128,7 @@ function waitForSubmissionElement(selector) {
   });
 }
 
+/** Register a new adapter (must implement canHandle()) */
 function registerAdapter(adapter) {
   if (!adapter || typeof adapter.canHandle !== 'function') {
     throw new Error('SubmissionDispatcher: Invalid adapter - must implement canHandle()');
@@ -119,6 +136,7 @@ function registerAdapter(adapter) {
   _adapters.push(adapter);
 }
 
+/** Register built-in adapters (currently only IframeSubmissionAdapter) */
 function registerBuiltinAdapters() {
   if (_builtinAdaptersRegistered) {
     return;
@@ -130,6 +148,7 @@ function registerBuiltinAdapters() {
   _builtinAdaptersRegistered = true;
 }
 
+/** Select the first registered adapter that can handle the current submission element */
 function selectAdapter() {
   if (!_submissionElement) {
     return null;
@@ -140,12 +159,15 @@ function selectAdapter() {
       if (_adapters[i].canHandle(_submissionElement)) {
         return _adapters[i];
       }
-    } catch (e) {}
+    } catch (e) {
+      // Adapter threw during canHandle — skip it
+    }
   }
 
   return null;
 }
 
+/** Destroy the active adapter and reset all state */
 export function destroy() {
   if (_activeAdapter && typeof _activeAdapter.destroy === 'function') {
     _activeAdapter.destroy();

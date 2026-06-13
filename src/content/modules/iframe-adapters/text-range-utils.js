@@ -1,3 +1,7 @@
+/**
+ * Walks a set of DOM elements, flattens all text nodes into an indexed array,
+ * and builds a contiguous text string separated by `separator`.
+ */
 export function buildTextNodes(elements, separator) {
   const textNodes = [];
   const partTexts = [];
@@ -27,6 +31,7 @@ export function buildTextNodes(elements, separator) {
     }
     partTexts.push(partText);
 
+    // Account for the separator between elements
     if (index < elements.length - 1) {
       charOffset += separator.length;
     }
@@ -36,6 +41,10 @@ export function buildTextNodes(elements, separator) {
   return { textNodes, text };
 }
 
+/**
+ * Converts a character-offset range (startOffset, endOffset) into a DOM Range
+ * by looking up the corresponding text nodes in the pre-built index.
+ */
 export function getRangeBetweenOffsets(textNodes, startOffset, endOffset) {
   if (startOffset >= endOffset) {
     return null;
@@ -46,6 +55,7 @@ export function getRangeBetweenOffsets(textNodes, startOffset, endOffset) {
   let endNode = null;
   let endNodeOffset = 0;
 
+  // Find the text node containing the start offset
   for (let i = 0; i < textNodes.length; i++) {
     const tn = textNodes[i];
     if (startOffset >= tn.startOffset && startOffset < tn.endOffset) {
@@ -55,6 +65,7 @@ export function getRangeBetweenOffsets(textNodes, startOffset, endOffset) {
     }
   }
 
+  // Find the text node containing the end offset
   for (let i = 0; i < textNodes.length; i++) {
     const tn = textNodes[i];
     if (endOffset > tn.startOffset && endOffset <= tn.endOffset) {
@@ -74,6 +85,7 @@ export function getRangeBetweenOffsets(textNodes, startOffset, endOffset) {
   return range;
 }
 
+/** Scrolls the first element matching `selector` into view with optional behaviour. */
 export function scrollIntoView(selector, options = {}) {
   try {
     const element = document.querySelector(selector);

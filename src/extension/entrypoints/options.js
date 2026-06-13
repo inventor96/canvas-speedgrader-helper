@@ -1,6 +1,7 @@
 import { SYNCED_SETTINGS } from '@/shared/settings.js';
 import { saveStudentNamesWithPrune, initializeLimits } from '@/shared/storage-utils.js';
 
+/** Creates a single placeholder list item with an input and remove button. */
 function createItem(value = '') {
   const container = document.createElement('div');
   container.className = 'placeholder-item';
@@ -21,13 +22,16 @@ function createItem(value = '') {
   return container;
 }
 
+/** Reads synced settings and populates all form controls. */
 function loadPlaceholders() {
   chrome.storage.sync.get(SYNCED_SETTINGS, (data) => {
+    // Populate placeholder inputs
     const list = document.getElementById('placeholders-list');
     list.innerHTML = '';
     const items = (data && data.placeholders && data.placeholders.length) ? data.placeholders : SYNCED_SETTINGS.placeholders;
     items.forEach(p => list.appendChild(createItem(p)));
 
+    // Map each checkbox from storage to its DOM element
     const cb = document.getElementById('open-rubric');
     if (cb) cb.checked = !!data.openRubricForUngraded;
 
@@ -94,12 +98,14 @@ function loadPlaceholders() {
     const autoClickLoadQueueEveryHourWhenLessThanTenItemsCb = document.getElementById('auto-click-load-queue-every-hour-when-less-than-ten-items');
     if (autoClickLoadQueueEveryHourWhenLessThanTenItemsCb) autoClickLoadQueueEveryHourWhenLessThanTenItemsCb.checked = !!data.autoClickLoadQueueEveryHourWhenLessThanTenItems;
 
+    // Populate name format radio
     const format = data && data.studentNameFormat ? data.studentNameFormat : SYNCED_SETTINGS.studentNameFormat;
     const formatRadio = document.querySelector(`input[name="student-name-format"][value="${format}"]`);
     if (formatRadio) formatRadio.checked = true;
   });
 }
 
+/** Creates a student item row with read-only ID and editable name. */
 function createStudentItem(id = '', name = '') {
   const container = document.createElement('div');
   container.className = 'student-item';
@@ -130,6 +136,7 @@ function createStudentItem(id = '', name = '') {
   return container;
 }
 
+/** Reads student name rows from the DOM and persists with LRU pruning. */
 function saveStudentsFromDOM(callback) {
   const rows = Array.from(document.querySelectorAll('.student-item'));
   const students = {};
@@ -141,6 +148,7 @@ function saveStudentsFromDOM(callback) {
   saveStudentNamesWithPrune(students, callback);
 }
 
+/** Loads student names from local storage and renders the list. */
 function loadStudents() {
   chrome.storage.local.get({ studentNames: {} }, (data) => {
     const list = document.getElementById('students-list');
@@ -153,6 +161,7 @@ function loadStudents() {
   });
 }
 
+/** Returns a promise resolving to the stored student names map. */
 function getStudentsFromStorage() {
   return new Promise(resolve => {
     chrome.storage.local.get({ studentNames: {} }, (data) => {
@@ -161,6 +170,7 @@ function getStudentsFromStorage() {
   });
 }
 
+/** Parses CSV text into a 2D array of strings, handling quoted fields. */
 function parseCsv(text) {
   const rows = [];
   let current = [];
@@ -202,10 +212,12 @@ function parseCsv(text) {
   return rows;
 }
 
+/** Lowercases and strips whitespace/punctuation from a CSV header value. */
 function normalizeHeader(value) {
   return (value || '').toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9_]/g, '');
 }
 
+/** Parses student CSV into an array of { id, name } objects, detecting headers. */
 function parseStudentsFromCsv(text) {
   const rows = parseCsv(text).map(row => row.map(cell => (cell || '').trim()));
   if (!rows.length) return [];
@@ -238,6 +250,7 @@ function parseStudentsFromCsv(text) {
   return students;
 }
 
+/** Escapes a value for CSV output, wrapping in quotes if needed. */
 function toCsvValue(value) {
   const text = value == null ? '' : String(value);
   if (/[",\n\r]/.test(text)) {
@@ -246,6 +259,7 @@ function toCsvValue(value) {
   return text;
 }
 
+/** Converts the student names map to CSV format. */
 function exportStudentsToCsv(students) {
   const lines = ['student_id,preferred_name'];
   Object.keys(students).forEach(id => {
@@ -254,6 +268,7 @@ function exportStudentsToCsv(students) {
   return lines.join('\n');
 }
 
+/** Triggers a file download from a string. */
 function downloadCsv(filename, content) {
   const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -266,6 +281,7 @@ function downloadCsv(filename, content) {
   URL.revokeObjectURL(url);
 }
 
+/** Displays the import results summary and conflict list. */
 function setImportResults(summary, conflicts) {
   const container = document.getElementById('import-results');
   const summaryEl = document.getElementById('import-summary');
@@ -283,18 +299,22 @@ function setImportResults(summary, conflicts) {
   container.classList.toggle('hidden', !summary);
 }
 
+/** Initialise the options page: load settings, wire event listeners. */
 document.addEventListener('DOMContentLoaded', async () => {
   if (typeof initializeLimits === 'function') {
     await initializeLimits();
   }
 
+  // Load existing settings and student names
   loadPlaceholders();
   loadStudents();
 
+  // Add placeholder button
   document.getElementById('add-placeholder').addEventListener('click', () => {
     document.getElementById('placeholders-list').appendChild(createItem(''));
   });
 
+  // Mutually exclusive checkboxes: open comment on max vs clear comment on max
   const openCommentBoxMaxCheckbox = document.getElementById('open-comment-box-after-max-points');
   const clearCommentBoxCheckbox = document.getElementById('clear-comment-box-on-max-points');
 
@@ -312,6 +332,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // Save all settings to chrome.storage.sync
   document.getElementById('save').addEventListener('click', () => {
     const inputs = Array.from(document.querySelectorAll('.placeholder-input')).map(i => i.value.trim()).filter(Boolean);
     const toSave = inputs.length ? inputs : SYNCED_SETTINGS.placeholders;
@@ -339,6 +360,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const autoClickLoadQueueEveryHourWhenLessThanTenItems = !!document.getElementById('auto-click-load-queue-every-hour-when-less-than-ten-items') && document.getElementById('auto-click-load-queue-every-hour-when-less-than-ten-items').checked;
     const studentNameFormat = document.querySelector('input[name="student-name-format"]:checked')?.value || SYNCED_SETTINGS.studentNameFormat;
 
+    // Save students first, then synced settings
     saveStudentsFromDOM(() => {
       chrome.storage.sync.set({
         placeholders: toSave,
@@ -373,6 +395,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
+  // Export/import student names
   const exportBtn = document.getElementById('export-students');
   const importBtn = document.getElementById('import-students');
   const importFile = document.getElementById('import-students-file');
@@ -397,6 +420,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const incoming = parseStudentsFromCsv(text);
       const existing = await getStudentsFromStorage();
 
+      // Merge: skip conflicts where existing names differ, add new entries
       const merged = { ...existing };
       const conflicts = [];
       let addedCount = 0;

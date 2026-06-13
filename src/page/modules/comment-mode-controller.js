@@ -6,6 +6,7 @@ let _observerAttached = false;
 let _observerDebounceTimer = null;
 const _processedSubmitButtons = new WeakSet();
 
+/** Force-activates a radio input using multiple strategies (click, label, native setter). */
 export function activateRadioInput(radioInput) {
   if (!radioInput) return false;
 
@@ -42,6 +43,7 @@ export function activateRadioInput(radioInput) {
   }
 }
 
+/** Sets comment mode to "group" for each submit button if the setting is enabled. */
 export function selectGroupCommentModeIfEnabled() {
   try {
     if (!get('autoSetCommentsToWholeGroupWhenAvailable')) return;
@@ -63,6 +65,7 @@ export function selectGroupCommentModeIfEnabled() {
   }
 }
 
+/** Debounced wrapper for selectGroupCommentModeIfEnabled. */
 function scheduleAutoSelect() {
   if (_observerDebounceTimer) {
     clearTimeout(_observerDebounceTimer);
@@ -74,6 +77,7 @@ function scheduleAutoSelect() {
   }, 120);
 }
 
+/** Observes DOM mutations to re-apply group comment mode when the page changes. */
 export function attachCommentModeObserver() {
   if (_observerAttached || !document.body) return;
   _observerAttached = true;
@@ -90,6 +94,7 @@ export function attachCommentModeObserver() {
   });
 }
 
+/** Returns the name to substitute for placeholders: "Team" for group mode or the student name. */
 export function getReplacementName() {
   if (get('useTeamNameForGroupPlaceholderReplacement')) {
     const groupModeRadio = document.querySelector('input[name="commentMode"][value="group"]');

@@ -1,6 +1,7 @@
 import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
 import { initializeLimits, saveStudentNamesWithPrune } from '@/shared/storage-utils.js';
 
+/** Initialise the popup: detect SpeedGrader tab, load preferred name, wire buttons. */
 document.addEventListener('DOMContentLoaded', async () => {
   if (typeof initializeLimits === 'function') {
     await initializeLimits();
@@ -18,11 +19,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const openSettingsBtn = document.getElementById('open-settings');
   let activeSpeedgraderTabId = null;
 
+  /** Shows a status message briefly, then clears it. */
   function showStatus(msg, timeout = 1500) {
     statusEl.textContent = msg;
     if (timeout) setTimeout(() => (statusEl.textContent = ''), timeout);
   }
 
+  /** Shows an error message for the "Jump to groups" button. */
   function showJumpGroupsError(msg, timeout = 3000) {
     if (!jumpGroupsStatusEl) return;
     jumpGroupsStatusEl.textContent = msg || '';
@@ -35,6 +38,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  // Identify the active SpeedGrader tab and extract student ID
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const tab = tabs && tabs[0];
     if (!tab || !tab.url) {
@@ -55,7 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       sid = url.searchParams.get('student_id');
     } catch (e) {
-      // ignore
+      // Ignore invalid URLs
     }
 
     if (!sid) {
@@ -63,6 +67,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
+    // Show the form and load existing preferred name
     studentIdEl.textContent = sid;
     formEl.style.display = '';
     jumpGroupsWrapEl.style.display = '';
@@ -75,6 +80,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       nameInput.focus();
     });
 
+    /** Saves the preferred name mapping to local storage. */
     function saveMapping() {
       const val = nameInput.value.trim();
       chrome.storage.local.get({ studentNames: {} }, (data) => {
@@ -92,6 +98,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     saveBtn.addEventListener('click', saveMapping);
 
+    // Allow Enter key to save
     nameInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.keyCode === 13) {
         e.preventDefault();
@@ -99,6 +106,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
 
+    // "Jump to groups" button triggers the groups check via content script
     if (jumpGroupsBtn) {
       jumpGroupsBtn.addEventListener('click', () => {
         if (!activeSpeedgraderTabId) {
@@ -128,6 +136,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  /** Opens the extension's options page. */
   function openOptionsPage() {
     try {
       if (chrome && chrome.runtime && chrome.runtime.openOptionsPage) {

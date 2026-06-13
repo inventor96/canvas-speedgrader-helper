@@ -1,6 +1,7 @@
 import { observeUntil } from '@/shared/observe-until.js';
 import { logger } from '@/shared/logger.js';
 
+/** Finds the queue row DOM element for a given student name. */
 export function getQueueRowByStudentName(studentName) {
   if (!studentName) {
     logger.warn('No student name provided');
@@ -27,17 +28,20 @@ export function getQueueRowByStudentName(studentName) {
   return row;
 }
 
+/** Extracts the student name text from a queue row. */
 export function getStudentNameFromRow(row) {
   if (!row) return '';
   const studentNameElement = row.querySelector('[data-control-name="txtStudentName"]');
   return studentNameElement?.textContent?.trim() || '';
 }
 
+/** Gets the queue row from a Grade action button. */
 export function getQueueRowFromActionButton(button) {
   if (!button || typeof button.closest !== 'function') return null;
   return button.closest('[data-control-name="ActionButtons"]')?.parentElement || null;
 }
 
+/** Gets the queue row from a Complete button with fallback selectors. */
 export function getQueueRowFromCompleteButton(completeButton) {
   if (!completeButton || typeof completeButton.closest !== 'function') return null;
 
@@ -53,15 +57,18 @@ export function getQueueRowFromCompleteButton(completeButton) {
   return completeControl.closest('[data-control-name="ColumnLabels"]')?.parentElement || completeControl.parentElement || null;
 }
 
+/** Normalises a student name to a lookup key (trimmed string). */
 export function getStudentKey(studentName) {
   return String(studentName || '').trim();
 }
 
+/** Returns the first enabled grade button in the queue, or null. */
 export function getFirstAvailableGradeButton() {
   const gradeButtons = Array.from(document.querySelectorAll('[data-control-name="GraderButton"] button'));
   return gradeButtons.find((button) => !button.disabled && button.isConnected) || null;
 }
 
+/** Gets the grading status <select> element from a queue row. */
 export function getGradingStatusSelect(row) {
   if (!row) return null;
   const select = row.querySelector('[data-control-name="GradingStatusCmbx"] select');
@@ -72,6 +79,7 @@ export function getGradingStatusSelect(row) {
   return select;
 }
 
+/** Returns the value of the "Already Graded" option from a grading status select. */
 export function getAlreadyGradedOptionValue(gradingStatusSelect) {
   if (!gradingStatusSelect) return null;
 
@@ -88,6 +96,7 @@ export function getAlreadyGradedOptionValue(gradingStatusSelect) {
   return alreadyGradedOption.value;
 }
 
+/** Counts how many items are currently in the queue by student name elements. */
 export function getCurrentQueueItemCount() {
   const studentNameElements = Array.from(document.querySelectorAll('[data-control-name="txtStudentName"]'));
   return studentNameElements.filter((element) => {
@@ -96,6 +105,7 @@ export function getCurrentQueueItemCount() {
   }).length;
 }
 
+/** Waits until a DOM element is removed from the document. */
 export function waitForElementRemoval(element, timeoutMs = 15000) {
   return observeUntil(() => !element || !element.isConnected, {
     timeout: timeoutMs,
@@ -103,6 +113,7 @@ export function waitForElementRemoval(element, timeoutMs = 15000) {
   });
 }
 
+/** Attempts to click the first available grade button. Returns true on success. */
 export function tryClickFirstGradeButton() {
   const firstAvailable = getFirstAvailableGradeButton();
   if (!firstAvailable) {

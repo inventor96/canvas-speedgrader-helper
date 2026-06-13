@@ -1,9 +1,11 @@
 import { ensureHighlightStyles } from './highlight-utils.js';
 import { buildTextNodes, getRangeBetweenOffsets, scrollIntoView } from './text-range-utils.js';
 
+/** Selector for discussion post message elements. */
 const ELEMENT_SELECTOR = '.discussion_entry > .content > .message.user_content';
 const SEPARATOR = '\n\n---\n\n';
 
+/** Extracts all text from discussion posts, separated by a horizontal rule marker. */
 export function getText() {
   try {
     const messageElements = document.querySelectorAll(ELEMENT_SELECTOR);
@@ -18,6 +20,7 @@ export function getText() {
   }
 }
 
+/** Applies CSS custom highlights to matching character ranges in discussion posts. */
 export function applyHighlights(ranges, cssHighlightName) {
   try {
     if (!ranges || ranges.length === 0) {
@@ -35,6 +38,7 @@ export function applyHighlights(ranges, cssHighlightName) {
       throw new Error('No discussion posts found for highlighting');
     }
 
+    // Build text node index and convert character offsets to DOM ranges
     const { textNodes } = buildTextNodes(messageElements, SEPARATOR);
 
     const domRanges = [];

@@ -1,8 +1,10 @@
+/** Options page main content width constraint. */
 main {
   max-width: 720px;
   margin: 0 auto
 }
 
+/** Placeholder list as a vertical stack. */
 #placeholders-list {
   display: flex;
   flex-direction: column;
@@ -10,6 +12,7 @@ main {
   margin: 8px 0 12px
 }
 
+/** Student names list as a vertical stack. */
 #students-list {
   display: flex;
   flex-direction: column;
@@ -17,18 +20,21 @@ main {
   margin: 8px 0 12px;
 }
 
+/** Individual placeholder row: input + remove button. */
 .placeholder-item {
   display: flex;
   gap: 8px;
   align-items: center
 }
 
+/** Individual student row: ID, name, remove button. */
 .student-item {
   display: flex;
   gap: 8px;
   align-items: center;
 }
 
+/** Read-only student ID field styling. */
 .student-item .student-id {
   width: 140px;
   padding: 6px 8px;
@@ -37,6 +43,7 @@ main {
   background: #fafafa;
 }
 
+/** Editable student name field. */
 .student-item .student-name {
   flex: 1;
   padding: 6px 8px;
@@ -44,6 +51,7 @@ main {
   border-radius: 4px;
 }
 
+/** Generic placeholder input styling. */
 .placeholder-item input {
   flex: 1;
   padding: 6px 8px;
@@ -51,10 +59,12 @@ main {
   border-radius: 4px
 }
 
+/** Button control container spacing. */
 .controls {
   margin-bottom: 8px
 }
 
+/** Import results summary box. */
 .import-results {
   margin: 8px 0 12px;
   padding: 8px 10px;
@@ -63,6 +73,7 @@ main {
   background: #ddd;
 }
 
+/** Conflict list styling. */
 #import-conflicts {
   margin: 6px 0 0;
   padding-left: 18px;
@@ -70,6 +81,7 @@ main {
   font-size: 0.9rem;
 }
 
+/** Save button and status row. */
 .actions {
   margin-top: 12px;
   display: flex;
@@ -77,6 +89,7 @@ main {
   align-items: center
 }
 
+/** Save status feedback text. */
 #status {
   color: var(--muted);
   font-size: 0.9rem

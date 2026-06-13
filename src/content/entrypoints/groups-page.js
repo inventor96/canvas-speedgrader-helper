@@ -1,18 +1,21 @@
 import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
 import { observeUntil } from '@/shared/observe-until.js';
 
+/** Selectors for the Canvas Groups page DOM. */
 const SEARCH_INPUT_SELECTOR = '[data-testid="group-search-input"]';
 const GROUPS_CONTAINER_SELECTOR = 'div.student-groups';
 const GROUP_HEADER_CLASS = 'student-groups-header';
 const GROUP_BODY_CLASS = 'student-group-body';
 const GROUP_MEMBER_SELECTOR = 'span.screenreader-only';
 
+/** Time budget for various groups page operations. */
 const MAX_WAIT_FOR_RESULTS_MS = 10000;
 const QUIET_WINDOW_MS = 700;
 const MAX_WAIT_FOR_SEARCH_INPUT_MS = 10000;
 const GROUPS_READY_POLL_MS = 250;
 const GROUPS_READY_MAX_WAIT_MS = 6000;
 
+/** Lowercases and normalises whitespace for name comparison. */
 function normalizeName(name) {
   return String(name || '')
     .trim()
@@ -20,6 +23,7 @@ function normalizeName(name) {
     .replace(/\s+/g, ' ');
 }
 
+/** Sets an input's value using the native setter to trigger React's onChange. */
 function setInputValue(input, nextValue) {
   const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
   if (nativeSetter) {
@@ -29,6 +33,7 @@ function setInputValue(input, nextValue) {
   }
 }
 
+/** Fires keydown, input, and keyup events to simulate real user typing in the search field. */
 function fireSearchEvents(input, value) {
   const stringValue = String(value || '');
   const lastChar = stringValue.slice(-1);
@@ -66,6 +71,7 @@ function fireSearchEvents(input, value) {
   }));
 }
 
+/** Waits for debounced DOM mutations to settle (quiet window + max timeout). */
 function waitForDebouncedResults() {
   return new Promise((resolve) => {
     const startedAt = Date.now();
@@ -93,6 +99,7 @@ function waitForDebouncedResults() {
       quietTimer = setTimeout(finalize, QUIET_WINDOW_MS);
     };
 
+    // Watch DOM for mutations and reset the quiet timer each time
     observer = new MutationObserver(() => {
       scheduleQuietResolve();
     });
@@ -108,12 +115,14 @@ function waitForDebouncedResults() {
   });
 }
 
+/** Waits for the groups search input element to appear in the DOM. */
 async function waitForSearchInput() {
   return observeUntil(() => document.querySelector(SEARCH_INPUT_SELECTOR), {
     timeout: MAX_WAIT_FOR_SEARCH_INPUT_MS,
   });
 }
 
+/** Parses the current groups page DOM into an array of { header, memberNames }. */
 function parseGroups() {
   const groups = [];
   const containers = document.querySelectorAll(GROUPS_CONTAINER_SELECTOR);
@@ -145,6 +154,7 @@ function parseGroups() {
   return groups;
 }
 
+/** Checks if any group contains a member matching the target name. */
 function hasTargetName(groups, targetName) {
   const normalizedTarget = normalizeName(targetName);
   if (!normalizedTarget) return false;
@@ -152,6 +162,10 @@ function hasTargetName(groups, targetName) {
   return groups.some((group) => group.memberNames.some((member) => normalizeName(member) === normalizedTarget));
 }
 
+/**
+ * Polls the groups DOM until both target names are found, or the groups
+ * structure has stabilised, or the max wait time elapses.
+ */
 async function waitForGroupsToLoad(queuedName, speedgraderName) {
   const startedAt = Date.now();
   let lastSignature = '';
@@ -177,10 +191,12 @@ async function waitForGroupsToLoad(queuedName, speedgraderName) {
       bestGroups = groups;
     }
 
+    // Exit early if both target names are found
     if (queuedFound || speedgraderFound) {
       return groups;
     }
 
+    // Exit if groups exist and have been stable for 2+ consecutive polls
     if ((groups.length > 0 || totalMembers > 0) && stablePollCount >= 2) {
       return groups;
     }
@@ -191,6 +207,7 @@ async function waitForGroupsToLoad(queuedName, speedgraderName) {
   return bestGroups;
 }
 
+/** Determines whether both names belong to the same group. */
 function evaluateSameGroup(groups, queuedName, speedgraderName) {
   const normalizedQueued = normalizeName(queuedName);
   const normalizedSpeedgrader = normalizeName(speedgraderName);
@@ -211,6 +228,7 @@ function evaluateSameGroup(groups, queuedName, speedgraderName) {
   };
 }
 
+/** Sends the groups check result back via chrome.runtime.sendMessage. */
 async function notifyComplete(payload) {
   try {
     await chrome.runtime.sendMessage({
@@ -220,11 +238,13 @@ async function notifyComplete(payload) {
   } catch (e) {}
 }
 
+/** Main entry point: fetches pending context, searches the groups page, and reports the result. */
 async function run() {
   if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
     return;
   }
 
+  // Retrieve the pending check context from the service worker
   let contextResponse;
   try {
     contextResponse = await chrome.runtime.sendMessage({
@@ -250,6 +270,7 @@ async function run() {
     return;
   }
 
+  // Wait for the search input, then search for the queued student name
   const searchInput = await waitForSearchInput();
   if (!searchInput) {
     await notifyComplete({
@@ -263,6 +284,7 @@ async function run() {
   fireSearchEvents(searchInput, queuedName);
   await waitForDebouncedResults();
 
+  // Wait for groups to render, evaluate, and report
   const groups = await waitForGroupsToLoad(queuedName, speedgraderName);
   const evaluation = evaluateSameGroup(groups, queuedName, speedgraderName);
 

@@ -1,5 +1,10 @@
+/** Prefix applied to all extension console output. */
 const PREFIX = '[CSH]'
 
+/**
+ * Prepends the CSH prefix to the first argument if it's a string,
+ * otherwise passes the prefix as a separate argument.
+ */
 function formatArgs(args) {
   if (args.length === 0) return [PREFIX]
 
@@ -11,6 +16,7 @@ function formatArgs(args) {
   return [PREFIX, ...args]
 }
 
+/** Namespaced console wrapper that tags all output with [CSH]. */
 export const logger = {
   log(...args) {
     console.log(...formatArgs(args))

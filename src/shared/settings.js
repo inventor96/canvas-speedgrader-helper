@@ -1,3 +1,4 @@
+/** Synced settings (per-install preferences). Each key maps to a toggle or stored value. */
 export const SYNCED_SETTINGS = {
   placeholders: ["STUDENT_NAME"],
   openRubricForUngraded: true,
@@ -27,6 +28,7 @@ export const SYNCED_SETTINGS = {
   savedPointsMeta: { lastUsed: {} },
 };
 
+/** Local-only settings (per-device, not synced). */
 export const LOCAL_SETTINGS = {
   studentNames: {},
   studentNamesMeta: { lastUsed: {} },
