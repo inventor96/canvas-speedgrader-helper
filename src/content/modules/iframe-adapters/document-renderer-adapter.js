@@ -19,14 +19,10 @@ function waitForTextLayers(timeoutMs = 15000, settleMs = 800) {
   return new Promise((resolve, reject) => {
     let finished = false;
     let observer = null;
-    let intervalId = null;
     let settleTimerId = null;
     let settled = false;
-    let spansSeen = false;
-
     const cleanup = () => {
       clearTimeout(timeoutId);
-      if (intervalId !== null) clearInterval(intervalId);
       if (observer) observer.disconnect();
       if (settleTimerId !== null) clearTimeout(settleTimerId);
     };
@@ -49,12 +45,6 @@ function waitForTextLayers(timeoutMs = 15000, settleMs = 800) {
       finish(textLayers, null);
     };
 
-    const kickSettleTimer = () => {
-      if (finished || settled) return;
-      if (settleTimerId !== null) clearTimeout(settleTimerId);
-      settleTimerId = setTimeout(markSettled, settleMs);
-    };
-
     const onMutation = () => {
       const textLayers = document.querySelectorAll(ELEMENT_SELECTOR);
 
@@ -65,10 +55,6 @@ function waitForTextLayers(timeoutMs = 15000, settleMs = 800) {
         }
         settled = false;
         return;
-      }
-
-      if (!spansSeen) {
-        spansSeen = true;
       }
 
       if (settled) return;
@@ -90,15 +76,6 @@ function waitForTextLayers(timeoutMs = 15000, settleMs = 800) {
         subtree: true,
       });
     }
-
-    intervalId = setInterval(() => {
-      if (spansSeen) return;
-      const textLayers = document.querySelectorAll(ELEMENT_SELECTOR);
-      if (hasTextSpans(textLayers)) {
-        spansSeen = true;
-        kickSettleTimer();
-      }
-    }, 250);
 
     onMutation();
   });

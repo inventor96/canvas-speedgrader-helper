@@ -1,3 +1,4 @@
+import { observeUntil } from '../../shared/observe-until.js';
 import { get } from './settings-store.js';
 import { attachCommentLibraryHandler } from './comment-library-controller.js';
 import { attachAutoFillListeners, attachCommentLibraryChangeListeners } from './points-memory.js';
@@ -56,27 +57,11 @@ async function scrollToFirstCriterionIfEnabled() {
   scrollToFirstCriterionRow();
 }
 
-function waitForRubricTableDisplayed(timeoutMs = 6000, pollMs = 150) {
-  return new Promise((resolve) => {
-    const rubricSelector = 'div.rubric_summary,[data-testid="rubric-assessment-traditional-view"]';
-    const endTime = Date.now() + timeoutMs;
-
-    const check = () => {
-      const rubricTable = document.querySelector(rubricSelector);
-      if (rubricTable) {
-        resolve(true);
-        return;
-      }
-
-      if (Date.now() >= endTime) {
-        resolve(false);
-        return;
-      }
-
-      setTimeout(check, pollMs);
-    };
-
-    check();
+function waitForRubricTableDisplayed(timeoutMs = 6000) {
+  const rubricSelector = 'div.rubric_summary,[data-testid="rubric-assessment-traditional-view"]';
+  return observeUntil(() => document.querySelector(rubricSelector), {
+    timeout: timeoutMs,
+    container: document.querySelector('#assessment') || document.body,
   });
 }
 

@@ -1,12 +1,12 @@
 import { CSH_MESSAGE_TYPES } from '../../shared/message-types.js';
+import { observeUntil } from '../../shared/observe-until.js';
 import { get } from './settings-store.js';
-import { escapeHtml, normalizeName } from './helpers/dom-utils.js';
+import { escapeHtml, normalizeName, waitForElement } from './helpers/dom-utils.js';
 import { getCurrentStudentNameFromPage } from './student-name-service.js';
 
 let _groupsResultListenerAttached = false;
 let _pendingTripletLookup = null;
 const GROUP_INDICATOR_WAIT_MS = 3500;
-const GROUP_INDICATOR_POLL_MS = 200;
 
 export function getCurrentTripletContext() {
   try {
@@ -97,26 +97,8 @@ function isGroupAssignmentDetected() {
   return !!groupModeRadio || wholeGroupNotice;
 }
 
-function waitForGroupIndicators(timeoutMs = GROUP_INDICATOR_WAIT_MS, pollMs = GROUP_INDICATOR_POLL_MS) {
-  return new Promise((resolve) => {
-    const endTime = Date.now() + timeoutMs;
-
-    const check = () => {
-      if (isGroupAssignmentDetected()) {
-        resolve(true);
-        return;
-      }
-
-      if (Date.now() >= endTime) {
-        resolve(false);
-        return;
-      }
-
-      setTimeout(check, pollMs);
-    };
-
-    check();
-  });
+function waitForGroupIndicators(timeoutMs = GROUP_INDICATOR_WAIT_MS) {
+  return observeUntil(isGroupAssignmentDetected, { timeout: timeoutMs });
 }
 
 function getOrCreateWarningContainer() {
@@ -417,7 +399,7 @@ async function showStudentNameMismatchWarning(queuedName, speedgraderName) {
   }
 }
 
-export function checkQueuedStudentName(retryCount = 0, maxRetries = 20) {
+export function checkQueuedStudentName() {
   const queued = get('queuedStudentName');
 
   if (!queued || !queued.name) {
@@ -428,27 +410,30 @@ export function checkQueuedStudentName(retryCount = 0, maxRetries = 20) {
   const currentName = getCurrentStudentNameFromPage(true);
 
   if (!currentName) {
-    if (retryCount < maxRetries) {
-      console.log(`CSH: Student name not available yet, retrying... (${retryCount + 1}/${maxRetries})`);
-      setTimeout(() => checkQueuedStudentName(retryCount + 1, maxRetries), 1000);
-    } else {
-      console.warn('CSH: Could not get current student name from SpeedGrader after maximum retries');
-    }
+    const STUDENT_SELECTOR = 'button[data-testid="student-select-trigger"] [data-testid="selected-student"]';
+    waitForElement(STUDENT_SELECTOR, 20000).then(() => {
+      const name = getCurrentStudentNameFromPage(true);
+      if (name) finishStudentNameCheck(queued.name, name);
+    });
     return;
   }
 
+  finishStudentNameCheck(queued.name, currentName);
+}
+
+function finishStudentNameCheck(queuedName, currentName) {
   try {
     window.postMessage({ type: CSH_MESSAGE_TYPES.CLEAR_QUEUED_STUDENT }, '*');
   } catch (e) {
     console.warn('CSH: Failed to send clear queued student message', e);
   }
 
-  if (currentName.trim().toLowerCase() !== queued.name.trim().toLowerCase()) {
+  if (currentName.trim().toLowerCase() !== queuedName.trim().toLowerCase()) {
     if (get('notifyOnStudentNameMismatch')) {
-      showStudentNameMismatchWarning(queued.name, currentName);
+      showStudentNameMismatchWarning(queuedName, currentName);
     }
   } else {
     console.log('CSH: Student names match! \u2713');
-    checkMatchedStudentNameForCachedGroupContext(queued.name);
+    checkMatchedStudentNameForCachedGroupContext(queuedName);
   }
 }

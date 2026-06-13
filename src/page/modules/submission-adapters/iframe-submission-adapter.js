@@ -1,7 +1,6 @@
 import { CSH_MESSAGE_TYPES } from '../../../shared/message-types.js';
 
 const REQUEST_TIMEOUT_MS = 20000;
-const READY_TIMEOUT_MS = 15000;
 
 let _iframeElement = null;
 const _pendingRequests = new Map();
@@ -9,8 +8,6 @@ let _ready = false;
 let _readyCallbacks = [];
 let _iframeLoaded = false;
 let _childAdapterReady = false;
-let _readyTimeoutId = null;
-let _readyRequestIntervalId = null;
 let _messageListenerAttached = false;
 let _handleMessage = null;
 
@@ -34,28 +31,12 @@ export function whenReady(callback) {
 function markReady() {
   if (_ready) return;
   _ready = true;
-  if (_readyTimeoutId !== null) {
-    clearTimeout(_readyTimeoutId);
-    _readyTimeoutId = null;
-  }
-  if (_readyRequestIntervalId !== null) {
-    clearInterval(_readyRequestIntervalId);
-    _readyRequestIntervalId = null;
-  }
   const cbs = _readyCallbacks;
   _readyCallbacks = [];
   cbs.forEach((cb) => cb());
 }
 
 export function init(submissionElement) {
-  if (_readyTimeoutId !== null) {
-    clearTimeout(_readyTimeoutId);
-    _readyTimeoutId = null;
-  }
-  if (_readyRequestIntervalId !== null) {
-    clearInterval(_readyRequestIntervalId);
-    _readyRequestIntervalId = null;
-  }
   _ready = false;
   _iframeLoaded = false;
   _childAdapterReady = false;
@@ -84,57 +65,26 @@ function waitForIframeReady() {
     _iframeElement.addEventListener('load', checkIframeLoaded, { once: true });
   }
 
-  startReadyRequests();
-  startReadyTimeout();
+  // Send one ready request to prompt the child adapter to respond
+  sendReadyRequest();
   checkBothReady();
+}
+
+function sendReadyRequest() {
+  if (!_iframeElement || !_iframeElement.contentWindow) {
+    return;
+  }
+  try {
+    _iframeElement.contentWindow.postMessage({
+      type: CSH_MESSAGE_TYPES.IFRAME_SUBMISSION_READY_REQUEST,
+    }, '*');
+  } catch (e) {}
 }
 
 function checkBothReady() {
   if (_childAdapterReady) {
     markReady();
   }
-}
-
-function sendReadyAck() {
-  if (!_iframeElement || !_iframeElement.contentWindow) {
-    return;
-  }
-
-  try {
-    _iframeElement.contentWindow.postMessage({
-      type: CSH_MESSAGE_TYPES.IFRAME_SUBMISSION_READY_ACK,
-    }, '*');
-  } catch (e) {}
-}
-
-function startReadyRequests() {
-  const sendReadyRequest = () => {
-    if (_ready || !_iframeElement || !_iframeElement.contentWindow) {
-      return;
-    }
-    try {
-      _iframeElement.contentWindow.postMessage({
-        type: CSH_MESSAGE_TYPES.IFRAME_SUBMISSION_READY_REQUEST,
-      }, '*');
-    } catch (e) {}
-  };
-
-  sendReadyRequest();
-  _readyRequestIntervalId = setInterval(sendReadyRequest, 1000);
-}
-
-function startReadyTimeout() {
-  if (_readyTimeoutId !== null) {
-    clearTimeout(_readyTimeoutId);
-  }
-
-  _readyTimeoutId = setTimeout(() => {
-    if (_ready) return;
-    if (_readyRequestIntervalId !== null) {
-      clearInterval(_readyRequestIntervalId);
-      _readyRequestIntervalId = null;
-    }
-  }, READY_TIMEOUT_MS);
 }
 
 export function getText() {
@@ -204,7 +154,6 @@ function setupMessageListener() {
       }
 
       if (msg.type === CSH_MESSAGE_TYPES.IFRAME_SUBMISSION_ADAPTER_READY) {
-        sendReadyAck();
         if (_childAdapterReady) {
           return;
         }
@@ -251,14 +200,6 @@ export function destroy() {
   _readyCallbacks = [];
   _iframeLoaded = false;
   _childAdapterReady = false;
-  if (_readyTimeoutId !== null) {
-    clearTimeout(_readyTimeoutId);
-    _readyTimeoutId = null;
-  }
-  if (_readyRequestIntervalId !== null) {
-    clearInterval(_readyRequestIntervalId);
-    _readyRequestIntervalId = null;
-  }
 }
 
 export const IframeSubmissionAdapter = { canHandle, init, whenReady, getText, applyHighlights, scrollIntoView, destroy };

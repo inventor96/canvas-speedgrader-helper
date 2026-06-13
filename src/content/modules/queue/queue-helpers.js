@@ -1,3 +1,5 @@
+import { observeUntil } from '../../../shared/observe-until.js';
+
 export function getQueueRowByStudentName(studentName) {
   if (!studentName) {
     console.warn('CSH: No student name provided');
@@ -94,29 +96,9 @@ export function getCurrentQueueItemCount() {
 }
 
 export function waitForElementRemoval(element, timeoutMs = 15000) {
-  return new Promise((resolve) => {
-    if (!element || !element.isConnected) {
-      resolve(true);
-      return;
-    }
-
-    const timeoutId = setTimeout(() => {
-      observer.disconnect();
-      resolve(false);
-    }, timeoutMs);
-
-    const observer = new MutationObserver(() => {
-      if (!element.isConnected) {
-        clearTimeout(timeoutId);
-        observer.disconnect();
-        resolve(true);
-      }
-    });
-
-    observer.observe(document.documentElement, {
-      childList: true,
-      subtree: true,
-    });
+  return observeUntil(() => !element || !element.isConnected, {
+    timeout: timeoutMs,
+    container: document.documentElement,
   });
 }
 

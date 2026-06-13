@@ -122,6 +122,8 @@ export function waitForTinyMCE() {
       attachEditorHook(e.editor);
     });
 
+    // Safety net: re-scan for TinyMCE editors registered before our
+    // `AddEditor` listener was attached, or in edge cases TinyMCE misses
     setInterval(() => attachToExistingEditors(), 5000);
     return;
   }

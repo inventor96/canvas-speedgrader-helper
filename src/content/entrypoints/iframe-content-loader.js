@@ -3,8 +3,6 @@ import { HIGHLIGHT_CONFIG } from '../../shared/highlight-config.js';
 import { DocumentRendererAdapter } from '../modules/iframe-adapters/document-renderer-adapter.js';
 import { DiscussionPostsAdapter } from '../modules/iframe-adapters/discussion-posts-adapter.js';
 
-let readyNotificationIntervalId = null;
-
 const ADAPTER_MAP = {
   'document-renderer': DocumentRendererAdapter,
   'discussion-posts': DiscussionPostsAdapter,
@@ -72,11 +70,6 @@ function setupMessageListener(adapterName) {
 
       const msg = event.data;
       if (!msg || !msg.type) {
-        return;
-      }
-
-      if (msg.type === CSH_MESSAGE_TYPES.IFRAME_SUBMISSION_READY_ACK) {
-        stopReadyNotifications();
         return;
       }
 
@@ -164,30 +157,6 @@ function notifyParentReady(adapterName) {
   }
 }
 
-function stopReadyNotifications() {
-  if (readyNotificationIntervalId === null) {
-    return;
-  }
-
-  clearInterval(readyNotificationIntervalId);
-  readyNotificationIntervalId = null;
-}
-
-function startReadyNotifications(adapterName) {
-  let attempts = 0;
-  const maxAttempts = 20;
-
-  stopReadyNotifications();
-  notifyParentReady(adapterName);
-  readyNotificationIntervalId = setInterval(() => {
-    attempts += 1;
-    notifyParentReady(adapterName);
-    if (attempts >= maxAttempts) {
-      stopReadyNotifications();
-    }
-  }, 500);
-}
-
 function initialize() {
   try {
     const iframeType = detectIframeType();
@@ -204,7 +173,7 @@ function initialize() {
       if (err) {
         return;
       }
-      startReadyNotifications(loadedAdapterName);
+      notifyParentReady(loadedAdapterName);
     });
   } catch (e) {}
 }

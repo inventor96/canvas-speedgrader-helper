@@ -132,33 +132,35 @@ function attachSyncedSettingsChangeListener() {
   });
 }
 
-function retryOpenNextAfterQueueLoad(maxChecks = 15, intervalMs = 1000) {
+function retryOpenNextAfterQueueLoad(timeoutMs = 15000) {
   if (_queueRepopulationRetryActive) {
     console.log('CSH: Queue repopulation retry already active; skipping duplicate retry');
     return;
   }
 
   _queueRepopulationRetryActive = true;
-  let checksCompleted = 0;
 
-  const checkForGradeButton = () => {
+  if (tryClickFirstGradeButton()) {
+    _queueRepopulationRetryActive = false;
+    console.log('CSH: Opened next queue item after queue repopulation');
+    return;
+  }
+
+  const observer = new MutationObserver(() => {
     if (tryClickFirstGradeButton()) {
+      observer.disconnect();
+      clearTimeout(timeoutId);
       _queueRepopulationRetryActive = false;
       console.log('CSH: Opened next queue item after queue repopulation');
-      return;
     }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
 
-    checksCompleted += 1;
-    if (checksCompleted >= maxChecks) {
-      _queueRepopulationRetryActive = false;
-      console.warn('CSH: Queue repopulation retry timed out after 15 seconds');
-      return;
-    }
-
-    setTimeout(checkForGradeButton, intervalMs);
-  };
-
-  setTimeout(checkForGradeButton, intervalMs);
+  const timeoutId = setTimeout(() => {
+    observer.disconnect();
+    _queueRepopulationRetryActive = false;
+    console.warn('CSH: Queue repopulation retry timed out');
+  }, timeoutMs);
 }
 
 function waitForSelectValueByStudentName(
@@ -349,7 +351,7 @@ function maybeOpenNextQueueItemAfterComplete(completeButton, studentName) {
 
     const didClickLoadQueue = clickLoadQueueButton();
     if (didClickLoadQueue && shouldAutoOpenNextQueueItem) {
-      retryOpenNextAfterQueueLoad(15, 1000);
+      retryOpenNextAfterQueueLoad(15000);
     }
   });
 }

@@ -7,6 +7,7 @@ import { handleRubricFunctionality } from '../modules/rubric-controller.js';
 import { attachGroupsResultListener, checkQueuedStudentName } from '../modules/notification-ui.js';
 import { check } from '../modules/name-sanity-check.js';
 import { getNext } from '../modules/highlight-class-selector.js';
+import { waitForElement } from '../modules/helpers/dom-utils.js';
 
 function initializeAllFeatures() {
   whenReady((api) => {
@@ -104,13 +105,11 @@ function initializeAllFeatures() {
   if (get('enableNameSanityCheck')) {
     try {
       setTimeout(() => {
-        const tryCheck = (retry = 0) => {
-          check();
-          if (retry < 20 && !document.querySelector('button[data-testid="student-select-trigger"] [data-testid="selected-student"]')) {
-            setTimeout(() => tryCheck(retry + 1), 1000);
-          }
-        };
-        tryCheck();
+        const STUDENT_SELECTOR = 'button[data-testid="student-select-trigger"] [data-testid="selected-student"]';
+        check();
+        waitForElement(STUDENT_SELECTOR, 20000).then((el) => {
+          if (el) check();
+        });
       }, 1000);
     } catch (e) {
       console.error('Error initializing name sanity check:', e);

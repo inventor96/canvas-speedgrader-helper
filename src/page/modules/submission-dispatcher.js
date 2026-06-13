@@ -1,3 +1,4 @@
+import { observeUntil } from '../../shared/observe-until.js';
 import { IframeSubmissionAdapter } from './submission-adapters/iframe-submission-adapter.js';
 
 const SUBMISSION_CONTAINER_SELECTOR = 'article.speedgrader-preview-frame';
@@ -103,51 +104,10 @@ function startInit() {
 }
 
 function waitForSubmissionElement(selector) {
-  const findElement = () => document.querySelector(selector);
-  const existing = findElement();
-  if (existing) {
-    return Promise.resolve(existing);
-  }
-
-  return new Promise((resolve, reject) => {
-    let finished = false;
-    let observer = null;
-    let intervalId = null;
-
-    const finish = (element, error) => {
-      if (finished) return;
-      finished = true;
-      clearTimeout(timeoutId);
-      if (intervalId !== null) clearInterval(intervalId);
-      if (observer) observer.disconnect();
-      if (error) {
-        reject(error);
-      } else {
-        resolve(element);
-      }
-    };
-
-    const check = () => {
-      const element = findElement();
-      if (element) {
-        finish(element, null);
-      }
-    };
-
-    const timeoutId = setTimeout(() => {
-      finish(null, new Error('SubmissionDispatcher: Submission element not found'));
-    }, SUBMISSION_WAIT_TIMEOUT_MS);
-
-    if (document.body || document.documentElement) {
-      observer = new MutationObserver(check);
-      observer.observe(document.body || document.documentElement, {
-        childList: true,
-        subtree: true,
-      });
-    }
-
-    intervalId = setInterval(check, 250);
-    check();
+  return observeUntil(() => document.querySelector(selector), {
+    timeout: SUBMISSION_WAIT_TIMEOUT_MS,
+    rejectOnTimeout: true,
+    timeoutError: 'SubmissionDispatcher: Submission element not found',
   });
 }
 

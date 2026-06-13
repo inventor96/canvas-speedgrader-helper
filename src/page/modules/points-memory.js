@@ -129,6 +129,8 @@ export function attachCommentLibraryChangeListeners() {
       previousDropdownValue = dropdown.value;
 
       if (!pollingInterval) {
+        // Polling because change/input events don't fire reliably on this
+        // dropdown (Canvas UI framework / custom element implementation quirk)
         pollingInterval = setInterval(checkAndPrepopulatePoints, 500);
       }
     }, '__pointsPrePopulateFocusListenerAttached');

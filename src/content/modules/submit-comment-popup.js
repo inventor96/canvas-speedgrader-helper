@@ -1,4 +1,5 @@
 import { CSH_MESSAGE_TYPES } from '../../shared/message-types.js';
+import { observeUntil } from '../../shared/observe-until.js';
 import { getCurrentCanvasStudentFullName } from './settings-injector.js';
 
 let closeSpeedgraderTabAfterSubmitCommentEnabled = false;
@@ -16,36 +17,8 @@ function getPersistedCommentCount() {
 }
 
 function waitForPersistedCommentCountIncrease(previousCount, timeoutMs = 15000) {
-  return new Promise((resolve) => {
-    const hasIncreased = () => getPersistedCommentCount() > previousCount;
-
-    if (hasIncreased()) {
-      resolve(true);
-      return;
-    }
-
-    let finished = false;
-
-    const finish = (result) => {
-      if (finished) return;
-      finished = true;
-      clearTimeout(timeoutId);
-      observer.disconnect();
-      resolve(result);
-    };
-
-    const observer = new MutationObserver(() => {
-      if (hasIncreased()) {
-        finish(true);
-      }
-    });
-
-    observer.observe(document.body || document.documentElement, {
-      childList: true,
-      subtree: true,
-    });
-
-    const timeoutId = setTimeout(() => finish(false), timeoutMs);
+  return observeUntil(() => getPersistedCommentCount() > previousCount, {
+    timeout: timeoutMs,
   });
 }
 

@@ -1,4 +1,5 @@
 import { CSH_MESSAGE_TYPES } from '../../shared/message-types.js';
+import { observeUntil } from '../../shared/observe-until.js';
 
 const SEARCH_INPUT_SELECTOR = '[data-testid="group-search-input"]';
 const GROUPS_CONTAINER_SELECTOR = 'div.student-groups';
@@ -9,7 +10,6 @@ const GROUP_MEMBER_SELECTOR = 'span.screenreader-only';
 const MAX_WAIT_FOR_RESULTS_MS = 10000;
 const QUIET_WINDOW_MS = 700;
 const MAX_WAIT_FOR_SEARCH_INPUT_MS = 10000;
-const SEARCH_INPUT_POLL_MS = 150;
 const GROUPS_READY_POLL_MS = 250;
 const GROUPS_READY_MAX_WAIT_MS = 6000;
 
@@ -93,14 +93,6 @@ function waitForDebouncedResults() {
       quietTimer = setTimeout(finalize, QUIET_WINDOW_MS);
     };
 
-    const tick = () => {
-      if (Date.now() - startedAt >= MAX_WAIT_FOR_RESULTS_MS) {
-        finalize();
-        return;
-      }
-      window.setTimeout(tick, 150);
-    };
-
     observer = new MutationObserver(() => {
       scheduleQuietResolve();
     });
@@ -112,23 +104,14 @@ function waitForDebouncedResults() {
     });
 
     scheduleQuietResolve();
-    tick();
+    window.setTimeout(finalize, MAX_WAIT_FOR_RESULTS_MS);
   });
 }
 
 async function waitForSearchInput() {
-  const startedAt = Date.now();
-
-  while (Date.now() - startedAt < MAX_WAIT_FOR_SEARCH_INPUT_MS) {
-    const input = document.querySelector(SEARCH_INPUT_SELECTOR);
-    if (input) {
-      return input;
-    }
-
-    await new Promise((resolve) => window.setTimeout(resolve, SEARCH_INPUT_POLL_MS));
-  }
-
-  return null;
+  return observeUntil(() => document.querySelector(SEARCH_INPUT_SELECTOR), {
+    timeout: MAX_WAIT_FOR_SEARCH_INPUT_MS,
+  });
 }
 
 function parseGroups() {

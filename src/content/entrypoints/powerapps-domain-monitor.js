@@ -97,38 +97,45 @@ function escapeHtml(text) {
   return text.replace(/[&<>"']/g, m => map[m]);
 }
 
-function pollForIframe() {
+function checkIframeDomain() {
   const iframe = document.getElementById('fullscreen-app-host');
+  if (!iframe) return;
 
-  if (iframe) {
-    try {
-      const iframeSrc = iframe.src;
+  try {
+    const iframeSrc = iframe.src;
+    if (!iframeSrc) return;
 
-      if (iframeSrc) {
-        const domain = extractDomain(iframeSrc);
+    const domain = extractDomain(iframeSrc);
+    if (!domain || isKnownDomain(domain)) return;
 
-        if (domain && !isKnownDomain(domain)) {
-          setTimeout(() => {
-            const currentDomain = extractDomain(iframe.src);
-            if (currentDomain && !isKnownDomain(currentDomain)) {
-              showDomainNotification(currentDomain);
-            }
-          }, 5000);
-        }
+    setTimeout(() => {
+      const currentDomain = extractDomain(iframe.src);
+      if (currentDomain && !isKnownDomain(currentDomain)) {
+        showDomainNotification(currentDomain);
       }
-    } catch (e) {
-      console.warn('Error checking iframe domain:', e);
-    }
-  } else {
-    console.log('Iframe not found, retrying...');
-    setTimeout(pollForIframe, 500);
+    }, 5000);
+  } catch (e) {
+    console.warn('Error checking iframe domain:', e);
   }
 }
 
+function watchForIframe() {
+  if (document.getElementById('fullscreen-app-host')) {
+    checkIframeDomain();
+    return;
+  }
+
+  const observer = new MutationObserver(() => {
+    if (document.getElementById('fullscreen-app-host')) {
+      observer.disconnect();
+      checkIframeDomain();
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', pollForIframe);
-  console.log('Waiting for DOM to load before starting iframe polling...');
+  document.addEventListener('DOMContentLoaded', watchForIframe);
 } else {
-  pollForIframe();
-  console.log('DOM already loaded, starting iframe polling...');
+  watchForIframe();
 }
