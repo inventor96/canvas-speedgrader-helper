@@ -93,7 +93,7 @@ function waitForTextLayers(timeoutMs = 15000, settleMs = 800) {
 export async function getText() {
   try {
     const textLayers = await waitForTextLayers();
-    const { text } = buildTextNodes(textLayers, SEPARATOR);
+    const { text } = buildTextNodes(textLayers, SEPARATOR, { insertSpaces: true });
 
     logger.log('DocumentRendererAdapter: extracted text summary', {
       textLayerCount: textLayers.length,
@@ -124,7 +124,7 @@ export function applyHighlights(ranges, cssHighlightName) {
       throw new Error('No text layers found for highlighting');
     }
 
-    const { textNodes } = buildTextNodes(textLayers, SEPARATOR);
+    const { textNodes } = buildTextNodes(textLayers, SEPARATOR, { insertSpaces: true });
 
     const domRanges = [];
     ranges.forEach((range) => {

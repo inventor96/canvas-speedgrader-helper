@@ -1,8 +1,14 @@
 /**
  * Walks a set of DOM elements, flattens all text nodes into an indexed array,
  * and builds a contiguous text string separated by `separator`.
+ *
+ * When `options.insertSpaces` is true, a single space is inserted between
+ * consecutive text nodes within the same element when neither side already
+ * carries whitespace at the boundary. This is needed for e.g. PDF text layers
+ * where each word lives in its own `<span>` without inter-span whitespace.
  */
-export function buildTextNodes(elements, separator) {
+export function buildTextNodes(elements, separator, options = {}) {
+  const { insertSpaces = false } = options;
   const textNodes = [];
   const partTexts = [];
   let charOffset = 0;
@@ -17,9 +23,18 @@ export function buildTextNodes(elements, separator) {
 
     let node;
     let partText = '';
+    let prevEndsWithSpace = false;
+
     while ((node = walker.nextNode())) {
       const content = node.textContent;
       if (content.length > 0) {
+        const curStartsWithSpace = /^\s/.test(content);
+
+        if (insertSpaces && partText.length > 0 && !prevEndsWithSpace && !curStartsWithSpace) {
+          partText += ' ';
+          charOffset += 1;
+        }
+
         textNodes.push({
           node,
           startOffset: charOffset,
@@ -27,6 +42,7 @@ export function buildTextNodes(elements, separator) {
         });
         charOffset += content.length;
         partText += content;
+        prevEndsWithSpace = /\s$/.test(content);
       }
     }
     partTexts.push(partText);
