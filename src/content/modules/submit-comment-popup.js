@@ -190,6 +190,16 @@ const SubmitCommentPopup = (() => {
 
   function init() {
     if (_el) return;
+    if (!document.body) {
+      const observer = new MutationObserver(() => {
+        if (document.body) {
+          observer.disconnect();
+          init();
+        }
+      });
+      observer.observe(document.documentElement, { childList: true, subtree: true });
+      return;
+    }
     _el = _create();
 
     document.addEventListener('mouseover', (event) => {
