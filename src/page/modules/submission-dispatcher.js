@@ -60,7 +60,7 @@ function createApi() {
 function markReady() {
   if (_ready) return;
   _ready = true;
-  const cbs = _readyCallbacks;
+  const cbs = _readyCallbacks.slice();
   _readyCallbacks.length = 0;
   const api = createApi();
   cbs.forEach((cb) => cb(api));

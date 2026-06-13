@@ -4,10 +4,14 @@ import { DocumentRendererAdapter } from '@/content/modules/iframe-adapters/docum
 import { DiscussionPostsAdapter } from '@/content/modules/iframe-adapters/discussion-posts-adapter.js';
 import { logger } from '@/shared/logger.js';
 
+// Keys match getAdapterName() output so loadAdapter / setupMessageListener can
+// look up the correct adapter object via the human-readable name.
 const ADAPTER_MAP = {
-  'document-renderer': DocumentRendererAdapter,
-  'discussion-posts': DiscussionPostsAdapter,
+  'DocumentRendererAdapter': DocumentRendererAdapter,
+  'DiscussionPostsAdapter': DiscussionPostsAdapter,
 };
+
+let _readyNotificationIntervalId = null;
 
 function detectIframeType() {
   const url = window.location.href || '';
@@ -158,6 +162,33 @@ function notifyParentReady(adapterName) {
   }
 }
 
+// Retry ready notifications so the parent does not miss the one-time signal
+// in rare timing edge cases (e.g. if the parent's message listener is not yet
+// attached when the first notification fires). The parent deduplicates via
+// its own _childAdapterReady guard, so extra sends are harmless.
+function startReadyNotifications(adapterName) {
+  let attempts = 0;
+  const MAX_ATTEMPTS = 5;
+
+  stopReadyNotifications();
+  notifyParentReady(adapterName);
+  _readyNotificationIntervalId = setInterval(() => {
+    attempts += 1;
+    if (attempts >= MAX_ATTEMPTS) {
+      stopReadyNotifications();
+      return;
+    }
+    notifyParentReady(adapterName);
+  }, 500);
+}
+
+function stopReadyNotifications() {
+  if (_readyNotificationIntervalId !== null) {
+    clearInterval(_readyNotificationIntervalId);
+    _readyNotificationIntervalId = null;
+  }
+}
+
 function initialize() {
   try {
     const iframeType = detectIframeType();
@@ -174,7 +205,7 @@ function initialize() {
       if (err) {
         return;
       }
-      notifyParentReady(loadedAdapterName);
+      startReadyNotifications(loadedAdapterName);
     });
   } catch (e) {}
 }
