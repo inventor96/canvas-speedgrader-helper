@@ -22,6 +22,9 @@ I'm too lazy to publish this in the Chrome Web Store, so you have to load it as 
 5. Click "Load unpacked" and select the folder where you saved the extracted files.
 
 ### Updates
+
+To be notified of updates, you can "Watch" the repository on GitHub and select "Releases only" notifications.
+
 To update the extension with the latest features and fixes, download the latest zip file from the [releases page](https://github.com/inventor96/canvas-speedgrader-helper/releases), and replace everything in your existing extension folder with the extraction of the new zip file. Then reload the extension in `chrome://extensions`.
 
 ## Options Page Overview
