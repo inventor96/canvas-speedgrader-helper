@@ -61,6 +61,7 @@ function initializeAllFeatures() {
 
           logger.log('Applying ' + ranges.length + ' random highlight(s) individually...');
 
+          const classNames = [];
           let completed = 0;
           ranges.forEach((r, i) => {
             const snippet = text.slice(r.start, r.end).replace(/\s+/g, ' ').trim();
@@ -70,6 +71,8 @@ function initializeAllFeatures() {
               return;
             }
 
+            classNames[i] = className;
+
             logger.log('  Range ' + (i + 1) + ': chars ' + r.start + '\u2013' + r.end + ' \u2192 "' + snippet.slice(0, 60) + (snippet.length > 60 ? '\u2026' : '') + '" (' + className + ')');
             logger.log('  Range ' + (i + 1) + ' expected [' + className + ']: "' + text.slice(r.start, r.end) + '"');
 
@@ -78,6 +81,16 @@ function initializeAllFeatures() {
                 completed++;
                 if (completed === ranges.length) {
                   logger.log('All ' + ranges.length + ' highlights applied successfully!');
+
+                  // Pick a random highlight and scroll to the start of it
+                  const pick = Math.floor(Math.random() * ranges.length);
+                  const { start, end } = ranges[pick];
+                  const scrollClassName = classNames[pick];
+                  const scrollSnippet = text.slice(start, end).replace(/\s+/g, ' ').trim();
+                  logger.log('Scrolling to highlight ' + (pick + 1) + ': offset ' + start + ' (' + scrollClassName + ') \u2192 "' + scrollSnippet.slice(0, 60) + (scrollSnippet.length > 60 ? '\u2026' : '') + '"');
+                  api.scrollIntoViewByOffset(start).catch((err) => {
+                    logger.error('Scroll failed:', err.message);
+                  });
                 }
               })
               .catch((err) => {
