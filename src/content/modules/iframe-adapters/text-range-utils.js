@@ -101,20 +101,79 @@ export function getRangeBetweenOffsets(textNodes, startOffset, endOffset) {
   return range;
 }
 
-/** Scrolls the first element matching `selector` into view with optional behaviour. */
-export function scrollIntoView(selector, options = {}) {
-  try {
-    const element = document.querySelector(selector);
-    if (!element) {
-      throw new Error(`Element not found with selector: ${selector}`);
+/**
+ * Walks up from an element to find the nearest scrollable ancestor.
+ */
+function findScrollContainer(el) {
+  let current = el.parentElement;
+  while (current) {
+    const style = window.getComputedStyle(current);
+    if (
+      style.overflowY === 'auto' || style.overflowY === 'scroll' ||
+      style.overflow === 'auto' || style.overflow === 'scroll'
+    ) {
+      return current;
     }
-
-    element.scrollIntoView({
-      behavior: options.behavior || 'smooth',
-      block: options.block || 'start',
-      inline: options.inline || 'nearest',
-    });
-  } catch (e) {
-    throw new Error(`scrollIntoView failed: ${e.message}`);
+    current = current.parentElement;
   }
+  return document.scrollingElement || document.documentElement;
+}
+
+/**
+ * Scrolls so that the text at `charOffset` appears 25% from the top of
+ * the visible scroll area. Elements/separator/buildOptions mirror the
+ * parameters passed to `buildTextNodes` for consistent indexing.
+ */
+export function scrollIntoViewByOffset(elements, charOffset, separator, buildOptions = {}, scrollOptions = {}) {
+  const { textNodes } = buildTextNodes(elements, separator, buildOptions);
+
+  if (textNodes.length === 0) {
+    throw new Error('scrollIntoViewByOffset: no text nodes found');
+  }
+
+  let targetNode = null;
+
+  // Try exact match first
+  for (const tn of textNodes) {
+    if (charOffset >= tn.startOffset && charOffset < tn.endOffset) {
+      targetNode = tn.node;
+      break;
+    }
+  }
+
+  if (!targetNode) {
+    // Clamp or fall forward
+    if (charOffset < textNodes[0].startOffset) {
+      targetNode = textNodes[0].node;
+    } else if (charOffset >= textNodes[textNodes.length - 1].endOffset) {
+      targetNode = textNodes[textNodes.length - 1].node;
+    } else {
+      // In a separator gap — fall forward to the next text node
+      for (const tn of textNodes) {
+        if (charOffset < tn.startOffset) {
+          targetNode = tn.node;
+          break;
+        }
+      }
+      if (!targetNode) {
+        targetNode = textNodes[textNodes.length - 1].node;
+      }
+    }
+  }
+
+  const targetElement = targetNode.parentElement;
+  const container = findScrollContainer(targetElement);
+  const tRect = targetElement.getBoundingClientRect();
+  const cRect = container.getBoundingClientRect();
+
+  const relativeTop = tRect.top - cRect.top;
+  const viewportHeight = container === document.documentElement
+    ? window.innerHeight
+    : container.clientHeight;
+  const delta = relativeTop - viewportHeight * 0.25; // 25% down from the top
+
+  container.scrollBy({
+    top: delta,
+    behavior: scrollOptions.behavior || 'smooth',
+  });
 }

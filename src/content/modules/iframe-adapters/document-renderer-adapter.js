@@ -1,5 +1,5 @@
 import { ensureHighlightStyles } from './highlight-utils.js';
-import { buildTextNodes, getRangeBetweenOffsets, scrollIntoView } from './text-range-utils.js';
+import { buildTextNodes, getRangeBetweenOffsets, scrollIntoViewByOffset as scrollIntoViewByOffsetUtil } from './text-range-utils.js';
 import { logger } from '@/shared/logger.js';
 
 /** Selector for PDF text layer elements. */
@@ -145,6 +145,16 @@ export function applyHighlights(ranges, cssHighlightName) {
   }
 }
 
-export { scrollIntoView };
+export function scrollIntoViewByOffset(charOffset, scrollOptions = {}) {
+  try {
+    const textLayers = document.querySelectorAll(ELEMENT_SELECTOR);
+    if (textLayers.length === 0) {
+      throw new Error('No text layers found');
+    }
+    scrollIntoViewByOffsetUtil(textLayers, charOffset, SEPARATOR, { insertSpaces: true }, scrollOptions);
+  } catch (e) {
+    throw new Error(`DocumentRendererAdapter scrollIntoViewByOffset failed: ${e.message}`);
+  }
+}
 
-export const DocumentRendererAdapter = { getText, applyHighlights, scrollIntoView };
+export const DocumentRendererAdapter = { getText, applyHighlights, scrollIntoViewByOffset };

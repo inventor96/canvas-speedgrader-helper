@@ -103,10 +103,10 @@ export function applyHighlights(ranges, cssHighlightName) {
   });
 }
 
-export function scrollIntoView(selector, options = {}) {
+export function scrollIntoViewByOffset(charOffset, options = {}) {
   return new Promise((resolve, reject) => {
     whenReady(() => {
-      sendIframeRequest('scrollIntoView', { selector, options }).then(resolve).catch(reject);
+      sendIframeRequest('scrollIntoViewByOffset', { charOffset, options }).then(resolve).catch(reject);
     });
   });
 }
@@ -202,4 +202,4 @@ export function destroy() {
   _childAdapterReady = false;
 }
 
-export const IframeSubmissionAdapter = { canHandle, init, whenReady, getText, applyHighlights, scrollIntoView, destroy };
+export const IframeSubmissionAdapter = { canHandle, init, whenReady, getText, applyHighlights, scrollIntoViewByOffset, destroy };

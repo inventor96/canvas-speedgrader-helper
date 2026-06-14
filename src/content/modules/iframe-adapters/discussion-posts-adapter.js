@@ -1,5 +1,5 @@
 import { ensureHighlightStyles } from './highlight-utils.js';
-import { buildTextNodes, getRangeBetweenOffsets, scrollIntoView } from './text-range-utils.js';
+import { buildTextNodes, getRangeBetweenOffsets, scrollIntoViewByOffset as scrollIntoViewByOffsetUtil } from './text-range-utils.js';
 
 /** Selector for discussion post message elements. */
 const ELEMENT_SELECTOR = '.discussion_entry > .content > .message.user_content';
@@ -60,6 +60,16 @@ export function applyHighlights(ranges, cssHighlightName) {
   }
 }
 
-export { scrollIntoView };
+export function scrollIntoViewByOffset(charOffset, scrollOptions = {}) {
+  try {
+    const messageElements = document.querySelectorAll(ELEMENT_SELECTOR);
+    if (messageElements.length === 0) {
+      throw new Error('No discussion posts found');
+    }
+    scrollIntoViewByOffsetUtil(messageElements, charOffset, SEPARATOR, {}, scrollOptions);
+  } catch (e) {
+    throw new Error(`DiscussionPostsAdapter scrollIntoViewByOffset failed: ${e.message}`);
+  }
+}
 
-export const DiscussionPostsAdapter = { getText, applyHighlights, scrollIntoView };
+export const DiscussionPostsAdapter = { getText, applyHighlights, scrollIntoViewByOffset };

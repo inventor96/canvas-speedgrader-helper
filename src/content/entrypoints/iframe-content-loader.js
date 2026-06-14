@@ -104,7 +104,7 @@ function setupMessageListener(adapterName) {
   });
 }
 
-/** Dispatches a submission request (getText, applyHighlights, scrollIntoView) to the adapter. */
+/** Dispatches a submission request (getText, applyHighlights, scrollIntoViewByOffset) to the adapter. */
 async function handleRequest(adapter, msg) {
   const { requestId, action, params } = msg;
 
@@ -115,8 +115,8 @@ async function handleRequest(adapter, msg) {
       result = adapter.getText();
     } else if (action === 'applyHighlights') {
       result = adapter.applyHighlights(params.ranges, params.cssHighlightName);
-    } else if (action === 'scrollIntoView') {
-      result = adapter.scrollIntoView(params.selector, params.options);
+    } else if (action === 'scrollIntoViewByOffset') {
+      result = adapter.scrollIntoViewByOffset(params.charOffset, params.options);
     } else {
       sendError(requestId, `Unknown action: ${action}`);
       return;

@@ -52,13 +52,13 @@ function createApi() {
         throw err;
       });
     },
-    /** Scroll to an element matching selector within the submission */
-    scrollIntoView: (selector, options = {}) => {
+    /** Scroll the text at the given character offset to 25% from viewport top */
+    scrollIntoViewByOffset: (charOffset, options = {}) => {
       if (!adapter) return Promise.reject(new Error('SubmissionDispatcher: No active adapter'));
-      return adapter.scrollIntoView(selector, options).then((result) => {
+      return adapter.scrollIntoViewByOffset(charOffset, options).then((result) => {
         return result;
       }).catch((err) => {
-        logger.error('SubmissionDispatcher API: scrollIntoView rejected:', err.message);
+        logger.error('SubmissionDispatcher API: scrollIntoViewByOffset rejected:', err.message);
         throw err;
       });
     },
