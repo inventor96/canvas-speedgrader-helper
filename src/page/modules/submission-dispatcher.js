@@ -92,10 +92,14 @@ function startInit() {
       registerBuiltinAdapters();
 
       // Pick the first adapter that can handle this submission type
-      const adapter = selectAdapter();
-      if (!adapter) {
-        throw new Error('SubmissionDispatcher: No adapter found for current submission type');
-      }
+      // Use observeUntil so the DOM has time to settle — e.g. the container element
+      // may appear before a child <iframe> is dynamically injected
+      const adapter = await observeUntil(() => selectAdapter(), {
+        container: _submissionElement,
+        timeout: 3000,
+        rejectOnTimeout: true,
+        timeoutError: 'SubmissionDispatcher: No adapter found for current submission type',
+      });
 
       // Initialize the chosen adapter and mark ready when its sub-initialization completes
       adapter.init(_submissionElement);
