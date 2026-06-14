@@ -68,17 +68,33 @@ export function getRangeBetweenOffsets(textNodes, startOffset, endOffset) {
 
   let startNode = null;
   let startNodeOffset = 0;
+  let startIdx = -1;
   let endNode = null;
   let endNodeOffset = 0;
+  let endIdx = -1;
 
-  // Find the text node containing the start offset
+  // Find the text node containing the start offset.
+  // If startOffset falls in a separator gap (no text node covers it),
+  // fall forward to the next text node (start of the respective post).
   for (let i = 0; i < textNodes.length; i++) {
     const tn = textNodes[i];
     if (startOffset >= tn.startOffset && startOffset < tn.endOffset) {
       startNode = tn.node;
       startNodeOffset = startOffset - tn.startOffset;
+      startIdx = i;
       break;
     }
+    if (startOffset < tn.startOffset) {
+      // separator gap before this node — start at the beginning of this post
+      startNode = tn.node;
+      startNodeOffset = 0;
+      startIdx = i;
+      break;
+    }
+  }
+
+  if (!startNode) {
+    return null;
   }
 
   // Find the text node containing the end offset
@@ -87,11 +103,30 @@ export function getRangeBetweenOffsets(textNodes, startOffset, endOffset) {
     if (endOffset > tn.startOffset && endOffset <= tn.endOffset) {
       endNode = tn.node;
       endNodeOffset = endOffset - tn.startOffset;
+      endIdx = i;
       break;
     }
   }
 
-  if (!startNode || !endNode) {
+  // If endOffset falls in a separator gap, fall backward to the previous
+  // text node (end of the respective post).
+  if (!endNode) {
+    for (let i = textNodes.length - 1; i >= 0; i--) {
+      if (endOffset > textNodes[i].endOffset) {
+        endNode = textNodes[i].node;
+        endNodeOffset = textNodes[i].endOffset - textNodes[i].startOffset;
+        endIdx = i;
+        break;
+      }
+    }
+  }
+
+  if (!endNode) {
+    return null;
+  }
+
+  // After gap adjustments, verify that start still precedes end
+  if (startIdx > endIdx || (startIdx === endIdx && startNodeOffset >= endNodeOffset)) {
     return null;
   }
 
