@@ -66,7 +66,10 @@ export function scrollIntoViewByOffset(charOffset, scrollOptions = {}) {
     if (messageElements.length === 0) {
       throw new Error('No discussion posts found');
     }
-    scrollIntoViewByOffsetUtil(messageElements, charOffset, SEPARATOR, {}, scrollOptions);
+    scrollIntoViewByOffsetUtil(messageElements, charOffset, SEPARATOR, {}, {
+      ...scrollOptions,
+      container: scrollOptions.container || document.scrollingElement,
+    });
   } catch (e) {
     throw new Error(`DiscussionPostsAdapter scrollIntoViewByOffset failed: ${e.message}`);
   }

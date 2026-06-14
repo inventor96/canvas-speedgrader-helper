@@ -158,6 +158,10 @@ function findScrollContainer(el) {
  * Scrolls so that the text at `charOffset` appears 25% from the top of
  * the visible scroll area. Elements/separator/buildOptions mirror the
  * parameters passed to `buildTextNodes` for consistent indexing.
+ *
+ * `scrollOptions` may include `behavior` (passed to `scrollBy`) and
+ * `container` (an explicit scroll container override; when absent the
+ * utility walks up from the target element via `findScrollContainer`).
  */
 export function scrollIntoViewByOffset(elements, charOffset, separator, buildOptions = {}, scrollOptions = {}) {
   const { textNodes } = buildTextNodes(elements, separator, buildOptions);
@@ -197,12 +201,12 @@ export function scrollIntoViewByOffset(elements, charOffset, separator, buildOpt
   }
 
   const targetElement = targetNode.parentElement;
-  const container = findScrollContainer(targetElement);
+  const container = scrollOptions.container || findScrollContainer(targetElement);
   const tRect = targetElement.getBoundingClientRect();
   const cRect = container.getBoundingClientRect();
 
   const relativeTop = tRect.top - cRect.top;
-  const viewportHeight = container === document.documentElement
+  const viewportHeight = (container === document.documentElement || container === document.body)
     ? window.innerHeight
     : container.clientHeight;
   const delta = relativeTop - viewportHeight * 0.25; // 25% down from the top
