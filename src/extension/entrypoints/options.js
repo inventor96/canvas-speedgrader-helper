@@ -1,4 +1,4 @@
-import { SYNCED_SETTINGS } from '@/shared/settings.js';
+import { SYNCED_SETTINGS, LOCAL_SETTINGS } from '@/shared/settings.js';
 import { saveStudentNamesWithPrune, initializeLimits } from '@/shared/storage-utils.js';
 
 /** Creates a single placeholder list item with an input and remove button. */
@@ -102,6 +102,20 @@ function loadPlaceholders() {
     const format = data && data.studentNameFormat ? data.studentNameFormat : SYNCED_SETTINGS.studentNameFormat;
     const formatRadio = document.querySelector(`input[name="student-name-format"][value="${format}"]`);
     if (formatRadio) formatRadio.checked = true;
+  });
+}
+
+/** Reads local-only AI settings and populates the AI form controls. */
+function loadLocalSettings() {
+  chrome.storage.local.get(LOCAL_SETTINGS, (data) => {
+    const enableAiCb = document.getElementById('enable-ai');
+    if (enableAiCb) enableAiCb.checked = !!data.aiEnabled;
+
+    const endpointInput = document.getElementById('ai-endpoint-url');
+    if (endpointInput) endpointInput.value = data.aiEndpointUrl || '';
+
+    const modelInput = document.getElementById('ai-model');
+    if (modelInput) modelInput.value = data.aiModel || '';
   });
 }
 
@@ -307,6 +321,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Load existing settings and student names
   loadPlaceholders();
+  loadLocalSettings();
   loadStudents();
 
   // Add placeholder button
@@ -332,7 +347,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Save all settings to chrome.storage.sync
+  // Save all settings to chrome.storage
   document.getElementById('save').addEventListener('click', () => {
     const inputs = Array.from(document.querySelectorAll('.placeholder-input')).map(i => i.value.trim()).filter(Boolean);
     const toSave = inputs.length ? inputs : SYNCED_SETTINGS.placeholders;
@@ -360,7 +375,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const autoClickLoadQueueEveryHourWhenLessThanTenItems = !!document.getElementById('auto-click-load-queue-every-hour-when-less-than-ten-items') && document.getElementById('auto-click-load-queue-every-hour-when-less-than-ten-items').checked;
     const studentNameFormat = document.querySelector('input[name="student-name-format"]:checked')?.value || SYNCED_SETTINGS.studentNameFormat;
 
-    // Save students first, then synced settings
+    // AI local settings
+    const aiEnabled = !!document.getElementById('enable-ai') && document.getElementById('enable-ai').checked;
+    const aiEndpointUrl = (document.getElementById('ai-endpoint-url')?.value || '').trim();
+    const aiModel = (document.getElementById('ai-model')?.value || '').trim();
+
+    // Save students first, then synced settings, then local settings
     saveStudentsFromDOM(() => {
       chrome.storage.sync.set({
         placeholders: toSave,
@@ -388,9 +408,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         autoClickLoadQueueEveryHourWhenLessThanTenItems: autoClickLoadQueueEveryHourWhenLessThanTenItems,
         studentNameFormat: studentNameFormat
       }, () => {
-        const status = document.getElementById('status');
-        status.textContent = 'Saved';
-        setTimeout(() => (status.textContent = ''), 1500);
+        // Save local AI settings after synced settings complete
+        chrome.storage.local.set({
+          aiEnabled,
+          aiEndpointUrl,
+          aiModel,
+        }, () => {
+          const status = document.getElementById('status');
+          status.textContent = 'Saved';
+          setTimeout(() => (status.textContent = ''), 1500);
+        });
       });
     });
   });

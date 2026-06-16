@@ -59,6 +59,17 @@ main {
   border-radius: 4px
 }
 
+/** AI settings text inputs. */
+.ai-input {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-sizing: border-box;
+  margin-top: 4px;
+}
+
 /** Button control container spacing. */
 .controls {
   margin-bottom: 8px

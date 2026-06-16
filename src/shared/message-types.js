@@ -37,4 +37,8 @@ export const CSH_MESSAGE_TYPES = {
 
   // Iframe content → parent (adapter readiness signal)
   IFRAME_SUBMISSION_ADAPTER_READY: 'CSH_IFRAME_SUBMISSION_ADAPTER_READY',
+
+  // LLM chat request/response (Page → Content Script → Service Worker)
+  LLM_CHAT_REQUEST: 'CSH_LLM_CHAT_REQUEST',
+  LLM_CHAT_RESULT: 'CSH_LLM_CHAT_RESULT',
 };

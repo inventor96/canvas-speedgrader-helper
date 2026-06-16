@@ -227,6 +227,34 @@ window.addEventListener('message', (event) => {
         void chrome.runtime?.lastError;
       });
     }
+
+    // === Forward LLM chat request to the service worker ===
+    if (msg.type === CSH_MESSAGE_TYPES.LLM_CHAT_REQUEST) {
+      if (!chrome.runtime || !chrome.runtime.sendMessage) return;
+      const messages = Array.isArray(msg.messages) ? msg.messages : [];
+      if (messages.length === 0) return;
+
+      const requestId = msg.requestId || '';
+
+      chrome.runtime.sendMessage({
+        type: CSH_MESSAGE_TYPES.LLM_CHAT_REQUEST,
+        messages,
+        options: msg.options || {},
+      }, (response) => {
+        const error = chrome.runtime?.lastError?.message || (response && response.error) || null;
+
+        try {
+          window.postMessage({
+            type: CSH_MESSAGE_TYPES.LLM_CHAT_RESULT,
+            requestId,
+            response: response?.response || null,
+            disabled: !!response?.disabled,
+            error,
+          }, '*');
+        } catch (e) {}
+      });
+      return;
+    }
   } catch (e) {}
 });
 
@@ -272,7 +300,23 @@ if (chrome.runtime && chrome.runtime.onMessage) {
         return true;
       }
 
-      if (!msg || msg.type !== CSH_MESSAGE_TYPES.GROUPS_CHECK_RESULT) return;
+      if (!msg) return;
+
+      if (msg.type === CSH_MESSAGE_TYPES.LLM_CHAT_RESULT) {
+        // Relay LLM result to the MAIN world
+        try {
+          window.postMessage({
+            type: CSH_MESSAGE_TYPES.LLM_CHAT_RESULT,
+            requestId: msg.requestId || '',
+            response: msg.response || null,
+            disabled: !!msg.disabled,
+            error: msg.error || null,
+          }, '*');
+        } catch (e) {}
+        return;
+      }
+
+      if (msg.type !== CSH_MESSAGE_TYPES.GROUPS_CHECK_RESULT) return;
 
       // Relay groups check result to the MAIN world
       const sameGroup = !!msg.sameGroup;

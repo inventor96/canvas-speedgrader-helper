@@ -1,6 +1,7 @@
 import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
 import { getGroupTripletCacheKey, pruneGroupTripletCache, withGroupTripletCache, groupTripletCache, persistGroupTripletCache } from './group-triplet-cache.js';
 import { PENDING_CHECK_TTL_MS, pendingGroupsChecks, normalizeCourseGroupsUrl, safeSendToTab, closeTabIfPresent } from './groups-check-state.js';
+import { sendChatRequest } from './llm-service.js';
 
 /** Removes expired pending checks and prunes stale triplet cache entries. */
 function cleanupStaleChecks() {
@@ -215,6 +216,29 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     sendResponse({ ok: true });
     return;
+  }
+
+  // === LLM Chat Request: forward to the configured endpoint ===
+  if (message.type === CSH_MESSAGE_TYPES.LLM_CHAT_REQUEST) {
+    const messages = Array.isArray(message.messages) ? message.messages : [];
+    if (messages.length === 0) {
+      sendResponse({ ok: false, error: 'No messages provided.' });
+      return;
+    }
+
+    sendChatRequest(messages, message.options || {})
+      .then((response) => {
+        if (response === null) {
+          sendResponse({ ok: true, disabled: true, response: null });
+        } else {
+          sendResponse({ ok: true, disabled: false, response });
+        }
+      })
+      .catch((err) => {
+        sendResponse({ ok: false, error: err.message });
+      });
+
+    return true;
   }
 
   sendResponse({ ok: false, error: `Unhandled message type: ${message.type}` });
