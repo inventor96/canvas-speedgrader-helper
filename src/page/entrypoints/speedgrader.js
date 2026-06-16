@@ -8,12 +8,13 @@ import { handleRubricFunctionality } from '@/page/modules/rubric-controller.js';
 import { attachGroupsResultListener, checkQueuedStudentName } from '@/page/modules/notification-ui.js';
 import { check } from '@/page/modules/name-sanity-check.js';
 import { waitForElement } from '@/page/modules/helpers/dom-utils.js';
+import { initRubricHighlighting } from '@/page/modules/rubric-highlight-controller.js';
 
 /** Initialises all SpeedGrader feature modules once settings are available. */
 function initializeAllFeatures() {
-  // API readiness callback — use api.getText(), api.applyHighlights(),
-  // api.scrollIntoViewByOffset() here once features need them.
-  whenReady(() => {});
+  whenReady((api) => {
+    initRubricHighlighting(api);
+  });
 
   waitForTinyMCE();
 

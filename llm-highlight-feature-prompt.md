@@ -39,8 +39,19 @@ submission the content relevant to a specific rubric aspect is located.
 You do not assign scores. Return only valid JSON with no preamble or markdown.
 
 User:
-RUBRIC ASPECT:
-[aspect description]
+RUBRIC CRITERIA:
+[criteria title + description]
+
+POSSIBLE QUALITY LEVELS FOR THIS CRITERIA (for context only — 
+do not search for one specific level; the submission may fall 
+anywhere on this spectrum, including not at all):
+- [Rating description]: [long description]
+- [Rating description]: [long description]
+- [Rating description]: [long description]
+
+Your job is to locate where the submission addresses this criteria, 
+regardless of how well it does so. If no part of the submission 
+addresses this criteria at all, set found to false.
 
 SUBMISSION TEXT:
 [full submission text]

@@ -16,21 +16,30 @@ function formatArgs(args) {
   return [PREFIX, ...args]
 }
 
+/** Canvas uses sentry for APM, which overrides the standard console methods. This function ensures we use the original console methods. */
+function getConsoleMethodInstance(method) {
+  let methodInstance = console[method]
+  while (methodInstance && methodInstance.__sentry_original__) {
+    methodInstance = methodInstance.__sentry_original__
+  }
+  return methodInstance || console[method]
+}
+
 /** Namespaced console wrapper that tags all output with [CSH]. */
 export const logger = {
   log(...args) {
-    console.log(...formatArgs(args))
+    getConsoleMethodInstance('log')(...formatArgs(args))
   },
   warn(...args) {
-    console.warn(...formatArgs(args))
+    getConsoleMethodInstance('warn')(...formatArgs(args))
   },
   error(...args) {
-    console.error(...formatArgs(args))
+    getConsoleMethodInstance('error')(...formatArgs(args))
   },
   info(...args) {
-    console.info(...formatArgs(args))
+    getConsoleMethodInstance('info')(...formatArgs(args))
   },
   debug(...args) {
-    console.debug(...formatArgs(args))
+    getConsoleMethodInstance('debug')(...formatArgs(args))
   },
 }

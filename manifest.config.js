@@ -27,6 +27,8 @@ export default defineManifest({
   },
   // Hosts the extension may access (Canvas, PowerApps)
   host_permissions: [
+    'http://localhost:*/*',
+    'http://127.0.0.1:*/*',
     'https://*.instructure.com/*',
     'https://apps.powerapps.com/*',
     'https://runtime-app.powerapps.com/*',
