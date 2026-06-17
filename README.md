@@ -89,6 +89,15 @@ These options apply only to unstructured rubrics without preset point values:
 - **Import/Export CSV**: Back up or migrate preferred names using CSV files.
 - **Name format sanity check**: When enabled, the extension detects all-uppercase or all-lowercase names and offers to save a properly formatted preferred name (e.g. `JOHN DOE` → `John Doe`, `mary-jane` → `Mary-Jane`). The check is skipped when a preferred name is already saved for the student.
 
+### AI Settings
+
+These settings are stored locally and are not synced between devices. AI features are designed to work with a local [Ollama](https://ollama.com/) instance (or any OpenAI-compatible API) so that student data never leaves your machine, helping comply with privacy regulations like FERPA.
+
+- **Endpoint URL**: The base URL of your Ollama instance (default `http://localhost:11434`). Must point to an Ollama server or another OpenAI-compatible API.
+- **Model**: Select a model from the dropdown. Click **Refresh models** to fetch the list of available models from the endpoint. The model must support JSON-mode output (Ollama's `format: json`).
+- **Keep-Alive (minutes)**: How long to keep the model loaded in memory after the last request (5–360 minutes, default 60). This affects response latency — a higher value keeps the model warm between rubric rows but uses more GPU memory.
+- **Enable AI functionality**: Master toggle. Only available when both an endpoint URL and a model are configured. When disabled, all AI-powered features (marked with ‡) are inactive.
+
 ## Popup (Quick Preferred Name)
 
 The toolbar popup lets you set or clear a preferred name for the current student while you are on a SpeedGrader page. This is a quick shortcut to the preferred-name list in settings.
