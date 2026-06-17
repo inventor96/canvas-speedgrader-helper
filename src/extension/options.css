@@ -87,6 +87,10 @@ main {
   margin-bottom: 6px;
 }
 
+.ai-keep-alive-input {
+  max-width: 120px;
+}
+
 /** Button control container spacing. */
 .controls {
   margin-bottom: 8px

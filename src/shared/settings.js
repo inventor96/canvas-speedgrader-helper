@@ -36,4 +36,5 @@ export const LOCAL_SETTINGS = {
   aiEnabled: false,
   aiEndpointUrl: 'http://localhost:11434',
   aiModel: '',
+  aiKeepAlive: 60,
 };

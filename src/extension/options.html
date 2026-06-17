@@ -224,6 +224,11 @@
           <p class="muted small">Select the model to use for AI requests. Click "Refresh models" to fetch the available models from the endpoint above.</p>
         </div>
         <div style="margin:8px 0 12px">
+          <label for="ai-keep-alive">Keep-Alive (minutes)</label>
+          <input id="ai-keep-alive" type="number" class="ai-input ai-keep-alive-input" min="5" max="360" />
+          <p class="muted small">How long to keep the model loaded in memory after the last request (Ollama's keep_alive setting). Min: 5, Max: 360 (6 hours). Default: 60.</p>
+        </div>
+        <div style="margin:8px 0 12px">
           <label>
             <input id="enable-ai" type="checkbox" disabled />
             Enable AI functionality

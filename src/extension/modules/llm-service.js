@@ -15,6 +15,7 @@ export function getSettings() {
         aiEnabled: !!data.aiEnabled,
         aiEndpointUrl: data.aiEndpointUrl || DEFAULT_SETTINGS.aiEndpointUrl,
         aiModel: data.aiModel || DEFAULT_SETTINGS.aiModel,
+        aiKeepAlive: data.aiKeepAlive ?? 60,
       });
     });
   });
@@ -35,6 +36,10 @@ export async function sendChatRequest(messages, options = {}) {
     messages,
     stream: false,
   };
+
+  if (settings.aiKeepAlive != null) {
+    payload.keep_alive = settings.aiKeepAlive * 60;
+  }
 
   if (options.useJsonFormat) {
     payload.format = 'json';
