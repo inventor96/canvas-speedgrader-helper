@@ -4,6 +4,7 @@ import { get } from './settings-store.js';
 import { getNext } from './highlight-class-selector.js';
 import { sendLlmChat } from './llm-page-client.js';
 import { findExcerpt } from './excerpt-matcher.js';
+import { getLatestScrollTs } from './structured-rubric-ux.js';
 
 const TABLE_SELECTOR = '[data-testid="rubric-assessment-traditional-view"]';
 const TBODY_SELECTOR = `${TABLE_SELECTOR} table > tbody`;
@@ -11,6 +12,7 @@ const TBODY_SELECTOR = `${TABLE_SELECTOR} table > tbody`;
 let _processing = false;
 let _progressEl = null;
 let _delegationSetUp = false;
+let _scrollObserver = null;
 
 function hexToRgba(hex, alpha) {
   const h = hex.replace('#', '');
@@ -92,6 +94,11 @@ function clearRowHighlights() {
   });
   document.querySelectorAll('.csh-aspect-status').forEach((el) => el.remove());
   document.querySelectorAll('.csh-confidence-warning').forEach((el) => el.remove());
+  document.querySelectorAll('[data-csh-highlight-start]').forEach((el) => {
+    delete el.dataset.cshHighlightStart;
+    delete el.dataset.cshHighlightEnd;
+    delete el.dataset.cshHighlightClass;
+  });
 }
 
 function applyRowHighlight(titleTd, className) {
@@ -256,6 +263,19 @@ async function processOneAspect(criterion, submissionText, api) {
 
   applyRowHighlight(titleTd, className);
 
+  criterion.row.dataset.cshHighlightStart = String(match.start);
+  criterion.row.dataset.cshHighlightEnd = String(match.end);
+  criterion.row.dataset.cshHighlightClass = className;
+
+  if (get('scrollSubmissionToHighlight')) {
+    const scrollTs = criterion.row.dataset.cshRubricScrolled;
+    if (scrollTs && scrollTs === String(getLatestScrollTs())) {
+      api.scrollIntoViewByOffset(match.start, { behavior: 'smooth' }).catch((e) => {
+        logger.error('Submission scroll failed:', e.message);
+      });
+    }
+  }
+
   if (llmResult.confidence != null && llmResult.confidence < 0.5) {
     addConfidenceWarning(titleTd);
   }
@@ -263,6 +283,35 @@ async function processOneAspect(criterion, submissionText, api) {
   clearAspectStatus(titleTd);
   logger.debug('processOneAspect — done');
 }
+
+function handleRubricRowScrolled(row) {
+  if (!get('scrollSubmissionToHighlight')) return;
+  const start = row.dataset.cshHighlightStart;
+  if (start == null) return;
+  const scrollTs = row.dataset.cshRubricScrolled;
+  if (!scrollTs || scrollTs !== String(getLatestScrollTs())) return;
+
+  if (!_apiForScroll) return;
+  _apiForScroll.scrollIntoViewByOffset(parseInt(start, 10), { behavior: 'smooth' }).catch((e) => {
+    logger.error('Submission scroll failed:', e.message);
+  });
+}
+
+function setupScrollObserver(tbody) {
+  if (_scrollObserver) {
+    _scrollObserver.disconnect();
+  }
+  _scrollObserver = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+      if (m.type === 'attributes' && m.attributeName === 'data-csh-rubric-scrolled' && m.target) {
+        handleRubricRowScrolled(m.target);
+      }
+    }
+  });
+  _scrollObserver.observe(tbody, { subtree: true, attributes: true, attributeFilter: ['data-csh-rubric-scrolled'] });
+}
+
+let _apiForScroll = null;
 
 async function startProcessing(api) {
   logger.debug('startProcessing called');
@@ -277,6 +326,9 @@ async function startProcessing(api) {
     _processing = false;
     return;
   }
+
+  _apiForScroll = api;
+  setupScrollObserver(tbody);
 
   const criteria = extractCriteria(tbody);
   logger.debug('startProcessing — criteria count:', criteria.length);

@@ -68,6 +68,9 @@ function loadPlaceholders() {
     const highlightRubricRowSectionCb = document.getElementById('highlight-rubric-row-section');
     if (highlightRubricRowSectionCb) highlightRubricRowSectionCb.checked = !!data.highlightRubricRowSection;
 
+    const scrollSubmissionToHighlightCb = document.getElementById('scroll-submission-to-highlight');
+    if (scrollSubmissionToHighlightCb) scrollSubmissionToHighlightCb.checked = !!data.scrollSubmissionToHighlight;
+
     const rubricAutoScrollToNextCriterionCb = document.getElementById('rubric-auto-scroll-to-next-criterion');
     if (rubricAutoScrollToNextCriterionCb) rubricAutoScrollToNextCriterionCb.checked = !!data.rubricAutoScrollToNextCriterion;
 
@@ -506,6 +509,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const openCommentBoxAfterMaxPoints = !!document.getElementById('open-comment-box-after-max-points') && document.getElementById('open-comment-box-after-max-points').checked;
     const openCommentBoxAfterLessThanMaxPoints = !!document.getElementById('open-comment-box-after-less-than-max-points') && document.getElementById('open-comment-box-after-less-than-max-points').checked;
     const highlightRubricRowSection = !!document.getElementById('highlight-rubric-row-section') && document.getElementById('highlight-rubric-row-section').checked;
+    const scrollSubmissionToHighlight = !!document.getElementById('scroll-submission-to-highlight') && document.getElementById('scroll-submission-to-highlight').checked;
     const rubricAutoScrollToNextCriterion = !!document.getElementById('rubric-auto-scroll-to-next-criterion') && document.getElementById('rubric-auto-scroll-to-next-criterion').checked;
     const rubricAutoScrollToFirstCriterionAfterOpening = !!document.getElementById('rubric-auto-scroll-to-first-criterion-after-opening') && document.getElementById('rubric-auto-scroll-to-first-criterion-after-opening').checked;
     const clearCommentBoxOnMaxPoints = !!document.getElementById('clear-comment-box-on-max-points') && document.getElementById('clear-comment-box-on-max-points').checked;
@@ -537,6 +541,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         openCommentBoxAfterMaxPoints: openCommentBoxAfterMaxPoints,
         openCommentBoxAfterLessThanMaxPoints: openCommentBoxAfterLessThanMaxPoints,
         highlightRubricRowSection: highlightRubricRowSection,
+        scrollSubmissionToHighlight: scrollSubmissionToHighlight,
         rubricAutoScrollToNextCriterion: rubricAutoScrollToNextCriterion,
         rubricAutoScrollToFirstCriterionAfterOpening: rubricAutoScrollToFirstCriterionAfterOpening,
         clearCommentBoxOnMaxPoints: clearCommentBoxOnMaxPoints,

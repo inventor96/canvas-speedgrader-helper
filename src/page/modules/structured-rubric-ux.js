@@ -2,6 +2,10 @@ import { logger } from '@/shared/logger.js';
 import { get } from './settings-store.js';
 import { attachEventListenerIdempotent } from './helpers/dom-utils.js';
 
+let _latestScrollTs = 0;
+
+export function getLatestScrollTs() { return _latestScrollTs; }
+
 /** Returns the rubric assessment tbody (or its container) for traditional rubrics. */
 export function getTraditionalRubricRoot() {
   return document.querySelector('[data-testid="rubric-assessment-traditional-view"] tbody')
@@ -40,6 +44,9 @@ export function scrollRowIntoGradingPanelCenter(targetRow) {
   const clampedTop = Math.min(Math.max(0, nextTop), maxTop);
 
   gradingPanel.scrollTo({ top: clampedTop, behavior: 'smooth' });
+
+  _latestScrollTs = Date.now();
+  targetRow.dataset.cshRubricScrolled = String(_latestScrollTs);
 }
 
 /** Scrolls the Save Rubric Assessment button into view. */
