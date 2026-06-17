@@ -211,20 +211,23 @@
         <p class="muted">Configure the settings below to enable AI-powered features. The AI functionality is built with the assumption that you're running Ollama on your own computer in order to comply with privacy regulations like FERPA. It is ultimately your responsibility to ensure compliance with your AI configuration.</p>
         <p class="muted">If you do not have Ollama or an equivalent AI setup, please leave the "Enable AI functionality" checkbox unchecked, as AI features will not function without a proper AI backend. These settings are stored locally and are not synced between devices in case you have unique setups between devices.</p>
         <div style="margin:8px 0 12px">
-          <label>
-            <input id="enable-ai" type="checkbox" />
-            Enable AI functionality
-          </label>
-        </div>
-        <div style="margin:8px 0 12px">
           <label for="ai-endpoint-url">Endpoint URL</label>
           <input id="ai-endpoint-url" type="text" class="ai-input" />
           <p class="muted small">The base URL of your Ollama instance (or other OpenAI-compatible API).</p>
         </div>
         <div style="margin:8px 0 12px">
+          <button id="refresh-models" type="button" style="margin-bottom: 12px; margin-top: 12px;">Refresh models</button>
           <label for="ai-model">Model</label>
-          <input id="ai-model" type="text" class="ai-input" />
-          <p class="muted small">The model name to use for AI requests.</p>
+          <select id="ai-model" class="ai-input ai-select" disabled>
+            <option value="">Loading models...</option>
+          </select>
+          <p class="muted small">Select the model to use for AI requests. Click "Refresh models" to fetch the available models from the endpoint above.</p>
+        </div>
+        <div style="margin:8px 0 12px">
+          <label>
+            <input id="enable-ai" type="checkbox" disabled />
+            Enable AI functionality
+          </label>
         </div>
       </section>
 

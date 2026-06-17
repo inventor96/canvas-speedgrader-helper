@@ -5,7 +5,7 @@ const API_PATH = '/v1/chat/completions';
 const DEFAULT_SETTINGS = {
   aiEnabled: false,
   aiEndpointUrl: 'http://localhost:11434',
-  aiModel: 'qwen3.5:4b',
+  aiModel: '',
 };
 
 export function getSettings() {

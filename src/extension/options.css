@@ -59,7 +59,7 @@ main {
   border-radius: 4px
 }
 
-/** AI settings text inputs. */
+/** AI settings text inputs and select. */
 .ai-input {
   display: block;
   width: 100%;
@@ -68,6 +68,23 @@ main {
   border-radius: 4px;
   box-sizing: border-box;
   margin-top: 4px;
+}
+
+.ai-select {
+  appearance: auto;
+  background: #fff;
+  cursor: pointer;
+}
+
+.ai-select:disabled {
+  background: #f5f5f5;
+  color: #888;
+  cursor: not-allowed;
+}
+
+#refresh-models {
+  display: block;
+  margin-bottom: 6px;
 }
 
 /** Button control container spacing. */

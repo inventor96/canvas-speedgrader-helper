@@ -35,5 +35,5 @@ export const LOCAL_SETTINGS = {
   queuedStudentName: null,
   aiEnabled: false,
   aiEndpointUrl: 'http://localhost:11434',
-  aiModel: 'qwen3.5:4b',
+  aiModel: '',
 };
