@@ -215,7 +215,7 @@ function loadLocalSettings() {
     }
 
     const keepAliveInput = document.getElementById('ai-keep-alive');
-    if (keepAliveInput) keepAliveInput.value = data.aiKeepAlive ?? 60;
+    if (keepAliveInput) keepAliveInput.value = data.aiKeepAlive;
 
     fetchModels((document.getElementById('ai-endpoint-url')?.value || '').trim());
   });
@@ -515,7 +515,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const autoClickLoadQueueEveryHourWhenLessThanTenItems = !!document.getElementById('auto-click-load-queue-every-hour-when-less-than-ten-items') && document.getElementById('auto-click-load-queue-every-hour-when-less-than-ten-items').checked;
     const studentNameFormat = document.querySelector('input[name="student-name-format"]:checked')?.value || SYNCED_SETTINGS.studentNameFormat;
 
-    const aiKeepAlive = Math.min(360, Math.max(5, parseInt(document.getElementById('ai-keep-alive')?.value, 10) || 60));
+    const aiKeepAlive = Math.min(360, Math.max(5, parseInt(document.getElementById('ai-keep-alive')?.value, 10) || LOCAL_SETTINGS.aiKeepAlive));
 
     // Save students first, then synced settings, then local settings
     saveStudentsFromDOM(() => {

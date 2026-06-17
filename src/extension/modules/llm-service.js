@@ -1,21 +1,16 @@
 import { logger } from '@/shared/logger.js';
+import { LOCAL_SETTINGS } from '@/shared/settings.js';
 
 const API_PATH = '/api/chat';
 
-const DEFAULT_SETTINGS = {
-  aiEnabled: false,
-  aiEndpointUrl: 'http://localhost:11434',
-  aiModel: '',
-};
-
 export function getSettings() {
   return new Promise((resolve) => {
-    chrome.storage.local.get(DEFAULT_SETTINGS, (data) => {
+    chrome.storage.local.get(LOCAL_SETTINGS, (data) => {
       resolve({
         aiEnabled: !!data.aiEnabled,
-        aiEndpointUrl: data.aiEndpointUrl || DEFAULT_SETTINGS.aiEndpointUrl,
-        aiModel: data.aiModel || DEFAULT_SETTINGS.aiModel,
-        aiKeepAlive: data.aiKeepAlive ?? 60,
+        aiEndpointUrl: data.aiEndpointUrl || LOCAL_SETTINGS.aiEndpointUrl,
+        aiModel: data.aiModel || LOCAL_SETTINGS.aiModel,
+        aiKeepAlive: data.aiKeepAlive ?? LOCAL_SETTINGS.aiKeepAlive,
       });
     });
   });
