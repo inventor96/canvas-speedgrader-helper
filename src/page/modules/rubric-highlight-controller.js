@@ -56,7 +56,6 @@ function buildUserMessage(criterion, submissionText) {
 
 function extractCriteria(tbody) {
   const rows = tbody.querySelectorAll('tr');
-  logger.debug('extractCriteria — rows found:', rows.length);
   return Array.from(rows).map((row, idx) => {
     const titleTd = row.querySelector('td:first-child');
     const ratingsTd = row.querySelector('td:nth-child(2)');
@@ -72,15 +71,12 @@ function extractCriteria(tbody) {
       const pointsEl = testid ? btn.querySelector(`[data-testid="${testid}-points"]`) : null;
       const fullText = pointsEl ? pointsEl.textContent.trim() : '';
       const pointsMatch = fullText.match(/^(\d+)/);
-      logger.debug(`extractCriteria — row ${idx} rating button: testid="${testid}", points=${pointsMatch ? pointsMatch[1] : 'N/A'}`);
       return {
         description: descEl ? descEl.textContent.trim() : '',
         longDescription: longDescEl ? longDescEl.textContent.trim() : '',
         points: pointsMatch ? parseInt(pointsMatch[1], 10) : 0,
       };
     });
-
-    logger.debug(`extractCriteria — row ${idx}: title="${title.slice(0, 50)}..." ratings=${ratings.length} (total buttons found: ${ratingButtons.length})`);
 
     return { title, ratings, row, titleTd };
   });
@@ -205,10 +201,8 @@ function removeErrorBanner() {
 
 async function processOneAspect(criterion, submissionText, api) {
   const { titleTd, ratings, title } = criterion;
-  logger.debug(`processOneAspect — title="${title.slice(0, 40)}..." ratings:`, ratings.length);
 
   if (ratings.length === 0) {
-    logger.debug('processOneAspect — no ratings, skipping');
     clearAspectStatus(titleTd);
     return;
   }
@@ -217,14 +211,10 @@ async function processOneAspect(criterion, submissionText, api) {
     { role: 'system', content: buildSystemMessage() },
     { role: 'user', content: buildUserMessage(criterion, submissionText) },
   ];
-  logger.debug('processOneAspect — calling sendLlmChat');
-
   let llmResult;
   try {
     llmResult = await sendLlmChat(messages);
-    logger.debug('processOneAspect — AI result:', llmResult);
   } catch (e) {
-    logger.debug('processOneAspect — AI error:', e.message);
     const displayMsg = e.message.includes('Failed to parse')
       ? 'AI response parsing failed'
       : 'AI request failed';
@@ -236,27 +226,21 @@ async function processOneAspect(criterion, submissionText, api) {
   }
 
   if (!llmResult.found || !llmResult.excerpt) {
-    logger.debug('processOneAspect — not found or no excerpt');
     setAspectStatus(titleTd, 'No relevant content identified', '#999');
     return;
   }
 
-  logger.debug('processOneAspect — matching excerpt:', llmResult.excerpt.slice(0, 60));
   const match = findExcerpt(submissionText, llmResult.excerpt);
-  logger.debug('processOneAspect — match result:', match);
   if (!match) {
     setAspectStatus(titleTd, 'Could not locate excerpt in submission', '#999');
     return;
   }
 
   const className = getNext();
-  logger.debug('processOneAspect — className:', className);
   if (!className) return;
 
   try {
-    logger.debug('processOneAspect — applying highlight:', match, className);
     await api.applyHighlights([{ start: match.start, end: match.end }], className);
-    logger.debug('processOneAspect — highlight applied');
   } catch (e) {
     logger.error('Failed to apply submission highlight:', e.message);
   }
@@ -281,7 +265,6 @@ async function processOneAspect(criterion, submissionText, api) {
   }
 
   clearAspectStatus(titleTd);
-  logger.debug('processOneAspect — done');
 }
 
 function handleRubricRowScrolled(row) {
@@ -314,14 +297,12 @@ function setupScrollObserver(tbody) {
 let _apiForScroll = null;
 
 async function startProcessing(api) {
-  logger.debug('startProcessing called');
-  if (_processing) { logger.debug('startProcessing — already processing, skipping'); return; }
+  if (_processing) { return; }
   _processing = true;
 
   removeErrorBanner();
 
   const tbody = document.querySelector(TBODY_SELECTOR);
-  logger.debug('startProcessing — tbody found:', !!tbody);
   if (!tbody) {
     _processing = false;
     return;
@@ -331,7 +312,6 @@ async function startProcessing(api) {
   setupScrollObserver(tbody);
 
   const criteria = extractCriteria(tbody);
-  logger.debug('startProcessing — criteria count:', criteria.length);
   if (criteria.length === 0) {
     _processing = false;
     return;
@@ -341,9 +321,7 @@ async function startProcessing(api) {
 
   let submissionText;
   try {
-    logger.debug('startProcessing — calling api.getText()');
     submissionText = await api.getText();
-    logger.debug('startProcessing — getText succeeded, length:', submissionText?.length);
   } catch (e) {
     logger.error('Failed to get submission text:', e.message);
     createErrorBanner('Could not read submission text');
@@ -358,11 +336,9 @@ async function startProcessing(api) {
   }
 
   _progressEl = createProgressPopup(criteria.length);
-  logger.debug('startProcessing — progress popup created');
 
   for (let i = 0; i < criteria.length; i++) {
     updateProgressPopup(_progressEl, i + 1, criteria.length);
-    logger.debug(`startProcessing — processing aspect ${i + 1}/${criteria.length}`);
     try {
       await processOneAspect(criteria[i], submissionText, api);
     } catch (e) {
@@ -370,7 +346,6 @@ async function startProcessing(api) {
     }
   }
 
-  logger.debug('startProcessing — all aspects done');
   removeProgressPopup(_progressEl);
   _progressEl = null;
   _processing = false;
@@ -379,7 +354,6 @@ async function startProcessing(api) {
 function setupViewRubricDelegation(api) {
   if (_delegationSetUp) return;
   _delegationSetUp = true;
-  logger.debug('setupViewRubricDelegation — listener attached');
 
   document.addEventListener('click', (event) => {
     const btn = event.target.closest(
@@ -388,9 +362,7 @@ function setupViewRubricDelegation(api) {
     if (!btn) {
       return;
     }
-    logger.debug('delegation — rubric button clicked:', btn.dataset.testid);
     setTimeout(() => {
-      logger.debug('delegation — starting processing after click');
       startProcessing(api);
     }, 1200);
   });
@@ -398,10 +370,8 @@ function setupViewRubricDelegation(api) {
 
 function checkForExistingRubric(api) {
   const existing = document.querySelector(TBODY_SELECTOR);
-  logger.debug('checkForExistingRubric — tbody present:', !!existing);
   if (existing) {
     setTimeout(() => {
-      logger.debug('checkForExistingRubric — starting processing');
       startProcessing(api);
     }, 500);
   }
@@ -410,7 +380,6 @@ function checkForExistingRubric(api) {
 export function initRubricHighlighting(api) {
   const aiEnabled = get('aiEnabled');
   const highlightEnabled = get('highlightRubricRowSection');
-  logger.debug('initRubricHighlighting — aiEnabled:', aiEnabled, 'highlightRubricRowSection:', highlightEnabled);
   if (!aiEnabled || !highlightEnabled) return;
 
   setupViewRubricDelegation(api);

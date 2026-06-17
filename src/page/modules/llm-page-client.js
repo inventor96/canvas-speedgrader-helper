@@ -27,8 +27,6 @@ export function sendLlmChat(messages, options = {}) {
       if (settled) return;
       settled = true;
 
-      logger.debug('sendLlmChat — received response:', msg);
-
       if (msg.error) {
         reject(new Error(msg.error));
         return;
@@ -54,8 +52,6 @@ export function sendLlmChat(messages, options = {}) {
     };
 
     window.addEventListener('message', handler);
-
-    logger.debug('sendLlmChat — posting request, requestId:', requestId);
 
     window.postMessage({
       type: CSH_MESSAGE_TYPES.LLM_CHAT_REQUEST,
