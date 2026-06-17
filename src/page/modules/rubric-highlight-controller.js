@@ -45,9 +45,8 @@ function buildUserMessage(criterion, submissionText) {
     ``,
     `Find the portion of the submission most relevant to the rubric aspect above. Return a JSON object with these exact fields:`,
     `- "found": boolean — whether relevant content exists`,
-    `- "excerpt": a verbatim quote of 15–30 words copied exactly as it appears in the submission, including original punctuation and spacing. Do not paraphrase or summarize. Copy the words exactly.`,
-    `- "context": one sentence explaining why this location is relevant`,
-    `- "confidence": a float 0.0–1.0 representing how clearly the submission addresses this aspect`,
+    `- "excerpt": a verbatim quote of 15-30 words copied exactly as it appears in the submission, including original punctuation and spacing. Do not paraphrase or summarize. Copy the words exactly.`,
+    `- "confidence": a float 0.0-1.0 representing how clearly the submission addresses this aspect`,
     ``,
     `If no relevant content exists, return found: false and excerpt: null.`,
   ].join('\n');

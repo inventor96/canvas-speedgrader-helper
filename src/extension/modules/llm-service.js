@@ -1,6 +1,6 @@
 import { logger } from '@/shared/logger.js';
 
-const API_PATH = '/v1/chat/completions';
+const API_PATH = '/api/chat';
 
 const DEFAULT_SETTINGS = {
   aiEnabled: false,

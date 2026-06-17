@@ -1,7 +1,7 @@
 import { logger } from '@/shared/logger';
 import { CSH_MESSAGE_TYPES } from '@/shared/message-types.js';
 
-const REQUEST_TIMEOUT_MS = 60000;
+const REQUEST_TIMEOUT_MS = 1200000;
 
 export function sendLlmChat(messages, options = {}) {
   return new Promise((resolve, reject) => {
@@ -41,7 +41,7 @@ export function sendLlmChat(messages, options = {}) {
 
       try {
         const response = msg.response;
-        const content = response?.choices?.[0]?.message?.content;
+        const content = response?.message?.content;
         if (!content) {
           reject(new Error('Empty LLM response'));
           return;
@@ -61,7 +61,10 @@ export function sendLlmChat(messages, options = {}) {
       type: CSH_MESSAGE_TYPES.LLM_CHAT_REQUEST,
       requestId,
       messages,
-      options: { ...options, useJsonFormat: true },
+      options: {
+        ...options,
+        useJsonFormat: true,
+      },
     }, '*');
   });
 }
