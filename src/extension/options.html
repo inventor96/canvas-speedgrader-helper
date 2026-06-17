@@ -13,6 +13,7 @@
       <h1>Settings</h1>
       <p class="muted">Configure your preferences for the Helper for Canvas SpeedGrader extension. Changes will take effect immediately after saving. Unless otherwise specified, your settings are synced between your devices (if supported by your browser).</p>
       <p class="muted">Options marked with &dagger; can also be toggled on a case-by-case basis in a popup that appears when hovering over the applicable trigger (e.g. the "Submit Comment" button).</p>
+      <p class="muted">Options marked with &Dagger; require AI settings to be configured in order to function.</p>
 
       <hr>
 
@@ -93,6 +94,11 @@
           <label>
             <input id="scroll-to-submit-comment-after-comment-library-selection" type="checkbox" />
             Scroll to the "Submit Comment" button after selecting a Comment Library option
+          </label>
+          <br>
+          <label>
+            <input id="highlight-rubric-row-section" type="checkbox" />
+            Highlight the relevant section of the submission for each rubric row &Dagger;
           </label>
           <h3 style="margin-top: 48px; margin-bottom: 0;">Structured Rubric Options</h3>
           <p class="muted">These options apply to structured rubrics with preset point values. They do not affect functionality for unstructured or free-form rubrics.</p>

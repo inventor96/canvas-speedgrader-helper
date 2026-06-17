@@ -24,6 +24,7 @@ export const SYNCED_SETTINGS = {
   autoClickLoadQueueWhenEmpty: true,
   autoClickLoadQueueEveryHourWhenLessThanTenItems: true,
   autoCompleteQueueItemAfterCommentSubmit: true,
+  highlightRubricRowSection: true,
   savedPoints: {},
   savedPointsMeta: { lastUsed: {} },
 };

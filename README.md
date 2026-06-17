@@ -30,6 +30,7 @@ To update the extension with the latest features and fixes, download the latest 
 ## Options Page Overview
 
 Options marked with † can also be toggled on a case-by-case basis in a popup that appears when hovering over the applicable trigger (e.g. the "Submit Comment" button on the SpeedGrader page, or the "Complete" button in the Grading Queue).
+Options marked with ‡ require AI settings to be configured in order to function.
 
 ### Grading Queue Integration
 
@@ -48,6 +49,7 @@ When a group check confirms both names are in the same group, the mismatch warni
 
 ### Rubric
 
+- **Highlight the relevant section of the submission for each rubric row‡**: Uses AI to identify and highlight the portion of the submission text that corresponds to each rubric criterion. Requires AI settings to be configured.
 - **Open rubric automatically for ungraded submissions**: Opens the rubric panel when there is no prior evaluation.
 - **Open the Comment Library after submitting the assessment**: Opens the comment library after clicking Submit Assessment.
 - **Close the SpeedGrader tab after submitting a comment on the assignment†**: After you click the submit-comment button, waits 2 seconds to allow Canvas API requests to finish, then closes the current SpeedGrader tab.

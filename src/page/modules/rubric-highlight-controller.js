@@ -356,9 +356,10 @@ function checkForExistingRubric(api) {
 }
 
 export function initRubricHighlighting(api) {
-  const enabled = get('aiEnabled');
-  logger.debug('initRubricHighlighting — aiEnabled:', enabled);
-  if (!enabled) return;
+  const aiEnabled = get('aiEnabled');
+  const highlightEnabled = get('highlightRubricRowSection');
+  logger.debug('initRubricHighlighting — aiEnabled:', aiEnabled, 'highlightRubricRowSection:', highlightEnabled);
+  if (!aiEnabled || !highlightEnabled) return;
 
   setupViewRubricDelegation(api);
   checkForExistingRubric(api);
