@@ -321,8 +321,10 @@ if (chrome.runtime && chrome.runtime.onMessage) {
       // Relay groups check result to the MAIN world
       const sameGroup = !!msg.sameGroup;
       const isGraded = !!document.querySelector('[data-testid="graded-icon"]');
+      const noAutoClose = !!msg.noAutoClose;
 
-      if (sameGroup) {
+      // Popup "view groups" flow (noAutoClose) should skip grading side effects
+      if (sameGroup && !noAutoClose) {
         handleSameGroupGradingStatus(msg.queuedName || '', isGraded);
       }
 
@@ -332,6 +334,7 @@ if (chrome.runtime && chrome.runtime.onMessage) {
         speedgraderName: msg.speedgraderName || '',
         sameGroup,
         isGraded,
+        noAutoClose,
         matchedGroupHeader: msg.matchedGroupHeader || '',
         groupsCount: Number.isFinite(msg.groupsCount) ? msg.groupsCount : 0,
         error: msg.error || null,

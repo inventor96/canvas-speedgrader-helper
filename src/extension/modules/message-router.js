@@ -150,6 +150,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       groupsCount: Number.isFinite(message.groupsCount) ? message.groupsCount : 0,
       error: message.error || null,
       checkedAt: Date.now(),
+      noAutoClose: pending.noAutoClose,
     };
 
     // Send to origin tab

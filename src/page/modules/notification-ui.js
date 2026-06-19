@@ -309,7 +309,8 @@ function maybeApplyGroupsResult(msg) {
   if (!currentQueued || !currentSpeedgrader) return;
   if (currentQueued !== messageQueued || currentSpeedgrader !== messageSpeedgrader) return;
 
-  if (msg.sameGroup) {
+  // Popup "view groups" flow should not persist cache entries
+  if (msg.sameGroup && !msg.noAutoClose) {
     upsertCurrentTripletCache();
     renderBanner({
       queuedName: warningDiv.dataset.queuedName || msg.queuedName,
