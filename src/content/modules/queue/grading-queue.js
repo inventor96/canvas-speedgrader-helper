@@ -354,12 +354,12 @@ function maybeOpenNextQueueItemAfterComplete(completeButton, studentName) {
       return;
     }
 
-    if (!_autoClickLoadQueueWhenEmpty) {
+    if (!_autoClickLoadQueueWhenEmpty || !shouldAutoOpenNextQueueItem) {
       return;
     }
 
     const didClickLoadQueue = clickLoadQueueButton();
-    if (didClickLoadQueue && shouldAutoOpenNextQueueItem) {
+    if (didClickLoadQueue) {
       retryOpenNextAfterQueueLoad(15000);
     }
   });
