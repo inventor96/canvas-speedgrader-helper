@@ -398,14 +398,17 @@ function initializeGradingQueueListener() {
       timestamp: Date.now()
     };
 
+    const queueItemCount = getCurrentQueueItemCount();
+    const remainingCount = Math.max(0, queueItemCount - 1);
+
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
       chrome.storage.local.set(
-        { queuedStudentName: queuedStudent },
+        { queuedStudentName: queuedStudent, queuedQueueCount: remainingCount },
         () => {
           if (chrome.runtime && chrome.runtime.lastError) {
-            logger.warn('Failed to save queued student name', chrome.runtime.lastError);
+            logger.warn('Failed to save queued student data', chrome.runtime.lastError);
           } else {
-            logger.log('Saved queued student name:', studentName);
+            logger.log('Saved queued student name:', studentName, '| queue count:', remainingCount);
           }
         }
       );

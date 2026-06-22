@@ -35,6 +35,7 @@ export const LOCAL_SETTINGS = {
   studentNames: {},
   studentNamesMeta: { lastUsed: {} },
   queuedStudentName: null,
+  queuedQueueCount: null,
   aiEnabled: false,
   aiEndpointUrl: 'http://localhost:11434',
   aiModel: '',

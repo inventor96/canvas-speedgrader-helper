@@ -9,6 +9,7 @@ let autoCompleteQueueItemAfterCommentSubmitEnabled = SYNCED_SETTINGS.autoComplet
 let autoOpenNextQueueItemAfterCompleteEnabled = SYNCED_SETTINGS.autoOpenNextQueueItemAfterComplete;
 let closeOnSubmitCommentListenerAttached = false;
 let closeOnSubmitCommentPending = false;
+let _queueCount = null;
 
 /** Counts the persisted comment elements on the page. */
 function getPersistedCommentCount() {
@@ -112,6 +113,7 @@ const SubmitCommentPopup = (() => {
     if (cbClose) cbClose.checked = closeSpeedgraderTabAfterSubmitCommentEnabled;
     if (cbComplete) cbComplete.checked = autoCompleteQueueItemAfterCommentSubmitEnabled;
     if (cbNext) cbNext.checked = autoOpenNextQueueItemAfterCompleteEnabled;
+    _updateQueueCountLabel();
   }
 
   /** Creates the popup DOM element with three checkboxes. */
@@ -152,7 +154,15 @@ const SubmitCommentPopup = (() => {
 
     el.appendChild(makeRow('csh-close-tab-cb', 'Close tab on comment submission'));
     el.appendChild(makeRow('csh-complete-queue-cb', 'Click "Complete" in the queue'));
-    el.appendChild(makeRow('csh-open-next-cb', 'Start next queue submission'));
+
+    const nextRow = makeRow('csh-open-next-cb', 'Start next queue submission');
+    nextRow.style.flexWrap = 'wrap';
+    const countLine = document.createElement('i');
+    countLine.id = 'csh-queue-count-line';
+    countLine.style.cssText = 'font-style:italic;font-size:12px;color:#888;width:100%;padding-left:20px;white-space:nowrap;';
+    countLine.textContent = '(0 more in the queue)';
+    nextRow.appendChild(countLine);
+    el.appendChild(nextRow);
 
     // Sync checkbox changes into the live settings
     el.addEventListener('change', (event) => {
@@ -211,7 +221,19 @@ const SubmitCommentPopup = (() => {
     });
   }
 
-  return { init };
+  function _updateQueueCountLabel() {
+    if (!_el) return;
+    const countLine = document.getElementById('csh-queue-count-line');
+    if (!countLine) return;
+    if (typeof _queueCount === 'number' && _queueCount >= 0) {
+      countLine.textContent = `(${_queueCount} more in the queue)`;
+      countLine.style.display = 'block';
+    } else {
+      countLine.style.display = 'none';
+    }
+  }
+
+  return { init, updateQueueCountLabel: _updateQueueCountLabel };
 })();
 
 /** Loads settings from storage, attaches submit listener, and initialises the popup. */
@@ -230,11 +252,29 @@ function initializeCloseOnSubmitCommentSetting() {
   });
 }
 
+/** Reads the queued queue count from local storage and updates the popup label. */
+function initializeQueueCount() {
+  if (!chrome.storage || !chrome.storage.local || !chrome.storage.local.get) return;
+  chrome.storage.local.get({ queuedQueueCount: null }, (data) => {
+    _queueCount = data.queuedQueueCount;
+    SubmitCommentPopup.updateQueueCountLabel();
+  });
+}
+
 initializeCloseOnSubmitCommentSetting();
+initializeQueueCount();
 
 // Keep live settings in sync with storage changes
 if (chrome.storage && chrome.storage.onChanged) {
   chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'local') {
+      if (changes.queuedQueueCount) {
+        _queueCount = changes.queuedQueueCount.newValue;
+        SubmitCommentPopup.updateQueueCountLabel();
+      }
+      return;
+    }
+
     if (areaName !== 'sync') return;
     if (changes.closeSpeedgraderTabAfterSubmitComment) {
       closeSpeedgraderTabAfterSubmitCommentEnabled = !!changes.closeSpeedgraderTabAfterSubmitComment.newValue;
